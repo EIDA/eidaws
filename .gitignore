@@ -1,0 +1,12 @@
+*.kate-swp
+*.kdev4
+.kdev4/
+*.pyc
+*.swp
+*tags
+cscope.*
+
+*.eggs
+*.egg-info
+__pycache__
+venv
