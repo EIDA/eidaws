@@ -31,6 +31,14 @@ async def exception_handling_middleware(request, handler):
         return await handler(request)
     except (web.HTTPNotFound, asyncio.CancelledError, FDSNHTTPError) as err:
         raise err
+    except web.HTTPRequestEntityTooLarge as err:
+        raise FDSNHTTPError.create(
+            413,
+            request,
+            request_submitted=request[FED_BASE_ID + ".request_starttime"],
+            error_desc_long=str(err),
+            service_version=__version__,
+        )
     except Exception as err:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.critical(f"Local Exception: {type(err)}")

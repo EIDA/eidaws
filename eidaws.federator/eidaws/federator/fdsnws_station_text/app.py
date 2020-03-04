@@ -20,6 +20,7 @@ from eidaws.federator.settings import (
     FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE,
     FED_DEFAULT_POOL_SIZE,
     FED_DEFAULT_CACHE_CONFIG,
+    FED_DEFAULT_CLIENT_MAX_SIZE,
 )
 from eidaws.federator.utils.misc import get_config, setup_logger
 from eidaws.utils.misc import realpath, real_file_path
@@ -82,6 +83,7 @@ def default_config():
     )
     default_config.setdefault("pool_size", FED_DEFAULT_POOL_SIZE)
     default_config.setdefault("cache_config", FED_DEFAULT_CACHE_CONFIG)
+    default_config.setdefault("client_max_size", FED_DEFAULT_CLIENT_MAX_SIZE)
     default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
 
     return default_config
