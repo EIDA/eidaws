@@ -26,7 +26,7 @@ from eidaws.federator.version import __version__
 SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
 
-def create_app(config_dict={}, **kwargs):
+def create_app(config_dict, **kwargs):
 
     app = web.Application(
         # XXX(damb): The ordering of middlewares matters
