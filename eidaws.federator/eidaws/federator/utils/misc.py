@@ -171,7 +171,7 @@ async def setup_response_code_stats(service_id, app):
         app["redis_connection_pool"],
         ttl=app["config"][service_id]["client_retry_budget_ttl"],
         window_size=app["config"][service_id][
-            "client_rety_budget_window_size"
+            "client_retry_budget_window_size"
         ],
     )
 
