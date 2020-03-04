@@ -3,7 +3,6 @@
 Statistics related test facilities.
 """
 
-
 import aioredis
 import asyncio
 import pytest
