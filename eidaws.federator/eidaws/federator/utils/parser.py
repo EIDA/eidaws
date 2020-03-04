@@ -6,14 +6,27 @@ from webargs import core
 from webargs.aiohttpparser import parser, AIOHTTPParser
 
 from marshmallow import (
-    fields, validate, ValidationError, pre_load, validates_schema,
-    Schema, SchemaOpts, post_load)
+    fields,
+    validate,
+    ValidationError,
+    pre_load,
+    validates_schema,
+    Schema,
+    SchemaOpts,
+    post_load,
+)
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.utils.parser import FDSNWSParserMixin
 from eidaws.utils.schema import (
-    FDSNWSDateTime, Latitude, Longitude, Radius, FDSNWSBool, NoData)
+    FDSNWSDateTime,
+    Latitude,
+    Longitude,
+    Radius,
+    FDSNWSBool,
+    NoData,
+)
 
 
 class ServiceOpts(SchemaOpts):
@@ -23,13 +36,14 @@ class ServiceOpts(SchemaOpts):
 
     def __init__(self, meta, **kwargs):
         SchemaOpts.__init__(self, meta, **kwargs)
-        self.service = getattr(meta, 'service', 'dataselect')
+        self.service = getattr(meta, "service", "dataselect")
 
 
 class ServiceSchema(Schema):
     """
     Base class for webservice schema definitions.
     """
+
     OPTIONS_CLASS = ServiceOpts
 
     # read-only (the parameter is not parsed by webargs)
@@ -37,7 +51,7 @@ class ServiceSchema(Schema):
 
     @post_load
     def set_service(self, data, **kwargs):
-        data['service'] = self.opts.service
+        data["service"] = self.opts.service
         return data
 
     class Meta:
@@ -56,10 +70,10 @@ class StationSchema(ServiceSchema):
     nodata = NoData()
 
     # temporal options
-    startbefore = FDSNWSDateTime(format='fdsnws')
-    startafter = FDSNWSDateTime(format='fdsnws')
-    endbefore = FDSNWSDateTime(format='fdsnws')
-    endafter = FDSNWSDateTime(format='fdsnws')
+    startbefore = FDSNWSDateTime(format="fdsnws")
+    startafter = FDSNWSDateTime(format="fdsnws")
+    endbefore = FDSNWSDateTime(format="fdsnws")
+    endafter = FDSNWSDateTime(format="fdsnws")
 
     # geographic (rectangular spatial) options
     minlatitude = Latitude()
@@ -81,10 +95,10 @@ class StationSchema(ServiceSchema):
 
     # request options
     level = fields.Str(
-        missing='station',
-        validate=validate.OneOf(
-            ['network', 'station', 'channel', 'response']))
-    includerestricted = FDSNWSBool(missing='true')
+        missing="station",
+        validate=validate.OneOf(["network", "station", "channel", "response"]),
+    )
+    includerestricted = FDSNWSBool(missing="true")
 
     @pre_load
     def merge_keys(self, data, **kwargs):
@@ -97,12 +111,13 @@ class StationSchema(ServiceSchema):
             parsed.
         """
         _mappings = [
-            ('minlat', 'minlatitude'),
-            ('maxlat', 'maxlatitude'),
-            ('minlon', 'minlongitude'),
-            ('maxlon', 'maxlongitude'),
-            ('lat', 'latitude'),
-            ('lon', 'longitude')]
+            ("minlat", "minlatitude"),
+            ("maxlat", "maxlatitude"),
+            ("minlon", "minlongitude"),
+            ("maxlon", "maxlongitude"),
+            ("lat", "latitude"),
+            ("lon", "longitude"),
+        ]
 
         for alt_key, key in _mappings:
             if alt_key in data and key not in data:
@@ -113,51 +128,58 @@ class StationSchema(ServiceSchema):
 
     @validates_schema
     def validate_level(self, data, **kwargs):
-        if data['format'] == 'text' and data['level'] == 'response':
+        if data["format"] == "text" and data["level"] == "response":
             raise ValidationError("Invalid level for format 'text'.")
 
     @validates_schema
     def validate_spatial_params(self, data, **kwargs):
         # NOTE(damb): Allow either rectangular or circular spatial parameters
-        rectangular_spatial = ('minlatitude', 'maxlatitude', 'minlongitude',
-                               'maxlongitude')
-        circular_spatial = ('latitude', 'longitude', 'minradius', 'maxradius')
+        rectangular_spatial = (
+            "minlatitude",
+            "maxlatitude",
+            "minlongitude",
+            "maxlongitude",
+        )
+        circular_spatial = ("latitude", "longitude", "minradius", "maxradius")
 
-        if (any(k in data for k in rectangular_spatial) and
-                any(k in data for k in circular_spatial)):
+        if any(k in data for k in rectangular_spatial) and any(
+            k in data for k in circular_spatial
+        ):
             raise ValidationError(
-                'Bad Request: Both rectangular spatial and circular spatial' +
-                ' parameters defined.')
+                "Bad Request: Both rectangular spatial and circular spatial"
+                + " parameters defined."
+            )
             # TODO(damb): check if min values are smaller than max values;
             # no default values are set
 
     class Meta:
-        service = 'station'
+        service = "station"
         strict = True
         ordered = True
 
 
 # -----------------------------------------------------------------------------
 def setup_parser_error_handler(service_version=None):
-
     @parser.error_handler
     @fdsnws_parser.error_handler
     def handle_parser_error(error, req, schema, status_code, headers):
 
         raise FDSNHTTPError.create(
-            400, req,
-            request_submitted=req[FED_BASE_ID + '.request_starttime'],
-            service_version=service_version, error_desc_long=str(error))
+            400,
+            req,
+            request_submitted=req[FED_BASE_ID + ".request_starttime"],
+            service_version=service_version,
+            error_desc_long=str(error),
+        )
 
     return handle_parser_error
 
 
 class FDSNWSAIOHTTPParser(FDSNWSParserMixin, AIOHTTPParser):
-
     def parse_querystring(self, req, name, field):
         return core.get_value(
-            self._parse_streamepochs_from_argdict(req.query),
-            name, field)
+            self._parse_streamepochs_from_argdict(req.query), name, field
+        )
 
     async def parse_form(self, req, name, field):
         return core.get_value(
