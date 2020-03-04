@@ -160,12 +160,9 @@ class FDSNWSAIOHTTPParser(FDSNWSParserMixin, AIOHTTPParser):
             name, field)
 
     async def parse_form(self, req, name, field):
-        post_data = self._cache.get('post')
-        if post_data is None:
-            self._cache['post'] = await req.post()
-
-        return core.get_value(self._parse_postfile(
-            self._cache['post'], name, field))
+        return core.get_value(
+            self._parse_postfile(await req.text()), name, field
+        )
 
 
 fdsnws_parser = FDSNWSAIOHTTPParser()
