@@ -16,6 +16,8 @@ from eidaws.federator.settings import (
     FED_DEFAULT_REDIS_POOL_MAXSIZE,
     FED_DEFAULT_REDIS_POOL_TIMEOUT,
     FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES,
+    FED_DEFAULT_RETRY_BUDGET_CLIENT_TTL,
+    FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE,
     FED_DEFAULT_POOL_SIZE,
     FED_DEFAULT_CACHE_CONFIG,
 )
@@ -71,6 +73,12 @@ def default_config():
     )
     default_config.setdefault(
         "client_retry_budget_threshold", FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES
+    )
+    default_config.setdefault(
+        "client_retry_budget_ttl", FED_DEFAULT_RETRY_BUDGET_CLIENT_TTL
+    )
+    default_config.setdefault(
+        "client_retry_budget_window_size", FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE
     )
     default_config.setdefault("pool_size", FED_DEFAULT_POOL_SIZE)
     default_config.setdefault("cache_config", FED_DEFAULT_CACHE_CONFIG)
