@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import aiohttp_cors
 import functools
 
@@ -17,6 +19,7 @@ from eidaws.federator.utils.misc import (
     setup_cache,
 )
 from eidaws.federator.utils.parser import setup_parser_error_handler
+from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
 
 
@@ -58,6 +61,7 @@ def create_app(config_dict={}, **kwargs):
             cors.add(route)
 
     setup_parser_error_handler(service_version=__version__)
+    setup_keywordparser_error_handler(service_version=__version__)
 
     setup_endpoint_http_conn_pool(SERVICE_ID, app)
     setup_routing_http_conn_pool(SERVICE_ID, app)
