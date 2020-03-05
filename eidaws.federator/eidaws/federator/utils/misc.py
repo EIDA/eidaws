@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import aioredis
 import logging
 import logging.config
@@ -30,9 +31,15 @@ def _callable_or_raise(obj):
         return obj
 
 
-def get_config(service_id, path_config, defaults={}):
+def get_config(service_id, path_config=None, defaults={}):
 
     user_config = {FED_BASE_ID: {service_id: {}, "common": {}}}
+
+    if path_config is None:
+        assert defaults, "Using empty default configuration not supported."
+
+        return {"config": {service_id: defaults}}
+
     try:
         with open(path_config) as ifd:
             user_config = yaml.safe_load(ifd)

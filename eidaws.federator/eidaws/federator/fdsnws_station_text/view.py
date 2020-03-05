@@ -7,16 +7,16 @@ from aiohttp_cors import CorsViewMixin
 from webargs.aiohttpparser import parser
 
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID
+from eidaws.federator.utils.strict import keyword_parser
 from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.parser import fdsnws_parser
 from eidaws.federator.fdsnws_station_text.parser import StationTextSchema
 from eidaws.federator.fdsnws_station_text.process import (
     StationTextRequestProcessor,
 )
-from eidaws.utils.schema import ManyStreamEpochSchema
+from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
 
 # TODO(damb):
-#   - Implement strict arg parsing
 #   - Implement 413 handling
 #   - CORS headers
 
@@ -33,6 +33,13 @@ class StationTextView(web.View, CorsViewMixin):
         self.logger = make_context_logger(self._logger, self.request)
 
     async def get(self):
+
+        # strict parameter validation
+        await keyword_parser.parse(
+            (StationTextSchema, StreamEpochSchema),
+            self.request,
+            locations=("query",),
+        )
 
         # parse query parameters
         self.request[FED_BASE_ID + ".query_params"] = await parser.parse(
@@ -65,6 +72,11 @@ class StationTextView(web.View, CorsViewMixin):
         return await processor.federate()
 
     async def post(self):
+
+        # strict parameter validation
+        await keyword_parser.parse(
+            StationTextSchema, self.request, locations=("form",),
+        )
 
         # parse query parameters
         self.request[

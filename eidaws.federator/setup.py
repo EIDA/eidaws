@@ -51,6 +51,6 @@ setup(
     zip_safe=False,
     install_requires=_DEPS,
     setup_requires=['pytest-runner', ],
-    tests_require=['pytest', 'pytest-asyncio'],
+    tests_require=['pytest', 'pytest-asyncio', 'pytest-aiohttp'],
     python_requires='~=3.7',
 )
