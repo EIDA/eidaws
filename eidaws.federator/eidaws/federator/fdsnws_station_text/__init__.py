@@ -51,12 +51,14 @@ def create_app(config_dict, **kwargs):
         app,
         defaults={
             "*": aiohttp_cors.ResourceOptions(
-                allow_credentials=True, expose_headers="*", allow_headers="*",
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods=["POST", "GET"],
             )
         },
     )
 
-    # TODO(damb): Apparently, headers are not set correctly
     for route in list(app.router.routes()):
         if not isinstance(route.resource, web.StaticResource):  # workaround
             cors.add(route)
