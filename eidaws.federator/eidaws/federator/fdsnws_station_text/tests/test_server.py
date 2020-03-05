@@ -107,3 +107,76 @@ class TestFDSNStationTextServer:
 
         assert resp.status == 400
         assert "ValidationError: RTFM :)." in await resp.text()
+
+    async def test_get_cors_simple(self, make_aiohttp_client):
+        client = await make_aiohttp_client()
+
+        origin = "http://foo.example.com"
+
+        resp = await client.get(
+            self.PATH_QUERY, headers={"Origin": origin}, params={"foo": "bar"}
+        )
+
+        assert resp.status == 400
+        assert (
+            "Access-Control-Expose-Headers" in resp.headers
+            and resp.headers["Access-Control-Expose-Headers"] == ""
+        )
+        assert (
+            "Access-Control-Allow-Origin" in resp.headers
+            and resp.headers["Access-Control-Allow-Origin"] == origin
+        )
+
+    async def test_post_cors_simple(self, make_aiohttp_client):
+        client = await make_aiohttp_client()
+
+        origin = "http://foo.example.com"
+
+        data = b""
+        resp = await client.post(
+            self.PATH_QUERY, headers={"Origin": origin}, data=data
+        )
+
+        assert resp.status == 400
+        assert (
+            "Access-Control-Expose-Headers" in resp.headers
+            and resp.headers["Access-Control-Expose-Headers"] == ""
+        )
+        assert (
+            "Access-Control-Allow-Origin" in resp.headers
+            and resp.headers["Access-Control-Allow-Origin"] == origin
+        )
+
+    async def test_cors_preflight(self, make_aiohttp_client):
+        client = await make_aiohttp_client()
+
+        origin = "http://foo.example.com"
+        method = "GET"
+        headers = {"Origin": origin, "Access-Control-Request-Method": method}
+
+        resp = await client.options(self.PATH_QUERY, headers=headers)
+
+        assert resp.status == 200
+        assert (
+            "Access-Control-Allow-Methods" in resp.headers
+            and resp.headers["Access-Control-Allow-Methods"] == method
+        )
+        assert (
+            "Access-Control-Allow-Origin" in resp.headers
+            and resp.headers["Access-Control-Allow-Origin"] == origin
+        )
+
+    async def test_cors_preflight_forbidden(self, make_aiohttp_client):
+        client = await make_aiohttp_client()
+
+        origin = "http://foo.example.com"
+
+        resp = await client.options(
+            self.PATH_QUERY, headers={"Origin": origin}
+        )
+        assert resp.status == 403
+
+        resp = await client.options(
+            self.PATH_QUERY, headers={"Access-Control-Request-Method": "GET"}
+        )
+        assert resp.status == 403
