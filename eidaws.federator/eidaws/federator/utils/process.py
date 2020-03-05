@@ -128,7 +128,7 @@ class BaseRequestProcessor:
         return self.request[FED_BASE_ID + ".stream_epochs"]
 
     @property
-    def request_starttime(self):
+    def request_submitted(self):
         return self.request[FED_BASE_ID + ".request_starttime"]
 
     @property
@@ -279,7 +279,7 @@ class BaseRequestProcessor:
             raise FDSNHTTPError.create(
                 500,
                 self.request,
-                request_submitted=self.request_starttime,
+                request_submitted=self.request_submitted,
                 service_version=__version__,
             )
 
