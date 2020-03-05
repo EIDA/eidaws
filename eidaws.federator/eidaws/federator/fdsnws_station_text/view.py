@@ -18,7 +18,6 @@ from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
 
 # TODO(damb):
 #   - Implement 413 handling
-#   - CORS headers
 
 
 class StationTextView(web.View, CorsViewMixin):
