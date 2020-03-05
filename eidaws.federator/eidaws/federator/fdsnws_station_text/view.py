@@ -67,7 +67,9 @@ class StationTextView(web.View, CorsViewMixin):
     async def post(self):
 
         # parse query parameters
-        self.request[FED_BASE_ID + ".query_params"] = await parser.parse(
+        self.request[
+            FED_BASE_ID + ".query_params"
+        ] = await fdsnws_parser.parse(
             StationTextSchema(), self.request, locations=("form",)
         )
 
