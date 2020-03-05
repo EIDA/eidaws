@@ -54,6 +54,7 @@ class TestRedisCache:
         cache_key = "cache_key"
         cache_value = b"foo"
         await redis_cache.set(cache_key, cache_value, timeout=1)
+        assert await redis_cache.exists(cache_key)
 
         await asyncio.sleep(1)
 
@@ -65,6 +66,7 @@ class TestRedisCache:
         cache_value = b"foo"
 
         await redis_cache.set(cache_key, cache_value)
+        assert await redis_cache.exists(cache_key)
 
         await redis_cache.delete(cache_key)
 
