@@ -29,7 +29,12 @@ async def before_request(request, handler):
 async def exception_handling_middleware(request, handler):
     try:
         return await handler(request)
-    except (web.HTTPNotFound, asyncio.CancelledError, FDSNHTTPError) as err:
+    except (
+        web.HTTPNotFound,
+        web.HTTPForbidden,
+        asyncio.CancelledError,
+        FDSNHTTPError,
+    ) as err:
         raise err
     except web.HTTPRequestEntityTooLarge as err:
         raise FDSNHTTPError.create(
