@@ -51,7 +51,7 @@ def create_app(config_dict, **kwargs):
         app,
         defaults={
             "*": aiohttp_cors.ResourceOptions(
-                allow_credentials=True,
+                allow_credentials=False,
                 expose_headers="*",
                 allow_headers="*",
                 allow_methods=["POST", "GET"],
