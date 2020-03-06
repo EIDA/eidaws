@@ -11,8 +11,8 @@ from eidaws.federator.utils.misc import get_config
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
 
 
-# TODO(damb): Check if Redis is up and running. Mock eida-federator.ethz.ch's
-# Stationlite response. For requests while routing.
+# TODO(damb): Check if both Redis and eida-federator.ethz.ch's Stationlite are
+# up and running. Else skip tests.
 
 
 _PATH_QUERY = "/".join([FED_STATION_PATH_TEXT, FDSNWS_QUERY_METHOD_TOKEN])
@@ -73,6 +73,104 @@ class TestFDSNStationTextServerConfig:
 
         assert resp.status == 413
         assert "Request Entity Too Large" in await resp.text()
+
+    async def test_max_stream_epoch_duration(self, make_aiohttp_client):
+        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        config_dict[
+            "url_routing"
+        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
+        config_dict["max_stream_epoch_duration"] = 1
+
+        client = await make_aiohttp_client(
+            config_dict=get_config(SERVICE_ID, defaults=config_dict)
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BHZ",
+            "start": "2020-01-01",
+            "end": "2020-01-02",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BHZ",
+            "start": "2020-01-01",
+            "end": "2020-01-02T00:00:01",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 413
+
+    async def test_max_total_stream_epoch_duration(self, make_aiohttp_client):
+        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        config_dict[
+            "url_routing"
+        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
+        config_dict["max_total_stream_epoch_duration"] = 3
+
+        client = await make_aiohttp_client(
+            config_dict=get_config(SERVICE_ID, defaults=config_dict)
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BH?",
+            "start": "2020-01-01",
+            "end": "2020-01-02",
+            "level": "channel",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BH?",
+            "start": "2020-01-01",
+            "end": "2020-01-02T00:00:01",
+            "level": "channel",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 413
+
+    async def test_max_stream_epoch_durations(self, make_aiohttp_client):
+        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        config_dict[
+            "url_routing"
+        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
+        config_dict["max_stream_epoch_durations"] = 2
+        config_dict["max_total_stream_epoch_duration"] = 3
+
+        client = await make_aiohttp_client(
+            config_dict=get_config(SERVICE_ID, defaults=config_dict)
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BHZ",
+            "start": "2020-01-01",
+            "end": "2020-01-03",
+            "level": "channel",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "cha": "BHZ,BHN",
+            "start": "2020-01-01",
+            "end": "2020-01-03",
+            "level": "channel",
+        }
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 413
 
 
 class TestFDSNStationTextServerKeywordParser:

@@ -10,6 +10,7 @@ from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
+    _duration_to_timedelta,
     cached,
     BaseRequestProcessor,
     RequestProcessorError,
@@ -59,6 +60,18 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
     @property
     def pool_size(self):
         return self._config["pool_size"]
+
+    @property
+    def max_stream_epoch_duration(self):
+        return _duration_to_timedelta(
+            days=self._config["max_stream_epoch_duration"]
+        )
+
+    @property
+    def max_total_stream_epoch_duration(self):
+        return _duration_to_timedelta(
+            days=self._config["max_total_stream_epoch_duration"]
+        )
 
     @property
     def client_retry_budget_threshold(self):
@@ -155,18 +168,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         """
 
         for url, stream_epochs in routing_table.items():
-            try:
-                e_ratio = await self.get_cretry_budget_error_ratio(url)
-            except Exception:
-                pass
-            else:
-                if e_ratio > self.client_retry_budget_threshold:
-                    self.logger.warning(
-                        f"Exceeded per client retry-budget for {url}: "
-                        f"(e_ratio={e_ratio})."
-                    )
-                    continue
-
             # granular request strategy
             for se in stream_epochs:
                 self.logger.debug(
