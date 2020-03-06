@@ -11,6 +11,13 @@ from eidaws.federator.utils.misc import get_config
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
 
 
+# TODO(damb): Check if Redis is up and running. Mock eida-federator.ethz.ch's
+# Stationlite response. For requests while routing.
+
+
+_PATH_QUERY = "/".join([FED_STATION_PATH_TEXT, FDSNWS_QUERY_METHOD_TOKEN])
+
+
 @pytest.fixture
 def make_aiohttp_client(aiohttp_client):
 
@@ -25,9 +32,28 @@ def make_aiohttp_client(aiohttp_client):
 
 
 class TestFDSNStationTextServer:
+    async def test_post_single_sncl(self, make_aiohttp_client):
+        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        config_dict[
+            "url_routing"
+        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
+        config_dict["pool_size"] = 1
 
-    PATH_QUERY = "/".join([FED_STATION_PATH_TEXT, FDSNWS_QUERY_METHOD_TOKEN])
+        client = await make_aiohttp_client(
+            config_dict=get_config(SERVICE_ID, defaults=config_dict)
+        )
 
+        data = b"NL HGN ?? * 2013-10-10 2013-10-11"
+        resp = await client.post(_PATH_QUERY, data=data)
+
+        assert resp.status == 200
+
+        # XXX(damb): This is a workaround in order to avoid the message
+        # "Exception ignored in: <coroutine object ...>"
+        await asyncio.sleep(0.01)
+
+
+class TestFDSNStationTextServerConfig:
     async def test_client_max_size(self, make_aiohttp_client):
 
         client_max_size = 32
@@ -43,15 +69,17 @@ class TestFDSNStationTextServer:
 
         assert client_max_size < len(data)
 
-        resp = await client.post(self.PATH_QUERY, data=data)
+        resp = await client.post(_PATH_QUERY, data=data)
 
         assert resp.status == 413
         assert "Request Entity Too Large" in await resp.text()
 
+
+class TestFDSNStationTextServerKeywordParser:
     async def test_get_with_strict_args_invalid(self, make_aiohttp_client):
         client = await make_aiohttp_client()
 
-        resp = await client.get(self.PATH_QUERY, params={"foo": "bar"})
+        resp = await client.get(_PATH_QUERY, params={"foo": "bar"})
 
         assert resp.status == 400
         assert (
@@ -63,7 +91,7 @@ class TestFDSNStationTextServer:
         client = await make_aiohttp_client()
 
         data = b"foo=bar\n\nNL HGN ?? * 2013-10-10 2013-10-11"
-        resp = await client.post(self.PATH_QUERY, data=data)
+        resp = await client.post(_PATH_QUERY, data=data)
 
         assert resp.status == 400
         assert (
@@ -71,31 +99,11 @@ class TestFDSNStationTextServer:
             in await resp.text()
         )
 
-    async def test_post_single_sncl(self, make_aiohttp_client):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict[
-            "url_routing"
-        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
-        config_dict["pool_size"] = 1
-
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        data = b"NL HGN ?? * 2013-10-10 2013-10-11"
-        resp = await client.post(self.PATH_QUERY, data=data)
-
-        assert resp.status == 200
-
-        # XXX(damb): This is a workaround in order to avoid the message
-        # "Exception ignored in: <coroutine object ...>"
-        await asyncio.sleep(0.01)
-
     async def test_post_empty(self, make_aiohttp_client):
         client = await make_aiohttp_client()
 
         data = b""
-        resp = await client.post(self.PATH_QUERY, data=data)
+        resp = await client.post(_PATH_QUERY, data=data)
 
         assert resp.status == 400
 
@@ -103,18 +111,20 @@ class TestFDSNStationTextServer:
         client = await make_aiohttp_client()
 
         data = b"="
-        resp = await client.post(self.PATH_QUERY, data=data)
+        resp = await client.post(_PATH_QUERY, data=data)
 
         assert resp.status == 400
         assert "ValidationError: RTFM :)." in await resp.text()
 
+
+class TestFDSNStationTextServerCORS:
     async def test_get_cors_simple(self, make_aiohttp_client):
         client = await make_aiohttp_client()
 
         origin = "http://foo.example.com"
 
         resp = await client.get(
-            self.PATH_QUERY, headers={"Origin": origin}, params={"foo": "bar"}
+            _PATH_QUERY, headers={"Origin": origin}, params={"foo": "bar"}
         )
 
         assert resp.status == 400
@@ -134,7 +144,7 @@ class TestFDSNStationTextServer:
 
         data = b""
         resp = await client.post(
-            self.PATH_QUERY, headers={"Origin": origin}, data=data
+            _PATH_QUERY, headers={"Origin": origin}, data=data
         )
 
         assert resp.status == 400
@@ -154,7 +164,7 @@ class TestFDSNStationTextServer:
         method = "GET"
         headers = {"Origin": origin, "Access-Control-Request-Method": method}
 
-        resp = await client.options(self.PATH_QUERY, headers=headers)
+        resp = await client.options(_PATH_QUERY, headers=headers)
 
         assert resp.status == 200
         assert (
@@ -171,12 +181,10 @@ class TestFDSNStationTextServer:
 
         origin = "http://foo.example.com"
 
-        resp = await client.options(
-            self.PATH_QUERY, headers={"Origin": origin}
-        )
+        resp = await client.options(_PATH_QUERY, headers={"Origin": origin})
         assert resp.status == 403
 
         resp = await client.options(
-            self.PATH_QUERY, headers={"Access-Control-Request-Method": "GET"}
+            _PATH_QUERY, headers={"Access-Control-Request-Method": "GET"}
         )
         assert resp.status == 403
