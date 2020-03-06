@@ -16,9 +16,6 @@ from eidaws.federator.fdsnws_station_text.process import (
 )
 from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
 
-# TODO(damb):
-#   - Implement 413 handling
-
 
 class StationTextView(web.View, CorsViewMixin):
 
