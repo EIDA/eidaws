@@ -11,8 +11,8 @@ from eidaws.federator.utils.misc import get_config
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
 
 
-# TODO(damb): Check if Redis is up and running. Mock eida-federator.ethz.ch's
-# Stationlite response. For requests while routing.
+# TODO(damb): Check if both Redis and eida-federator.ethz.ch's Stationlite are
+# up and running. Else skip tests.
 
 
 _PATH_QUERY = "/".join([FED_STATION_PATH_TEXT, FDSNWS_QUERY_METHOD_TOKEN])
