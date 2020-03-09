@@ -6,16 +6,17 @@ import pytest
 
 from eidaws.federator.fdsnws_station_text import create_app, SERVICE_ID
 from eidaws.federator.fdsnws_station_text.app import DEFAULT_CONFIG
-from eidaws.federator.settings import FED_STATION_PATH_TEXT
 from eidaws.federator.utils.misc import get_config
-from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
+from eidaws.federator.fdsnws_station_text.route import (
+    FED_STATION_TEXT_PATH_QUERY,
+)
 
 
 # TODO(damb): Check if both Redis and eida-federator.ethz.ch's Stationlite are
 # up and running. Else skip tests.
 
 
-_PATH_QUERY = "/".join([FED_STATION_PATH_TEXT, FDSNWS_QUERY_METHOD_TOKEN])
+_PATH_QUERY = FED_STATION_TEXT_PATH_QUERY
 
 
 @pytest.fixture
