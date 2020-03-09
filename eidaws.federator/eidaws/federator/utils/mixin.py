@@ -1,8 +1,40 @@
 # -*- coding: utf-8 -*-
+
+import asyncio
+import aioredis
 import base64
+import functools
 import hashlib
 
 from eidaws.federator.utils.cache import null_control
+
+
+def with_redis_exception_handling(propagate_exceptions=False):
+    """
+    Returns a method decorator providing Redis exception handling facilities.
+    """
+
+    def propagate_exception(err):
+        if propagate_exceptions:
+            raise err
+
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                return await func(self, *args, **kwargs)
+            except asyncio.TimeoutError as err:
+                self.logger.warning(
+                    f"Timout while connecting Redis: {type(err)}"
+                )
+                propagate_exception(err)
+            except (OSError, aioredis.RedisError) as err:
+                self.logger.warning(f"Error while connecting Redis: {err}")
+                propagate_exception(err)
+
+        return wrapper
+
+    return decorator
 
 
 class CachingMixin:
@@ -99,3 +131,51 @@ class CachingMixin:
             return None, found
         else:
             return retval, found
+
+
+class ClientRetryBudgetMixin:
+    """
+    Adds facilities with respect to the client retry budget extension to a
+    :py:class:`~eidaws.federator.utils.process.BaseRequestProcessor` or any
+    other object with a ``request`` property.
+    """
+
+    @property
+    def stats_retry_budget_client(self):
+        return self.request.app["response_code_statistics"]
+
+    @with_redis_exception_handling(propagate_exceptions=True)
+    async def get_cretry_budget_error_ratio(self, url):
+        """
+        Return the error ratio of a response code time series referenced by
+        ``url``.
+
+        :param str url: URL indicating the response code time series to be
+            garbage collected
+
+        :returns: Error ratio in percent
+        :rtype: float
+        """
+        return 100 * await self.stats_retry_budget_client.get_error_ratio(url)
+
+    @with_redis_exception_handling(propagate_exceptions=True)
+    async def update_cretry_budget(self, url, code):
+        """
+        Add ``code`` to the response code time series referenced by
+        ``url``.
+
+        :param str url: URL indicating the response code time series to be
+            garbage collected
+        :param int code: HTTP status code to be appended
+        """
+        await self.stats_retry_budget_client.add(url, code)
+
+    @with_redis_exception_handling()
+    async def gc_cretry_budget(self, url):
+        """
+        Garbage collect the response code time series referenced by ``url``.
+
+        :param str url: URL indicating the response code time series to be
+            garbage collected
+        """
+        await self.stats_retry_budget_client.gc(url)

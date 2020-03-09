@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import aiohttp
-import aioredis
 import asyncio
 import datetime
 import functools
@@ -8,10 +7,11 @@ import logging
 
 from aiohttp import web
 
-from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.settings import FED_BASE_ID, FED_DEFAULT_NETLOC_PROXY
 from eidaws.federator.utils import misc
 from eidaws.federator.utils.httperror import FDSNHTTPError
+from eidaws.federator.utils.mixin import ClientRetryBudgetMixin
+from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.settings import (
@@ -26,34 +26,6 @@ def _duration_to_timedelta(*args, **kwargs):
         return datetime.timedelta(*args, **kwargs)
     except TypeError:
         return None
-
-
-def with_redis_exception_handling(propagate_exceptions=False):
-    """
-    Returns a method decorator providing Redis exception handling facilities.
-    """
-
-    def propagate_exception(err):
-        if propagate_exceptions:
-            raise err
-
-    def decorator(func):
-        @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            try:
-                return await func(self, *args, **kwargs)
-            except asyncio.TimeoutError as err:
-                self.logger.warning(
-                    f"Timout while connecting Redis: {type(err)}"
-                )
-                propagate_exception(err)
-            except (OSError, aioredis.RedisError) as err:
-                self.logger.warning(f"Error while connecting Redis: {err}")
-                propagate_exception(err)
-
-        return wrapper
-
-    return decorator
 
 
 def cached(func):
@@ -89,7 +61,7 @@ class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
 
 
-class BaseRequestProcessor:
+class BaseRequestProcessor(ClientRetryBudgetMixin):
     """
     Abstract base class for request processors.
     """
@@ -173,10 +145,6 @@ class BaseRequestProcessor:
     @property
     def max_total_stream_epoch_duration(self):
         return None
-
-    @property
-    def stats_retry_budget_client(self):
-        return self.request.app["response_code_statistics"]
 
     @property
     def client_retry_budget_threshold(self):
@@ -375,42 +343,6 @@ class BaseRequestProcessor:
         """
 
         raise NotImplementedError
-
-    @with_redis_exception_handling(propagate_exceptions=True)
-    async def get_cretry_budget_error_ratio(self, url):
-        """
-        Return the error ratio of a response code time series referenced by
-        ``url``.
-
-        :param str url: URL indicating the response code time series to be
-            garbage collected
-
-        :returns: Error ratio in percent
-        :rtype: float
-        """
-        return 100 * await self.stats_retry_budget_client.get_error_ratio(url)
-
-    @with_redis_exception_handling(propagate_exceptions=True)
-    async def update_cretry_budget(self, url, code):
-        """
-        Add ``code`` to the response code time series referenced by
-        ``url``.
-
-        :param str url: URL indicating the response code time series to be
-            garbage collected
-        :param int code: HTTP status code to be appended
-        """
-        await self.stats_retry_budget_client.add(url, code)
-
-    @with_redis_exception_handling()
-    async def gc_cretry_budget(self, url):
-        """
-        Garbage collect the response code time series referenced by ``url``.
-
-        :param str url: URL indicating the response code time series to be
-            garbage collected
-        """
-        await self.stats_retry_budget_client.gc(url)
 
     async def finalize(self, **kwargs):
         """
