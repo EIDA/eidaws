@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import aioredis
+import collections
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
@@ -18,6 +19,9 @@ from eidaws.utils.error import ErrorWithTraceback
 
 class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
+
+
+Route = collections.namedtuple('Route', ['url', 'stream_epochs'])
 
 
 def _callable_or_raise(obj):

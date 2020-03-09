@@ -7,7 +7,7 @@ from aiohttp import web
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.httperror import FDSNHTTPError
-from eidaws.federator.utils.misc import _callable_or_raise
+from eidaws.federator.utils.misc import _callable_or_raise, Route
 from eidaws.federator.utils.mixin import CachingMixin, ClientRetryBudgetMixin
 from eidaws.federator.utils.process import (
     _duration_to_timedelta,
@@ -17,6 +17,9 @@ from eidaws.federator.utils.process import (
 )
 from eidaws.federator.version import __version__
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
+
+
+_QUERY_FORMAT = "text"
 
 
 class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
@@ -50,7 +53,11 @@ class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     async def run(self, req_method="GET", **kwargs):
 
         while True:
-            req_handler = await self._queue.get()
+            route, query_params = await self._queue.get()
+            req_handler = FdsnRequestHandler(
+                **route._asdict(), query_params=query_params
+            )
+            req_handler.format = _QUERY_FORMAT
 
             req = (
                 req_handler.get(self._session)
@@ -159,8 +166,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         ),
     }
 
-    QUERY_FORMAT = "text"
-
     def __init__(self, request, url_routing, **kwargs):
         super().__init__(
             request, url_routing, **kwargs,
@@ -208,7 +213,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
     async def _dispatch(self, queue, routing_table, **kwargs):
         """
-        Dispatch requests.
+        Dispatch jobs.
         """
 
         for url, stream_epochs in routing_table.items():
@@ -218,10 +223,11 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
                     f"Creating job: URL={url}, stream_epochs={se!r}"
                 )
 
-                req_handler = FdsnRequestHandler(url, [se], self.query_params)
-                req_handler.format = self.QUERY_FORMAT
-
-                await queue.put(req_handler)
+                job = (
+                    Route(url=url, stream_epochs=[se]),
+                    self.query_params,
+                )
+                await queue.put(job)
 
     async def _make_response(
         self,
