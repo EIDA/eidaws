@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+import abc
 import aiohttp
 import asyncio
 import datetime
@@ -55,6 +57,25 @@ def cached(func):
         return await func(self, *args, **kwargs)
 
     return wrapper
+
+
+class BaseAsyncWorker(abc.ABC):
+    """
+    Abstract base class for worker implementations.
+    """
+
+    LOGGER = FED_BASE_ID + ".worker"
+
+    def __init__(self, request):
+
+        self.request = request
+
+        self._logger = logging.getLogger(self.LOGGER)
+        self.logger = misc.make_context_logger(self._logger, self.request)
+
+    @abc.abstractmethod
+    async def run(self, req_method="GET", **kwargs):
+        pass
 
 
 class RequestProcessorError(ErrorWithTraceback):
@@ -335,7 +356,10 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
         return response
 
     async def _make_response(
-        self, routing_table, timeout=aiohttp.ClientTimeout(total=60)
+        self,
+        routing_table,
+        req_method="GET",
+        timeout=aiohttp.ClientTimeout(total=60),
     ):
         """
         Template method to be implemented by concrete processor
