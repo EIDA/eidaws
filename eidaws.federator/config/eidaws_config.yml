@@ -13,7 +13,7 @@ eidaws.federator:
     # Threshold in percent before endpoint requests are being dropped
     client_retry_budget_threshold: 0.5
     client_retry_budget_ttl: 1800
-    client_rety_budget_window_size: 4096
+    client_retry_budget_window_size: 4096
     # Number of worker tasks
     pool_size: 20
   fdsnws.station.text:
