@@ -6,24 +6,8 @@ from eidaws.federator.fdsnws_station_text import SERVICE_ID, create_app
 from eidaws.federator.settings import (
     FED_DEFAULT_CONFIG_BASEDIR,
     FED_DEFAULT_CONFIG_FILE,
-    FED_DEFAULT_URL_ROUTING,
-    FED_DEFAULT_NETLOC_PROXY,
-    FED_DEFAULT_ENDPOINT_CONN_LIMIT,
-    FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
-    FED_DEFAULT_ROUTING_CONN_LIMIT,
-    FED_DEFAULT_URL_REDIS,
-    FED_DEFAULT_REDIS_POOL_MINSIZE,
-    FED_DEFAULT_REDIS_POOL_MAXSIZE,
-    FED_DEFAULT_REDIS_POOL_TIMEOUT,
-    FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES,
-    FED_DEFAULT_RETRY_BUDGET_CLIENT_TTL,
-    FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE,
-    FED_DEFAULT_POOL_SIZE,
-    FED_DEFAULT_CACHE_CONFIG,
-    FED_DEFAULT_CLIENT_MAX_SIZE,
-    FED_DEFAULT_MAX_STREAM_EPOCH_DURATION,
-    FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL,
 )
+from eidaws.federator.utils.app import default_config
 from eidaws.federator.utils.misc import get_config, setup_logger
 from eidaws.utils.misc import realpath, real_file_path
 
@@ -45,54 +29,6 @@ DEFAULT_PATH_CONFIG = (
 # simple CLI for testing purposes. Though, the parser cannot be used as a
 # parent parser since it is wrapped into aiohttp.web:main. Hence, there is no
 # way around duplicating the CLI provided.
-
-
-def default_config():
-    """
-    Return the application's default configuration.
-    """
-
-    default_config = {}
-    default_config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
-    default_config.setdefault(
-        "routing_connection_limit", FED_DEFAULT_ROUTING_CONN_LIMIT
-    )
-    default_config.setdefault(
-        "endpoint_connection_limit", FED_DEFAULT_ENDPOINT_CONN_LIMIT
-    )
-    default_config.setdefault(
-        "endpoint_connection_limit_per_host",
-        FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
-    )
-    default_config.setdefault("redis_url", FED_DEFAULT_URL_REDIS)
-    default_config.setdefault(
-        "redis_pool_minsize", FED_DEFAULT_REDIS_POOL_MINSIZE
-    )
-    default_config.setdefault(
-        "redis_pool_maxsize", FED_DEFAULT_REDIS_POOL_MAXSIZE
-    )
-    default_config.setdefault(
-        "redis_pool_timeout", FED_DEFAULT_REDIS_POOL_TIMEOUT
-    )
-    default_config.setdefault(
-        "client_retry_budget_threshold", FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES
-    )
-    default_config.setdefault(
-        "client_retry_budget_ttl", FED_DEFAULT_RETRY_BUDGET_CLIENT_TTL
-    )
-    default_config.setdefault(
-        "client_retry_budget_window_size", FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE
-    )
-    default_config.setdefault("pool_size", FED_DEFAULT_POOL_SIZE)
-    default_config.setdefault("cache_config", FED_DEFAULT_CACHE_CONFIG)
-    default_config.setdefault("client_max_size", FED_DEFAULT_CLIENT_MAX_SIZE)
-    default_config.setdefault('max_stream_epoch_duration',
-            FED_DEFAULT_MAX_STREAM_EPOCH_DURATION)
-    default_config.setdefault('max_total_stream_epoch_duration',
-            FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL)
-    default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
-
-    return default_config
 
 
 DEFAULT_CONFIG = default_config()
