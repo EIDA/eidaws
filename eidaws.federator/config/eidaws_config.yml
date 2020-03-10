@@ -33,6 +33,14 @@ eidaws.federator:
     # Note(damb): # EIDA datacenters is currently 12
     endpoint_connection_limit: 60
     endpoint_connection_limit_per_host: 5
+    # Frontend cache configuration
+    cache_config:
+      cache_type: 'redis'
+      # See https://aioredis.readthedocs.io/en/v1.3.0/api_reference.html#connections-pool
+      # for further configuration parameters
+      cache_kwargs:
+        url: "redis://localhost:6379"
+        default_timeout: 43200
   fdsnws.dataselect:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
   eidaws.wfcatalog:
