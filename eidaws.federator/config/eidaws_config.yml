@@ -30,6 +30,9 @@ eidaws.federator:
     # proxy_netloc: '//localhost:8090'
   fdsnws.station.xml:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
+    # Note(damb): # EIDA datacenters is currently 12
+    endpoint_connection_limit: 60
+    endpoint_connection_limit_per_host: 5
   fdsnws.dataselect:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
   eidaws.wfcatalog:
