@@ -22,6 +22,7 @@ _DEPS = [
     'aioredis>=1.3.1',
     'brotlipy>=0.7.0',
     'cchardet>=2.1.5',
+    'lxml>=4.5.0',
     'pyyaml>=5.3',
     'eidaws.utils==0.1',
     'yarl>=1.4.2', ]
