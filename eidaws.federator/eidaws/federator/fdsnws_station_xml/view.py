@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import aiohttp
 import logging
 
 from aiohttp import web
@@ -28,6 +29,10 @@ class StationXMLView(web.View, CorsViewMixin):
         super().__init__(request)
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
+
+        self._client_timeout = aiohttp.ClientTimeout(
+            connect=120, sock_connect=2, sock_read=30
+        )
 
     async def get(self):
 
@@ -66,7 +71,7 @@ class StationXMLView(web.View, CorsViewMixin):
 
         processor.post = False
 
-        return await processor.federate()
+        return await processor.federate(timeout=self._client_timeout)
 
     async def post(self):
 
@@ -105,4 +110,4 @@ class StationXMLView(web.View, CorsViewMixin):
 
         processor.post = True
 
-        return await processor.federate()
+        return await processor.federate(timeout=self._client_timeout)
