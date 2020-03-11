@@ -177,92 +177,6 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
     _handle_413 = _handle_error
 
     async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
-        def validate_stream_durations(stream_duration, total_stream_duration):
-            if (
-                self.max_stream_epoch_duration is not None
-                and stream_duration > self.max_stream_epoch_duration
-            ) or (
-                self.max_total_stream_epoch_duration is not None
-                and total_stream_duration
-                > self.max_total_stream_epoch_duration
-            ):
-                raise FDSNHTTPError.create(
-                    413,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
-
-        async def emerge_routing_table(text, post, default_endtime):
-            """
-            Default implementation parsing routing service's output stream and
-            create a routing table. Note that routes with an exceeded per client
-            retry-budget are dropped.
-            """
-
-            urlline = None
-            stream_epochs = []
-            skip_url = False
-
-            routing_table = {}
-            total_stream_duration = datetime.timedelta()
-
-            for line in text.split("\n"):
-                if not urlline:
-                    urlline = line.strip()
-
-                    try:
-                        e_ratio = await self.get_cretry_budget_error_ratio(
-                            urlline
-                        )
-                    except Exception:
-                        pass
-                    else:
-                        if e_ratio > self.client_retry_budget_threshold:
-                            self.logger.warning(
-                                f"Exceeded per client retry-budget for {urlline}: "
-                                f"(e_ratio={e_ratio})."
-                            )
-                            skip_url = True
-
-                elif not line.strip():
-                    # set up the routing table
-                    if stream_epochs:
-                        routing_table[urlline] = stream_epochs
-
-                    urlline = None
-                    stream_epochs = []
-                    skip_url = False
-
-                else:
-                    if skip_url:
-                        continue
-
-                    # XXX(damb): Do not substitute an empty endtime when
-                    # performing HTTP GET requests in order to guarantee
-                    # more cache hits (if eida-federator is coupled with
-                    # HTTP caching proxy).
-                    se = StreamEpoch.from_snclline(
-                        line,
-                        default_endtime=(
-                            self._default_endtime if post else None
-                        ),
-                    )
-
-                    stream_duration = se.duration
-                    try:
-                        total_stream_duration += stream_duration
-                    except OverflowError:
-                        total_stream_duration = datetime.timedelta.max
-
-                    validate_stream_durations(
-                        stream_duration, total_stream_duration
-                    )
-
-                    stream_epochs.append(se)
-
-            return routing_table
-
         req_handler = RoutingRequestHandler(
             self._url_routing,
             self.stream_epochs,
@@ -317,7 +231,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
                         service_version=__version__,
                     )
 
-                return await emerge_routing_table(
+                return await self._emerge_routing_table(
                     await resp.text(),
                     post=self._post,
                     default_endtime=self._default_endtime,
@@ -392,3 +306,85 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
         for url in self._routing_table.keys():
             await self.gc_cretry_budget(url)
+
+    async def _emerge_routing_table(self, text, post, default_endtime):
+        """
+        Default implementation parsing routing service's output stream and
+        create a routing table. Note that routes with an exceeded per client
+        retry-budget are dropped.
+        """
+
+        def validate_stream_durations(stream_duration, total_stream_duration):
+            if (
+                self.max_stream_epoch_duration is not None
+                and stream_duration > self.max_stream_epoch_duration
+            ) or (
+                self.max_total_stream_epoch_duration is not None
+                and total_stream_duration
+                > self.max_total_stream_epoch_duration
+            ):
+                raise FDSNHTTPError.create(
+                    413,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+        urlline = None
+        stream_epochs = []
+        skip_url = False
+
+        routing_table = {}
+        total_stream_duration = datetime.timedelta()
+
+        for line in text.split("\n"):
+            if not urlline:
+                urlline = line.strip()
+
+                try:
+                    e_ratio = await self.get_cretry_budget_error_ratio(urlline)
+                except Exception:
+                    pass
+                else:
+                    if e_ratio > self.client_retry_budget_threshold:
+                        self.logger.warning(
+                            f"Exceeded per client retry-budget for {urlline}: "
+                            f"(e_ratio={e_ratio})."
+                        )
+                        skip_url = True
+
+            elif not line.strip():
+                # set up the routing table
+                if stream_epochs:
+                    routing_table[urlline] = stream_epochs
+
+                urlline = None
+                stream_epochs = []
+                skip_url = False
+
+            else:
+                if skip_url:
+                    continue
+
+                # XXX(damb): Do not substitute an empty endtime when
+                # performing HTTP GET requests in order to guarantee
+                # more cache hits (if eida-federator is coupled with
+                # HTTP caching proxy).
+                se = StreamEpoch.from_snclline(
+                    line,
+                    default_endtime=(self._default_endtime if post else None),
+                )
+
+                stream_duration = se.duration
+                try:
+                    total_stream_duration += stream_duration
+                except OverflowError:
+                    total_stream_duration = datetime.timedelta.max
+
+                validate_stream_durations(
+                    stream_duration, total_stream_duration
+                )
+
+                stream_epochs.append(se)
+
+        return routing_table
