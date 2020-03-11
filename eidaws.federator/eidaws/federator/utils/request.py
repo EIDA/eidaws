@@ -44,10 +44,7 @@ class RequestHandlerBase:
     """
     RequestHandler base class implementation.
     """
-    DEFAULT_HEADERS = {
-               # force no encoding, because eida-federator currently cannot
-               # handle this
-               "Accept-Encoding": ""}
+    DEFAULT_HEADERS = {}
 
     def __init__(self, url, stream_epochs=[], query_params={}, headers={}):
         """
