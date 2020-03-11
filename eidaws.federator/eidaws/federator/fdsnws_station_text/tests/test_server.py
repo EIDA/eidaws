@@ -32,8 +32,15 @@ def make_aiohttp_client(aiohttp_client):
     return _make_aiohttp_client
 
 
+@pytest.fixture(scope="session")
+def fdsnws_station_text_content_type():
+    return "text/plain; charset=utf-8"
+
+
 class TestFDSNStationTextServer:
-    async def test_post_single_sncl(self, make_aiohttp_client):
+    async def test_post_single_sncl(
+        self, make_aiohttp_client, fdsnws_station_text_content_type
+    ):
         config_dict = copy.deepcopy(DEFAULT_CONFIG)
         config_dict[
             "url_routing"
@@ -48,6 +55,10 @@ class TestFDSNStationTextServer:
         resp = await client.post(_PATH_QUERY, data=data)
 
         assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_station_text_content_type
+        )
 
         # XXX(damb): This is a workaround in order to avoid the message
         # "Exception ignored in: <coroutine object ...>"
