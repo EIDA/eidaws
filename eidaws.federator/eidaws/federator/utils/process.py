@@ -195,8 +195,9 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
         async def emerge_routing_table(text, post, default_endtime):
             """
-            Parse the routing service's output stream and create a routing
-            table.
+            Default implementation parsing routing service's output stream and
+            create a routing table. Note that routes with an exceeded per client
+            retry-budget are dropped.
             """
 
             urlline = None
