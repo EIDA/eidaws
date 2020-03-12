@@ -22,6 +22,7 @@ from eidaws.federator.utils.process import (
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.version import __version__
+from eidaws.utils.sncl import StreamEpoch
 from eidaws.utils.settings import (
     FDSNWS_NO_CONTENT_CODES,
     STATIONXML_TAGS_NETWORK,
@@ -31,37 +32,6 @@ from eidaws.utils.settings import (
 
 
 _QUERY_FORMAT = "xml"
-
-
-def group_routes_by(routes, key="network"):
-    """
-    Group routes by a certain :py:class:`~eidaws.utils.sncl.Stream` keyword.
-    Combined keywords are also possible e.g. ``network.station``. When
-    combining keys the seperating character is ``.``.
-
-    :param dict routing_table: Routing table
-    :param str key: Key used for grouping.
-    """
-    SEP = "."
-
-    retval = collections.defaultdict(list)
-
-    for route in routes:
-        try:
-            _key = getattr(route.stream_epochs[0].stream, key)
-        except AttributeError:
-            if SEP in key:
-                # combined key
-                _key = SEP.join(
-                    getattr(route.stream_epochs[0].stream, k)
-                    for k in key.split(SEP)
-                )
-            else:
-                raise KeyError(f"Invalid separator. Must be {SEP!r}.")
-
-        retval[_key].append(route)
-
-    return retval
 
 
 class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
@@ -100,7 +70,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         while True:
             routes, query_params, net = await self._queue.get()
-            self.logger.debug(f"Fetching data for network: {net}")
+            self.logger.debug(f"Fetching data for network code: {net}")
 
             tasks = []
             # granular request strategy
@@ -404,9 +374,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         Dispatch jobs.
         """
 
-        grouped_routes = group_routes_by(routes, key="network")
-
-        for net, _routes in grouped_routes.items():
+        for net, _routes in routes.items():
             self.logger.debug(
                 f"Creating job: Network={net}, route={_routes!r}"
             )
@@ -481,3 +449,107 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
             await response.write_eof()
 
             return response
+
+    async def _emerge_routes(self, text, post, default_endtime):
+        """
+        Custom parser for the routing service's output stream. The parser
+        returns a routing table where
+
+        1. routes are grouped by network code and
+        2. multiple channels for a *network*, *station*, *location* combination
+        are grouped by channels and thus bundeled into a single route.
+
+        Note that routes which an exceeded per client retry-budget are dropped.
+        """
+
+        def validate_stream_durations(stream_duration, total_stream_duration):
+            if (
+                self.max_stream_epoch_duration is not None
+                and stream_duration > self.max_stream_epoch_duration
+            ) or (
+                self.max_total_stream_epoch_duration is not None
+                and total_stream_duration
+                > self.max_total_stream_epoch_duration
+            ):
+                raise FDSNHTTPError.create(
+                    413,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+        url = None
+        skip_url = False
+
+        urls = set([])
+        routing_table = {}
+        total_stream_duration = datetime.timedelta()
+
+        for line in text.split("\n"):
+            if not url:
+                url = line.strip()
+
+                try:
+                    e_ratio = await self.get_cretry_budget_error_ratio(url)
+                except Exception:
+                    pass
+                else:
+                    if e_ratio > self.client_retry_budget_threshold:
+                        self.logger.warning(
+                            f"Exceeded per client retry-budget for {url}: "
+                            f"(e_ratio={e_ratio})."
+                        )
+                        skip_url = True
+            elif not line.strip():
+                urls.add(url)
+
+                url = None
+                skip_url = False
+
+            else:
+                if skip_url:
+                    continue
+
+                # XXX(damb): Do not substitute an empty endtime when
+                # performing HTTP GET requests in order to guarantee
+                # more cache hits (if eida-federator is coupled with
+                # HTTP caching proxy).
+                se = StreamEpoch.from_snclline(
+                    line,
+                    default_endtime=(self._default_endtime if post else None),
+                )
+
+                stream_duration = se.duration
+                try:
+                    total_stream_duration += stream_duration
+                except OverflowError:
+                    total_stream_duration = datetime.timedelta.max
+
+                validate_stream_durations(
+                    stream_duration, total_stream_duration
+                )
+
+                key_attrs = [se.station, se.location, se.starttime.isoformat()]
+                if se.endtime is not None:
+                    key_attrs.append(se.endtime.isoformat())
+
+                group_key = ".".join(key_attrs)
+
+                try:
+                    routing_table[se.network][group_key][url].append(se)
+                except KeyError:
+                    try:
+                        routing_table[se.network][group_key] = {url: [se]}
+                    except KeyError:
+                        routing_table[se.network] = {group_key: {url: [se]}}
+
+        # flatten grouped routing table
+        flattened = collections.defaultdict(list)
+        for key, route_groups in routing_table.items():
+            for routes in route_groups.values():
+                for url, stream_epochs in routes.items():
+                    flattened[key].append(
+                        Route(url=url, stream_epochs=stream_epochs)
+                    )
+
+        return urls, flattened
