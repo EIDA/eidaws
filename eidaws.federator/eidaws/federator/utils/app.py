@@ -86,7 +86,7 @@ def default_config():
         "max_total_stream_epoch_duration",
         FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL,
     )
-    default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
+    # default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
 
     return default_config
 

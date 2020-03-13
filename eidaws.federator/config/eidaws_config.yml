@@ -26,7 +26,7 @@ eidaws.federator:
       cache_kwargs:
         url: "redis://localhost:6379"
         default_timeout: 43200 
-    proxy_netloc:
+    # proxy_netloc:
     # proxy_netloc: '//localhost:8090'
   fdsnws.station.xml:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
