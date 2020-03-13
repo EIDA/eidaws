@@ -8,7 +8,10 @@ from eidaws.federator.settings import (
     FED_DEFAULT_CONFIG_BASEDIR,
     FED_DEFAULT_CONFIG_FILE,
 )
-from eidaws.federator.utils.app import default_config
+from eidaws.federator.utils.app import (
+    default_config,
+    config_schema as default_config_schema,
+)
 from eidaws.federator.utils.misc import get_config, setup_logger
 from eidaws.utils.misc import realpath, real_file_path
 
@@ -53,7 +56,10 @@ def init_app(argv):
 
     # load config
     config_dict = get_config(
-        SERVICE_ID, path_config=args.config, defaults=DEFAULT_CONFIG,
+        SERVICE_ID,
+        path_config=args.config,
+        defaults=DEFAULT_CONFIG,
+        json_schema=default_config_schema,
     )
     app = create_app(config_dict=config_dict)
 

@@ -8,8 +8,9 @@ import logging.handlers  # needed for handlers defined in logging.conf
 import warnings
 import yaml
 
-from collections import ChainMap
 from aiohttp import TCPConnector
+from collections import ChainMap
+from jsonschema import validate, ValidationError
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.cache import Cache
@@ -35,7 +36,7 @@ def _callable_or_raise(obj):
         return obj
 
 
-def get_config(service_id, path_config=None, defaults={}):
+def get_config(service_id, path_config=None, defaults={}, json_schema=None):
 
     user_config = {FED_BASE_ID: {service_id: {}, "common": {}}}
 
@@ -62,7 +63,14 @@ def get_config(service_id, path_config=None, defaults={}):
         }
     }
 
-    # TODO(damb): Validate config with e.g. jsonschema
+    if json_schema is not None:
+        try:
+            validate(instance=dict(config_dict["config"][service_id]), schema=json_schema)
+        except ValidationError as err:
+            # avoid circular imports
+            from eidaws.federator.utils.app import ConfigurationError
+            raise ConfigurationError(str(err))
+
     return config_dict
 
 

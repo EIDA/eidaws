@@ -38,6 +38,86 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
+from eidaws.utils.error import Error
+
+
+config_schema = {
+    "type": "object",
+    "properties": {
+        "url_routing": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://",
+        },
+        "routing_connection_limit": {"type": "integer", "minimum": 1},
+        "endpoint_connection_limit": {"type": "integer", "minimum": 1},
+        "endpoint_connection_limit_per_host": {
+            "type": "integer",
+            "minimum": 1,
+        },
+        "redis_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^redis://",
+        },
+        "redis_pool_minsize": {"type": "integer", "minimum": 1},
+        "redis_pool_maxsize": {"type": "integer", "minimum": 1},
+        "redis_pool_timeout": {
+            "oneOf": [{"type": "number", "minimum": 1}, {"type": "null"}]
+        },
+        "client_retry_budget_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+        },
+        "client_retry_budget_ttl": {"type": "number", "minimum": 0},
+        "client_retry_budget_window_size": {"type": "integer", "minimum": 1},
+        "pool_size": {
+            "oneOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]
+        },
+        "cache_config": {
+            "oneOf": [
+                {"type": "null"},
+                {
+                    "type": "object",
+                    "properties": {
+                        "cache_type": {"type": "string", "pattern": "^null$"},
+                    },
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "cache_type": {"type": "string", "pattern": "^redis$"},
+                        "cache_kwargs": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "pattern": "^redis://",
+                                },
+                                "default_timeout": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                },
+                                "minsize": {"type": "integer", "minimum": 1},
+                                "maxsize": {"type": "integer", "maximum": 1},
+                            },
+                        },
+                    },
+                },
+            ]
+        },
+        "client_max_size": {"type": "integer", "minimum": 0},
+        "max_stream_epoch_duration": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]
+        },
+        "max_total_stream_epoch_duration": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]
+        },
+    },
+    "additionalProperties": False,
+}
 
 
 def default_config():
@@ -139,3 +219,11 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     setup_routing_http_conn_pool(service_id, app)
 
     return app
+
+
+class AppError(Error):
+    """Base application error ({})."""
+
+
+class ConfigurationError(AppError):
+    """Configuration errro: {}"""
