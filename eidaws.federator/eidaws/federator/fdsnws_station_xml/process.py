@@ -33,26 +33,17 @@ from eidaws.utils.settings import (
 _QUERY_FORMAT = "xml"
 
 
-def demux_routes(routing_table):
-    return [
-        Route(url, stream_epochs=[se])
-        for url, streams in routing_table.items()
-        for se in streams
-    ]
-
-
-def group_routes_by(routing_table, key="network"):
+def group_routes_by(routes, key="network"):
     """
     Group routes by a certain :py:class:`~eidaws.utils.sncl.Stream` keyword.
     Combined keywords are also possible e.g. ``network.station``. When
-    combining keys the seperating character is ``.``. Routes are demultiplexed.
+    combining keys the seperating character is ``.``.
 
     :param dict routing_table: Routing table
     :param str key: Key used for grouping.
     """
     SEP = "."
 
-    routes = demux_routes(routing_table)
     retval = collections.defaultdict(list)
 
     for route in routes:
@@ -108,7 +99,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     async def run(self, req_method="GET", **kwargs):
 
         while True:
-            net, routes, query_params = await self._queue.get()
+            routes, query_params, net = await self._queue.get()
             self.logger.debug(f"Fetching data for network: {net}")
 
             tasks = []
@@ -408,24 +399,22 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         await response.write(header)
         self.dump_to_cache_buffer(header)
 
-    async def _dispatch(self, queue, routing_table, **kwargs):
+    async def _dispatch(self, queue, routes, **kwargs):
         """
         Dispatch jobs.
         """
 
-        grouped_routes = group_routes_by(routing_table, key="network")
+        grouped_routes = group_routes_by(routes, key="network")
 
-        for net, routes in grouped_routes.items():
-            self.logger.debug(
-                f"Creating job: Network={net}, routes={routes!r}"
-            )
+        for net, _routes in grouped_routes.items():
+            self.logger.debug(f"Creating job: Network={net}, route={_routes!r}")
 
-            job = (net, routes, self.query_params)
+            job = (_routes, self.query_params, net)
             await queue.put(job)
 
     async def _make_response(
         self,
-        routing_table,
+        routes,
         req_method="GET",
         timeout=aiohttp.ClientTimeout(
             connect=None, sock_connect=2, sock_read=30
@@ -441,7 +430,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         lock = asyncio.Lock()
 
-        await self._dispatch(queue, routing_table)
+        await self._dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
             connector=self.request.app["endpoint_http_conn_pool"],

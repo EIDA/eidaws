@@ -212,27 +212,21 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         await response.write(header + b"\n")
         self.dump_to_cache_buffer(header + b"\n")
 
-    async def _dispatch(self, queue, routing_table, **kwargs):
+    async def _dispatch(self, queue, routes, **kwargs):
         """
         Dispatch jobs.
         """
 
-        for url, stream_epochs in routing_table.items():
-            # granular request strategy
-            for se in stream_epochs:
-                self.logger.debug(
-                    f"Creating job: URL={url}, stream_epochs={se!r}"
-                )
+        # granular request strategy
+        for route in routes:
+            self.logger.debug(f"Creating job for route: {route!r}")
 
-                job = (
-                    Route(url=url, stream_epochs=[se]),
-                    self.query_params,
-                )
-                await queue.put(job)
+            job = (route, self.query_params)
+            await queue.put(job)
 
     async def _make_response(
         self,
-        routing_table,
+        routes,
         req_method="GET",
         timeout=aiohttp.ClientTimeout(
             connect=None, sock_connect=2, sock_read=30
@@ -248,7 +242,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         lock = asyncio.Lock()
 
-        await self._dispatch(queue, routing_table)
+        await self._dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
             connector=self.request.app["endpoint_http_conn_pool"],

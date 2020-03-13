@@ -10,8 +10,11 @@ import logging
 from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID, FED_DEFAULT_NETLOC_PROXY
-from eidaws.federator.utils import misc
 from eidaws.federator.utils.httperror import FDSNHTTPError
+from eidaws.federator.utils.misc import (
+    make_context_logger,
+    Route,
+)
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
@@ -71,7 +74,7 @@ class BaseAsyncWorker(abc.ABC):
         self.request = request
 
         self._logger = logging.getLogger(self.LOGGER)
-        self.logger = misc.make_context_logger(self._logger, self.request)
+        self.logger = make_context_logger(self._logger, self.request)
 
     @abc.abstractmethod
     async def run(self, req_method="GET", **kwargs):
@@ -109,7 +112,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
         self._default_endtime = datetime.datetime.utcnow()
         self._post = False
 
-        self._routing_table = {}
+        self._routed_urls = None
         self._tasks = []
         self._await_on_close = [
             self._gc_response_code_stats,
@@ -117,7 +120,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
         ]
 
         self._logger = logging.getLogger(self.LOGGER)
-        self.logger = misc.make_context_logger(self._logger, self.request)
+        self.logger = make_context_logger(self._logger, self.request)
 
     @property
     def query_params(self):
@@ -231,7 +234,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
                         service_version=__version__,
                     )
 
-                return await self._emerge_routing_table(
+                return await self._emerge_routes(
                     await resp.text(),
                     post=self._post,
                     default_endtime=self._default_endtime,
@@ -240,7 +243,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
     @cached
     async def federate(self, timeout=aiohttp.ClientTimeout(total=60)):
         try:
-            self._routing_table = await self._route()
+            self._routed_urls, routes = await self._route()
         except asyncio.TimeoutError as err:
             self.logger.warning(f"TimeoutError while routing: {type(err)}")
             raise FDSNHTTPError.create(
@@ -250,7 +253,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
                 service_version=__version__,
             )
 
-        if not self._routing_table:
+        if not routes:
             raise FDSNHTTPError.create(
                 self.nodata,
                 self.request,
@@ -259,11 +262,10 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
             )
 
         self.logger.debug(
-            f"Number of routes received: {len(self._routing_table)}"
+            f"Number of (demuxed) routes received: {len(routes)}"
         )
 
-        response = await self._make_response(
-            self._routing_table, timeout=timeout
+        response = await self._make_response(routes, timeout=timeout
         )
 
         await asyncio.shield(self.finalize())
@@ -272,7 +274,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
     async def _make_response(
         self,
-        routing_table,
+        routes,
         req_method="GET",
         timeout=aiohttp.ClientTimeout(total=60),
     ):
@@ -304,14 +306,14 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
         self.logger.debug("Garbage collect response code statistics ...")
 
-        for url in self._routing_table.keys():
+        for url in self._routed_urls:
             await self.gc_cretry_budget(url)
 
-    async def _emerge_routing_table(self, text, post, default_endtime):
+    async def _emerge_routes(self, text, post, default_endtime):
         """
-        Default implementation parsing routing service's output stream and
-        create a routing table. Note that routes with an exceeded per client
-        retry-budget are dropped.
+        Default implementation parsing the routing service's output stream and
+        create fully demultiplexed routes. Note that routes with an exceeded
+        per client retry-budget are dropped.
         """
 
         def validate_stream_durations(stream_duration, total_stream_duration):
@@ -330,36 +332,33 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
                     service_version=__version__,
                 )
 
-        urlline = None
-        stream_epochs = []
+        url = None
         skip_url = False
 
-        routing_table = {}
+        urls = set([])
+        routes = []
         total_stream_duration = datetime.timedelta()
 
         for line in text.split("\n"):
-            if not urlline:
-                urlline = line.strip()
+            if not url:
+                url = line.strip()
 
                 try:
-                    e_ratio = await self.get_cretry_budget_error_ratio(urlline)
+                    e_ratio = await self.get_cretry_budget_error_ratio(url)
                 except Exception:
                     pass
                 else:
                     if e_ratio > self.client_retry_budget_threshold:
                         self.logger.warning(
-                            f"Exceeded per client retry-budget for {urlline}: "
+                            f"Exceeded per client retry-budget for {url}: "
                             f"(e_ratio={e_ratio})."
                         )
                         skip_url = True
 
             elif not line.strip():
-                # set up the routing table
-                if stream_epochs:
-                    routing_table[urlline] = stream_epochs
+                urls.add(url)
 
-                urlline = None
-                stream_epochs = []
+                url = None
                 skip_url = False
 
             else:
@@ -385,6 +384,6 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
                     stream_duration, total_stream_duration
                 )
 
-                stream_epochs.append(se)
+                routes.append(Route(url=url, stream_epochs=[se]))
 
-        return routing_table
+        return urls, routes
