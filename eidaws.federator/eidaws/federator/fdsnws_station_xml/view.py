@@ -33,7 +33,6 @@ class StationXMLView(BaseView):
         processor = StationXMLRequestProcessor(
             self.request,
             config[self.SERVICE_ID]["url_routing"],
-            proxy_netloc=config[self.SERVICE_ID]["proxy_netloc"],
         )
 
         processor.post = False
@@ -50,7 +49,6 @@ class StationXMLView(BaseView):
         processor = StationXMLRequestProcessor(
             self.request,
             config[self.SERVICE_ID]["url_routing"],
-            proxy_netloc=config[self.SERVICE_ID]["proxy_netloc"],
         )
 
         processor.post = True
