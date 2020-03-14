@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import abc
 import aiohttp
 import logging
 
@@ -15,33 +14,31 @@ from eidaws.federator.utils.parser import fdsnws_parser
 from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
 
 
-class BaseView(web.View, CorsViewMixin, metaclass=abc.ABCMeta):
+class BaseView(web.View, CorsViewMixin):
 
     LOGGER = FED_BASE_ID + ".view"
 
     SERVICE_ID = None
 
-    def __init__(self, request, schema, service_id=None):
+    def __init__(self, request, schema, processor_cls, service_id=None):
         super().__init__(request)
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
 
-        self._service_id = service_id or self.SERVICE_ID
         self._schema = schema
+        self._processor_cls = processor_cls
+        self._service_id = service_id or self.SERVICE_ID
 
-    @property
-    def config(self):
-        return self.request.config_dict["config"][self._service_id]
-
-    @property
-    def client_timeout(self):
-        return aiohttp.ClientTimeout(
+        self._client_timeout = aiohttp.ClientTimeout(
             connect=self.config["endpoint_timeout_connect"],
             sock_connect=self.config["endpoint_timeout_sock_connect"],
             sock_read=self.config["endpoint_timeout_sock_read"],
         )
 
-    @abc.abstractmethod
+    @property
+    def config(self):
+        return self.request.config_dict["config"][self._service_id]
+
     async def get(self):
         # strict parameter validation
         await keyword_parser.parse(
@@ -67,7 +64,14 @@ class BaseView(web.View, CorsViewMixin, metaclass=abc.ABCMeta):
         self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
         self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
 
-    @abc.abstractmethod
+        processor = self._processor_cls(
+            self.request, self.config["url_routing"],
+        )
+
+        processor.post = False
+
+        return await processor.federate(timeout=self._client_timeout)
+
     async def post(self):
         # strict parameter validation
         await keyword_parser.parse(
@@ -92,3 +96,11 @@ class BaseView(web.View, CorsViewMixin, metaclass=abc.ABCMeta):
 
         self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
         self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
+
+        processor = self._processor_cls(
+            self.request, self.config["url_routing"],
+        )
+
+        processor.post = True
+
+        return await processor.federate(timeout=self._client_timeout)

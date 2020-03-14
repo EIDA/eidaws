@@ -15,35 +15,8 @@ class StationTextView(BaseView):
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
     def __init__(self, request):
-        super().__init__(request, StationTextSchema)
-
-    async def get(self):
-
-        await super().get()
-
-        # process request
-        processor = StationTextRequestProcessor(
-            self.request,
-            self.config["url_routing"],
+        super().__init__(
+            request,
+            StationTextSchema,
+            processor_cls=StationTextRequestProcessor,
         )
-
-        processor.post = False
-
-        return await processor.federate(timeout=self.client_timeout)
-
-    async def post(self):
-
-        await super().post()
-
-        # process request
-        processor = StationTextRequestProcessor(
-            self.request,
-            self.config["url_routing"],
-        )
-
-        processor.post = True
-
-        return await processor.federate(timeout=self.client_timeout)
-
-
-BaseView.register(StationTextView)
