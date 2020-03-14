@@ -18,6 +18,9 @@ eidaws.federator:
     pool_size: 20
   fdsnws.station.text:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
+    endpoint_timeout_connect:
+    endpoint_timeout_sock_connect: 2
+    endpoint_timeout_sock_read: 3
     # Frontend cache configuration
     cache_config:
       cache_type: 'redis'
@@ -33,6 +36,9 @@ eidaws.federator:
     # Note(damb): # EIDA datacenters is currently 12
     endpoint_connection_limit: 60
     endpoint_connection_limit_per_host: 5
+    endpoint_timeout_connect:
+    endpoint_timeout_sock_connect: 2
+    endpoint_timeout_sock_read: 5
     # Frontend cache configuration
     cache_config:
       cache_type: 'redis'

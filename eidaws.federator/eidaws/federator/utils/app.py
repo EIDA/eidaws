@@ -22,6 +22,9 @@ from eidaws.federator.settings import (
     FED_DEFAULT_NETLOC_PROXY,
     FED_DEFAULT_ENDPOINT_CONN_LIMIT,
     FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
+    FED_DEFAULT_TIMEOUT_CONNECT,
+    FED_DEFAULT_TIMEOUT_SOCK_CONNECT,
+    FED_DEFAULT_TIMEOUT_SOCK_READ,
     FED_DEFAULT_ROUTING_CONN_LIMIT,
     FED_DEFAULT_URL_REDIS,
     FED_DEFAULT_REDIS_POOL_MINSIZE,
@@ -54,6 +57,15 @@ config_schema = {
         "endpoint_connection_limit_per_host": {
             "type": "integer",
             "minimum": 1,
+        },
+        "endpoint_timeout_connect": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
+        },
+        "endpoint_timeout_sock_connect": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
+        },
+        "endpoint_timeout_sock_read": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
         },
         "redis_url": {
             "type": "string",
@@ -136,6 +148,15 @@ def default_config():
     default_config.setdefault(
         "endpoint_connection_limit_per_host",
         FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
+    )
+    default_config.setdefault(
+        "endpoint_timeout_connect", FED_DEFAULT_TIMEOUT_CONNECT
+    )
+    default_config.setdefault(
+        "endpoint_timeout_sock_connect", FED_DEFAULT_TIMEOUT_SOCK_CONNECT
+    )
+    default_config.setdefault(
+        "endpoint_timeout_sock_read", FED_DEFAULT_TIMEOUT_SOCK_READ
     )
     default_config.setdefault("redis_url", FED_DEFAULT_URL_REDIS)
     default_config.setdefault(

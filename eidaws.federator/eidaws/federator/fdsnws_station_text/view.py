@@ -21,33 +21,29 @@ class StationTextView(BaseView):
 
         await super().get()
 
-        config = self.request.config_dict["config"]
-
         # process request
         processor = StationTextRequestProcessor(
             self.request,
-            config[self.SERVICE_ID]["url_routing"],
+            self.config["url_routing"],
         )
 
         processor.post = False
 
-        return await processor.federate()
+        return await processor.federate(timeout=self.client_timeout)
 
     async def post(self):
 
         await super().post()
 
-        config = self.request.config_dict["config"]
-
         # process request
         processor = StationTextRequestProcessor(
             self.request,
-            config[self.SERVICE_ID]["url_routing"],
+            self.config["url_routing"],
         )
 
         processor.post = True
 
-        return await processor.federate()
+        return await processor.federate(timeout=self.client_timeout)
 
 
 BaseView.register(StationTextView)

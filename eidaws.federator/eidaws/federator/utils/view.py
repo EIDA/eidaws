@@ -19,18 +19,35 @@ class BaseView(web.View, CorsViewMixin, metaclass=abc.ABCMeta):
 
     LOGGER = FED_BASE_ID + ".view"
 
-    def __init__(self, request, schema):
+    SERVICE_ID = None
+
+    def __init__(self, request, schema, service_id=None):
         super().__init__(request)
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
 
+        self._service_id = service_id or self.SERVICE_ID
         self._schema = schema
+
+    @property
+    def config(self):
+        return self.request.config_dict["config"][self._service_id]
+
+    @property
+    def client_timeout(self):
+        return aiohttp.ClientTimeout(
+            connect=self.config["endpoint_timeout_connect"],
+            sock_connect=self.config["endpoint_timeout_sock_connect"],
+            sock_read=self.config["endpoint_timeout_sock_read"],
+        )
 
     @abc.abstractmethod
     async def get(self):
         # strict parameter validation
         await keyword_parser.parse(
-            (self._schema, StreamEpochSchema), self.request, locations=("query",),
+            (self._schema, StreamEpochSchema),
+            self.request,
+            locations=("query",),
         )
 
         # parse query parameters
