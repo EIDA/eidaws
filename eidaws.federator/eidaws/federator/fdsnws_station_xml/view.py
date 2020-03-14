@@ -20,7 +20,7 @@ class StationXMLView(BaseView):
         super().__init__(request, StationXMLSchema)
 
         self._client_timeout = aiohttp.ClientTimeout(
-            connect=120, sock_connect=2, sock_read=30
+            connect=None, sock_connect=2, sock_read=5
         )
 
     async def get(self):
