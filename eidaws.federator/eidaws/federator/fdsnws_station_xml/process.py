@@ -407,7 +407,9 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         grouped_routes = group_routes_by(routes, key="network")
 
         for net, _routes in grouped_routes.items():
-            self.logger.debug(f"Creating job: Network={net}, route={_routes!r}")
+            self.logger.debug(
+                f"Creating job: Network={net}, route={_routes!r}"
+            )
 
             job = (_routes, self.query_params, net)
             await queue.put(job)
