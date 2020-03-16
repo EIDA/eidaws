@@ -27,6 +27,6 @@ Features
   federation in case of erroneous behaviour
 - Optional frontend cache powered by `Redis <https://redis.io/>`_
 - HTTP connection pooling to increase both performance and to limit the number
-  of concurrent endpoint requests
+  of concurrent endpoint requests configurable on federated resource granularity
 - ``fdsnws-station`` requests run entirely in-memory
 - Independent configuration of federated resources
