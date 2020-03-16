@@ -35,6 +35,8 @@ class BaseView(web.View, CorsViewMixin):
             sock_read=self.config["endpoint_timeout_sock_read"],
         )
 
+        assert self._service_id, f"Invalid service_id: {self._service_id}"
+
     @property
     def config(self):
         return self.request.config_dict["config"][self._service_id]
