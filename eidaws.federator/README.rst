@@ -29,4 +29,5 @@ Features
 - HTTP connection pooling to increase both performance and to limit the number
   of concurrent endpoint requests
 - ``fdsnws-station`` requests run entirely in-memory
+- Make use of *channel bundeling* for ``fdsnws-station-xml``
 - Independent configuration of federated resources
