@@ -20,6 +20,7 @@ from eidaws.federator.utils.process import (
     RequestProcessorError,
     BaseAsyncWorker,
 )
+from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
@@ -51,6 +52,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         write_lock,
         prepare_callback=None,
         write_callback=None,
+        **kwargs,
     ):
         super().__init__(request)
 
@@ -62,6 +64,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         self._prepare_callback = _callable_or_raise(prepare_callback)
         self._write_callback = _callable_or_raise(write_callback)
 
+        self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
+
     async def run(self, req_method="GET", **kwargs):
         def route_with_single_stream(route):
             streams = set([])
@@ -71,9 +75,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
             return len(streams) == 1
 
-        # executor used for blocking I/O operations
         with ThreadPoolExecutor(max_workers=1) as executor:
-
             while True:
                 route, query_params = await self._queue.get()
 
@@ -99,6 +101,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         stream_epochs,
         query_params,
         req_method,
+        last_chunk=None,
         splitting_const=2,
         executor=None,
         **kwargs,
@@ -161,30 +164,30 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     self._queue.task_done()
                     continue
 
-            async with self._lock:
-                if not self._response.prepared:
+            req_id = self.request[FED_BASE_ID + ".request_id"]
 
-                    if self._prepare_callback is not None:
-                        await self._prepare_callback(self._response)
-                    else:
-                        await self._response.prepare(self.request)
+            async with AioSpooledTemporaryFile(
+                # TODO(damb): Should be configurable
+                max_size=10 * 1024 ** 2,
+                prefix=str(req_id) + ".",
+                executor=executor,
+            ) as buf:
 
-                while True:
-                    try:
-                        chunk = await resp.content.read(self.CHUNK_SIZE)
-                    except asyncio.TimeoutError as err:
-                        self.logger.warning(
-                            f"Socket read timeout: {type(err)}"
-                        )
-                        break
+                await self._write_response_to_buffer(
+                    buf, resp, executor=executor
+                )
 
-                    if not chunk:
-                        break
+                async with self._lock:
+                    if not self._response.prepared:
 
-                    await self._response.write(chunk)
+                        if self._prepare_callback is not None:
+                            await self._prepare_callback(self._response)
+                        else:
+                            await self._response.prepare(self.request)
 
-                    if self._write_callback is not None:
-                        self._write_callback(chunk)
+                    await self._write_buffer_to_response(
+                        buf, self._response, executor=executor
+                    )
 
             try:
                 await self.update_cretry_budget(req_handler.url, resp.status)
@@ -192,6 +195,33 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 pass
 
         self._queue.task_done()
+
+    async def _write_response_to_buffer(self, buf, resp, executor):
+        while True:
+            try:
+                chunk = await resp.content.read(self.CHUNK_SIZE)
+            except asyncio.TimeoutError as err:
+                self.logger.warning(f"Socket read timeout: {type(err)}")
+                break
+
+            if not chunk:
+                break
+
+            await buf.write(chunk)
+
+    async def _write_buffer_to_response(self, buf, resp, executor):
+        await buf.seek(0)
+
+        while True:
+            chunk = await buf.read(self.CHUNK_SIZE)
+
+            if not chunk:
+                break
+
+            await resp.write(chunk)
+
+            if self._write_callback is not None:
+                self._write_callback(chunk)
 
 
 BaseAsyncWorker.register(_DataselectAsyncWorker)
@@ -295,6 +325,7 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
                     session,
                     response,
                     lock,
+                    endtime=self._default_endtime,
                     prepare_callback=self._prepare_response,
                     # avoid gzip encoding when writing data
                     write_callback=self.dump_to_cache_buffer,
