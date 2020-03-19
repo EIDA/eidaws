@@ -80,6 +80,14 @@ class BaseAsyncWorker(abc.ABC, ConfigMixin):
     async def run(self, req_method="GET", **kwargs):
         pass
 
+    async def _handle_error(self, error=None, **kwargs):
+        msg = kwargs.get("msg", error)
+        if msg is not None:
+            self.logger.warning(str(msg))
+
+    async def _handle_413(self, url, stream_epoch, **kwargs):
+        raise RequestProcessorError("HTTP code 413 handling not implemented.")
+
 
 class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
@@ -178,8 +186,10 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
     def client_retry_budget_threshold(self):
         return self.config["client_retry_budget_threshold"]
 
-    def _handle_error(self, result):
-        self.logger.warning(result)
+    def _handle_error(self, error=None, **kwargs):
+        msg = kwargs.get("msg", error)
+        if msg is not None:
+            self.logger.warning(str(msg))
 
     _handle_413 = _handle_error
 

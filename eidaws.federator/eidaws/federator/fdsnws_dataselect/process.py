@@ -2,6 +2,7 @@
 
 import aiohttp
 import asyncio
+import copy
 import datetime
 
 from aiohttp import web
@@ -19,7 +20,6 @@ from eidaws.federator.utils.mixin import (
 )
 from eidaws.federator.utils.process import (
     BaseRequestProcessor,
-    RequestProcessorError,
     BaseAsyncWorker,
 )
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
@@ -29,6 +29,10 @@ from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
 _QUERY_FORMAT = "miniseed"
+
+
+def _split_stream_epoch(stream_epoch, num, default_endtime):
+    return stream_epoch.slice(num=num, default_endtime=default_endtime)
 
 
 class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
@@ -70,6 +74,11 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
+        self._stream_epochs = []
+
+        # TODO(damb): Check if chunk_size is a multiple of record_size.
+        self._record_size = self.MSEED_RECORD_SIZE
+
     async def run(self, req_method="GET", **kwargs):
         def route_with_single_stream(route):
             streams = set([])
@@ -87,17 +96,48 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     route
                 ), "Cannot handle multiple streams within a single route."
 
-                req_handler = FdsnRequestHandler(
-                    **route._asdict(), query_params=query_params
-                )
-                req_handler.format = _QUERY_FORMAT
-
-                await self._run(
-                    **route._asdict(),
-                    query_params=query_params,
-                    req_method=req_method,
+                req_id = self.request[FED_BASE_ID + ".request_id"]
+                # TODO(damb): Check if there is enough space left on device.
+                async with AioSpooledTemporaryFile(
+                    max_size=self.config["buffer_rollover_size"],
+                    prefix=str(req_id) + ".",
+                    dir=self.config["tempdir"],
                     executor=executor,
-                )
+                ) as buf:
+
+                    url = route.url
+                    _sorted = sorted(route.stream_epochs)
+                    self._stream_epochs = copy.deepcopy(_sorted)
+
+                    await self._run(
+                        url,
+                        _sorted,
+                        query_params=query_params,
+                        req_method=req_method,
+                        buf=buf,
+                    )
+
+                    if _sorted[-1].endtime == self._stream_epochs[-1].endtime:
+
+                        if await buf.tell():
+
+                            async with self._lock:
+                                if not self._response.prepared:
+
+                                    if self._prepare_callback is not None:
+                                        await self._prepare_callback(
+                                            self._response
+                                        )
+                                    else:
+                                        await self._response.prepare(
+                                            self.request
+                                        )
+
+                                await self._write_buffer_to_response(
+                                    buf, self._response, executor=executor
+                                )
+
+                        self._queue.task_done()
 
     async def _run(
         self,
@@ -105,12 +145,12 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         stream_epochs,
         query_params,
         req_method,
-        last_chunk=None,
+        buf,
         splitting_const=2,
+        last_record=None,
         executor=None,
         **kwargs,
     ):
-
         for se in stream_epochs:
 
             req_handler = FdsnRequestHandler(
@@ -132,14 +172,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     f"url={req_handler.url}, method={req_method}"
                 )
 
-                try:
-                    await self.update_cretry_budget(req_handler.url, 503)
-                except Exception:
-                    pass
-                finally:
-                    self._queue.task_done()
-
-                continue
+                await self.update_cretry_budget(req_handler.url, 503)
+                break
 
             msg = (
                 f"Response: {resp.reason}: resp.status={resp.status}, "
@@ -151,56 +185,81 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 resp.raise_for_status()
             except aiohttp.ClientResponseError:
                 if resp.status == 413:
-                    raise RequestProcessorError(
-                        "HTTP code 413 handling not implemented."
+                    await self._handle_413(
+                        url,
+                        se,
+                        splitting_const=splitting_const,
+                        query_params=query_params,
+                        req_method=req_method,
+                        buf=buf,
                     )
-
-                self.logger.warning(msg)
-                self._queue.task_done()
-                continue
+                    continue
+                else:
+                    self._handle_error(msg=msg)
+                    break
             else:
                 if resp.status != 200:
                     if resp.status in FDSNWS_NO_CONTENT_CODES:
                         self.logger.info(msg)
                     else:
-                        self.logger.warning(msg)
-
-                    self._queue.task_done()
-                    continue
-
-            req_id = self.request[FED_BASE_ID + ".request_id"]
-
-            async with AioSpooledTemporaryFile(
-                max_size=self.config["buffer_rollover_size"],
-                prefix=str(req_id) + ".",
-                dir=self.config["tempdir"],
-                executor=executor,
-            ) as buf:
-
-                await self._write_response_to_buffer(
-                    buf, resp, executor=executor
-                )
-
-                async with self._lock:
-                    if not self._response.prepared:
-
-                        if self._prepare_callback is not None:
-                            await self._prepare_callback(self._response)
-                        else:
-                            await self._response.prepare(self.request)
-
-                    await self._write_buffer_to_response(
-                        buf, self._response, executor=executor
-                    )
-
-            try:
+                        self._handle_error(msg=msg)
+                        break
+            finally:
                 await self.update_cretry_budget(req_handler.url, resp.status)
-            except Exception:
-                pass
 
-        self._queue.task_done()
+            self.logger.debug(msg)
+            await self._write_response_to_buffer(
+                buf, resp, executor=executor, last_record=last_record,
+            )
 
-    async def _write_response_to_buffer(self, buf, resp, executor):
+    async def _handle_413(self, url, stream_epoch, **kwargs):
+
+        assert (
+            "splitting_const" in kwargs
+            and "query_params" in kwargs
+            and "req_method" in kwargs
+            and "buf" in kwargs
+        ), "Missing kwarg."
+
+        splitting_const = kwargs["splitting_const"]
+        buf = kwargs["buf"]
+
+        splitted = sorted(
+            _split_stream_epoch(
+                stream_epoch,
+                num=splitting_const,
+                default_endtime=self._endtime,
+            )
+        )
+        # keep track of stream epochs attempting to download
+        idx = self._stream_epochs.index(stream_epoch)
+        self._stream_epochs.pop(idx)
+        for i in range(len(splitted)):
+            self._stream_epochs.insert(i + idx, splitted[i])
+
+        self.logger.debug(
+            f"Splitting {stream_epoch!r} (splitting_const={splitting_const}). "
+            f"Stream epochs after splitting: {self._stream_epochs!r}"
+        )
+
+        last_record = None
+        await buf.seek(0, 2)
+        if await buf.tell() > self._record_size:
+            await buf.seek(-self._record_size, 2)
+            last_record = await buf.read(self._record_size)
+
+        await self._run(
+            url,
+            splitted,
+            query_params=kwargs["query_params"],
+            req_method=kwargs["req_method"],
+            buf=buf,
+            last_record=last_record,
+        )
+
+    async def _write_response_to_buffer(
+        self, buf, resp, executor, last_record=None
+    ):
         while True:
             try:
                 chunk = await resp.content.read(self.CHUNK_SIZE)
@@ -210,6 +269,11 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
             if not chunk:
                 break
+
+            # FIXME(damb): This might not work if record_size != chunk_size;
+            # Note, that chunk_size must be a multiple of mseed record size.
+            if last_record is not None and last_record in chunk:
+                chunk = chunk[: -self._record_size]
 
             await buf.write(chunk)
 
@@ -226,6 +290,12 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
             if self._write_callback is not None:
                 self._write_callback(chunk)
+
+    async def update_cretry_budget(self, url, code):
+        try:
+            await super().update_cretry_budget(url, code)
+        except Exception:
+            pass
 
 
 BaseAsyncWorker.register(_DataselectAsyncWorker)
