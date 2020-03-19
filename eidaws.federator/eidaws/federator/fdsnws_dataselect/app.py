@@ -28,7 +28,7 @@ DEFAULT_PATH_CONFIG = (
 # XXX(damb):
 # For development purposes start the service with
 # $ python -m aiohttp.web -H localhost -P 5000 \
-#       eidaws.federator.fdsnws_station_text.app:init_app
+#       eidaws.federator.fdsnws_station_dataselect.app:init_app
 #
 # NOTE(damb): aiohttp.web
 # (https://github.com/aio-libs/aiohttp/blob/master/aiohttp/web.py) provides a
