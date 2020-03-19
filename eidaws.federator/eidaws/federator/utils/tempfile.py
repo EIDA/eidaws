@@ -27,7 +27,8 @@ async def AioSpooledTemporaryFile(
     executor=None,
 ):
     """
-    Async open a spooled temporary file
+    Async open a spooled temporary file. Parameters are equal to
+    :py:class:`tempfile.SpooledTemporaryFile`.
     """
 
     if loop is None:
@@ -64,7 +65,9 @@ def cond_delegate_to_executor(*attrs):
 
 
 def _make_cond_delegate_method(attr_name):
-    """For spooled temp files, delegate only if rolled to file object"""
+    """
+    For spooled temp files, delegate only if rolled to file object
+    """
 
     async def method(self, *args, **kwargs):
         if self._file._rolled:
@@ -93,7 +96,9 @@ def _make_cond_delegate_method(attr_name):
 )
 @proxy_property_directly("closed", "encoding", "mode", "name", "softspace")
 class AsyncSpooledTemporaryFile(AsyncBase):
-    """Async wrapper for SpooledTemporaryFile class"""
+    """
+    Async wrapper for ``tempfile.SpooledTemporaryFile`` class.
+    """
 
     async def _check(self):
         if self._file._rolled:
@@ -103,7 +108,9 @@ class AsyncSpooledTemporaryFile(AsyncBase):
             await self.rollover()
 
     async def write(self, s):
-        """Implementation to anticipate rollover"""
+        """
+        Implementation to anticipate rollover
+        """
         if self._file._rolled:
             cb = partial(self._file.write, s)
             return await self._loop.run_in_executor(self._executor, cb)
@@ -114,7 +121,9 @@ class AsyncSpooledTemporaryFile(AsyncBase):
             return rv
 
     async def writelines(self, iterable):
-        """Implementation to anticipate rollover"""
+        """
+        Implementation to anticipate rollover
+        """
         if self._file._rolled:
             cb = partial(self._file.writelines, iterable)
             return await self._loop.run_in_executor(self._executor, cb)
