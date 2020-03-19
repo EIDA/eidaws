@@ -11,7 +11,6 @@ from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import CachingMixin, ClientRetryBudgetMixin
 from eidaws.federator.utils.process import (
-    _duration_to_timedelta,
     BaseRequestProcessor,
     RequestProcessorError,
     BaseAsyncWorker,
@@ -151,7 +150,9 @@ BaseAsyncWorker.register(_StationTextAsyncWorker)
 
 class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
-    LOGGER = ".".join([FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID, "process"])
+    SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
+
+    LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 
     _HEADER_MAP = {
         "network": b"#Network|Description|StartTime|EndTime|TotalStations",
@@ -172,7 +173,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
             request, url_routing, **kwargs,
         )
 
-        self._config = self.request.app["config"][FED_STATION_TEXT_SERVICE_ID]
         self._level = self.query_params.get("level", "station")
 
     @property
@@ -182,26 +182,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
     @property
     def charset(self):
         return "utf-8"
-
-    @property
-    def pool_size(self):
-        return self._config["pool_size"]
-
-    @property
-    def max_stream_epoch_duration(self):
-        return _duration_to_timedelta(
-            days=self._config["max_stream_epoch_duration"]
-        )
-
-    @property
-    def max_total_stream_epoch_duration(self):
-        return _duration_to_timedelta(
-            days=self._config["max_total_stream_epoch_duration"]
-        )
-
-    @property
-    def client_retry_budget_threshold(self):
-        return self._config["client_retry_budget_threshold"]
 
     async def _prepare_response(self, response):
         response.content_type = self.content_type
@@ -245,7 +225,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         await self._dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
-            connector=self.request.app["endpoint_http_conn_pool"],
+            connector=self.config["endpoint_http_conn_pool"],
             timeout=timeout,
             connector_owner=False,
         ) as session:
@@ -253,7 +233,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
             # create worker tasks
             pool_size = (
                 self.pool_size
-                or self._config["endpoint_connection_limit"]
+                or self.config["endpoint_connection_limit"]
                 or queue.qsize()
             )
 

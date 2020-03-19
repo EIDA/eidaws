@@ -15,7 +15,7 @@ from eidaws.federator.utils.misc import (
     make_context_logger,
     Route,
 )
-from eidaws.federator.utils.mixin import ClientRetryBudgetMixin
+from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
@@ -62,7 +62,7 @@ def cached(func):
     return wrapper
 
 
-class BaseAsyncWorker(abc.ABC):
+class BaseAsyncWorker(abc.ABC, ConfigMixin):
     """
     Abstract base class for worker implementations.
     """
@@ -85,7 +85,7 @@ class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
 
 
-class BaseRequestProcessor(ClientRetryBudgetMixin):
+class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for request processors.
     """
@@ -160,19 +160,23 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
     @property
     def pool_size(self):
-        return None
+        return self.config["pool_size"]
 
     @property
     def max_stream_epoch_duration(self):
-        return None
+        return _duration_to_timedelta(
+            days=self.config["max_stream_epoch_duration"]
+        )
 
     @property
     def max_total_stream_epoch_duration(self):
-        return None
+        return _duration_to_timedelta(
+            days=self.config["max_total_stream_epoch_duration"]
+        )
 
     @property
     def client_retry_budget_threshold(self):
-        raise NotImplementedError
+        return self.config["client_retry_budget_threshold"]
 
     def _handle_error(self, result):
         self.logger.warning(result)
@@ -265,8 +269,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
             f"Number of (demuxed) routes received: {len(routes)}"
         )
 
-        response = await self._make_response(routes, timeout=timeout
-        )
+        response = await self._make_response(routes, timeout=timeout)
 
         await asyncio.shield(self.finalize())
 

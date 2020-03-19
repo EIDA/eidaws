@@ -62,3 +62,6 @@ FED_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
 # Configures HTTP 413 behaviour
 FED_DEFAULT_MAX_STREAM_EPOCH_DURATION = None
 FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL = None
+# Configuration with respect to temporary file buffers
+FED_DEFAULT_TMPDIR = None
+FED_DEFAULT_BUFFER_ROLLOVER_SIZE = 0  # bytes; if 0 rollover is disabled

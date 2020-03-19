@@ -7,8 +7,13 @@ from eidaws.federator.fdsnws_dataselect import SERVICE_ID, create_app
 from eidaws.federator.settings import (
     FED_DEFAULT_CONFIG_BASEDIR,
     FED_DEFAULT_CONFIG_FILE,
+    FED_DEFAULT_TMPDIR,
+    FED_DEFAULT_BUFFER_ROLLOVER_SIZE,
 )
-from eidaws.federator.utils.app import default_config
+from eidaws.federator.utils.app import (
+    default_config,
+    config_schema as default_config_schema,
+)
 from eidaws.federator.utils.misc import get_config, setup_logger
 from eidaws.utils.misc import realpath, real_file_path
 
@@ -33,6 +38,19 @@ DEFAULT_PATH_CONFIG = (
 
 
 DEFAULT_CONFIG = default_config()
+DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
+DEFAULT_CONFIG.setdefault(
+    "buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE
+)
+
+config_schema = default_config_schema
+config_schema["properties"]["tempdir"] = {
+    "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^/"}]
+}
+config_schema["properties"]["buffer_rollover_size"] = {
+    "type": "integer",
+    "minimum": 0,
+}
 
 
 def init_app(argv):
@@ -53,7 +71,10 @@ def init_app(argv):
 
     # load config
     config_dict = get_config(
-        SERVICE_ID, path_config=args.config, defaults=DEFAULT_CONFIG,
+        SERVICE_ID,
+        path_config=args.config,
+        defaults=DEFAULT_CONFIG,
+        json_schema=config_schema,
     )
     app = create_app(config_dict=config_dict)
 

@@ -13,9 +13,11 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin, ClientRetryBudgetMixin
+from eidaws.federator.utils.mixin import (
+    CachingMixin,
+    ClientRetryBudgetMixin,
+)
 from eidaws.federator.utils.process import (
-    _duration_to_timedelta,
     BaseRequestProcessor,
     RequestProcessorError,
     BaseAsyncWorker,
@@ -35,6 +37,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
     element granularity.
     """
+
+    SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
 
     LOGGER = ".".join(
         [FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "worker"]
@@ -167,9 +171,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             req_id = self.request[FED_BASE_ID + ".request_id"]
 
             async with AioSpooledTemporaryFile(
-                # TODO(damb): Should be configurable
-                max_size=10 * 1024 ** 2,
+                max_size=self.config["buffer_rollover_size"],
                 prefix=str(req_id) + ".",
+                dir=self.config["tempdir"],
                 executor=executor,
             ) as buf:
 
@@ -229,42 +233,18 @@ BaseAsyncWorker.register(_DataselectAsyncWorker)
 
 class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
 
-    LOGGER = ".".join(
-        [FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "process"]
-    )
+    SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
+
+    LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 
     def __init__(self, request, url_routing, **kwargs):
         super().__init__(
             request, url_routing, **kwargs,
         )
 
-        self._config = self.request.app["config"][
-            FED_DATASELECT_MINISEED_SERVICE_ID
-        ]
-
     @property
     def content_type(self):
         return "application/vnd.fdsn.mseed"
-
-    @property
-    def pool_size(self):
-        return self._config["pool_size"]
-
-    @property
-    def max_stream_epoch_duration(self):
-        return _duration_to_timedelta(
-            days=self._config["max_stream_epoch_duration"]
-        )
-
-    @property
-    def max_total_stream_epoch_duration(self):
-        return _duration_to_timedelta(
-            days=self._config["max_total_stream_epoch_duration"]
-        )
-
-    @property
-    def client_retry_budget_threshold(self):
-        return self._config["client_retry_budget_threshold"]
 
     async def _prepare_response(self, response):
         response.content_type = self.content_type
@@ -310,13 +290,13 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
         await self._dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
-            connector=self.request.app["endpoint_http_conn_pool"],
+            connector=self.request.config_dict["endpoint_http_conn_pool"],
             timeout=timeout,
             connector_owner=False,
         ) as session:
 
             pool_size = (
-                self.pool_size or self._config["endpoint_connection_limit"]
+                self.pool_size or self.config["endpoint_connection_limit"]
             )
             for _ in range(pool_size):
                 worker = _DataselectAsyncWorker(
