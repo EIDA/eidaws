@@ -292,6 +292,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 self._write_callback(chunk)
 
     async def update_cretry_budget(self, url, code):
+        """
+        Supress Redis errors.
+        """
         try:
             await super().update_cretry_budget(url, code)
         except Exception:
