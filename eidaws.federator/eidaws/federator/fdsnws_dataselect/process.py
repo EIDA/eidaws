@@ -4,6 +4,8 @@ import aiohttp
 import asyncio
 import copy
 import datetime
+import io
+import struct
 
 from aiohttp import web
 from concurrent.futures import ThreadPoolExecutor
@@ -21,6 +23,7 @@ from eidaws.federator.utils.mixin import (
 from eidaws.federator.utils.process import (
     BaseRequestProcessor,
     BaseAsyncWorker,
+    RequestProcessorError,
 )
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -31,15 +34,112 @@ from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 _QUERY_FORMAT = "miniseed"
 
 
+class MiniseedParsingError(RequestProcessorError):
+    """Error while parsing miniseed data: {}."""
+
+
+def _get_mseed_record_size(fd):
+    """
+    Extract the *MiniSEED* record length from a file-like object.
+
+    .. note::
+        Taken from `SeisComP3's fdsnws_fetch
+        <https://github.com/SeisComP3/seiscomp3/blob/master/src/trunk/apps/fdsnws/fdsnws_fetch.py>_.
+    """
+
+    FIXED_DATA_HEADER_SIZE = 48
+    MINIMUM_RECORD_LENGTH = 256
+    DATA_ONLY_BLOCKETTE_NUMBER = 1000
+
+    # read fixed header
+    buf = fd.read(FIXED_DATA_HEADER_SIZE)
+    if not buf:
+        raise MiniseedParsingError("Missing data.")
+
+    # get offset of data (value before last,
+    # 2 bytes, unsigned short)
+    data_offset_idx = FIXED_DATA_HEADER_SIZE - 4
+    (data_offset,) = struct.unpack(
+        b"!H", buf[data_offset_idx : data_offset_idx + 2]
+    )
+
+    if data_offset >= FIXED_DATA_HEADER_SIZE:
+        remaining_header_size = data_offset - FIXED_DATA_HEADER_SIZE
+
+    elif data_offset == 0:
+        # This means that blockettes can follow,
+        # but no data samples. Use minimum record
+        # size to read following blockettes. This
+        # can still fail if blockette 1000 is after
+        # position 256
+        remaining_header_size = MINIMUM_RECORD_LENGTH - FIXED_DATA_HEADER_SIZE
+
+    else:
+        # Full header size cannot be smaller than
+        # fixed header size. This is an error.
+        raise MiniseedParsingError(
+            f"Data offset smaller than fixed header length: {data_offset}"
+        )
+
+    buf = fd.read(remaining_header_size)
+    if not buf:
+        raise MiniseedParsingError("remaining header corrupt in record")
+
+    # scan variable header for blockette 1000
+    blockette_start = 0
+    b1000_found = False
+
+    while blockette_start < remaining_header_size:
+
+        # 2 bytes, unsigned short
+        (blockette_id,) = struct.unpack(
+            b"!H", buf[blockette_start : blockette_start + 2]
+        )
+
+        # get start of next blockette (second
+        # value, 2 bytes, unsigned short)
+        (next_blockette_start,) = struct.unpack(
+            b"!H", buf[blockette_start + 2 : blockette_start + 4]
+        )
+
+        if blockette_id == DATA_ONLY_BLOCKETTE_NUMBER:
+
+            b1000_found = True
+            break
+
+        elif next_blockette_start == 0:
+            # no blockettes follow
+            break
+
+        else:
+            blockette_start = next_blockette_start
+
+    # blockette 1000 not found
+    if not b1000_found:
+        raise MiniseedParsingError("blockette 1000 not found, stop reading")
+
+    # get record size (1 byte, unsigned char)
+    record_size_exponent_idx = blockette_start + 6
+    (record_size_exponent,) = struct.unpack(
+        b"!B", buf[record_size_exponent_idx : record_size_exponent_idx + 1]
+    )
+
+    return 2 ** record_size_exponent
+
+
 def _split_stream_epoch(stream_epoch, num, default_endtime):
     return stream_epoch.slice(num=num, default_endtime=default_endtime)
 
 
 class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     """
-    A worker task implementation operating on `StationXML
-    <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
-    element granularity.
+    A worker task implementation for ``fdsnws-dataselect`` ``format=miniseed``.
+    The worker implements splitting and aligning facilities.
+
+    When splitting and aligning (i.e. merging potentially occurring overlaps)
+    data is downloaded sequentially. Note, that a worker assumes the MiniSEED
+    data to be shipped with a uniform record length (with respect to a stream
+    epoch).
     """
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
@@ -48,8 +148,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         [FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "worker"]
     )
 
-    MSEED_RECORD_SIZE = 512
-    CHUNK_SIZE = MSEED_RECORD_SIZE * 8
+    # minimum chunk size
+    _CHUNK_SIZE = 4096
 
     def __init__(
         self,
@@ -76,8 +176,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         self._stream_epochs = []
 
-        # TODO(damb): Check if chunk_size is a multiple of record_size.
-        self._record_size = self.MSEED_RECORD_SIZE
+        self._mseed_record_size = None
+        # NOTE(damb): chunk_size must be aligned with mseed record_size
+        self._chunk_size = self._CHUNK_SIZE
 
     async def run(self, req_method="GET", **kwargs):
         def route_with_single_stream(route):
@@ -117,27 +218,25 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                         buf=buf,
                     )
 
-                    if _sorted[-1].endtime == self._stream_epochs[-1].endtime:
+                    if await buf.tell():
 
-                        if await buf.tell():
+                        async with self._lock:
+                            if not self._response.prepared:
 
-                            async with self._lock:
-                                if not self._response.prepared:
+                                if self._prepare_callback is not None:
+                                    await self._prepare_callback(
+                                        self._response
+                                    )
+                                else:
+                                    await self._response.prepare(self.request)
 
-                                    if self._prepare_callback is not None:
-                                        await self._prepare_callback(
-                                            self._response
-                                        )
-                                    else:
-                                        await self._response.prepare(
-                                            self.request
-                                        )
+                            await self._write_buffer_to_response(
+                                buf, self._response, executor=executor
+                            )
 
-                                await self._write_buffer_to_response(
-                                    buf, self._response, executor=executor
-                                )
-
-                        self._queue.task_done()
+                self._mseed_record_size = None
+                self._chunk_size = self._CHUNK_SIZE
+                self._queue.task_done()
 
     async def _run(
         self,
@@ -244,9 +343,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         last_record = None
         await buf.seek(0, 2)
-        if await buf.tell() > self._record_size:
-            await buf.seek(-self._record_size, 2)
-            last_record = await buf.read(self._record_size)
+        if self._mseed_record_size is not None:
+            await buf.seek(-self._mseed_record_size, 2)
+            last_record = await buf.read(self._mseed_record_size)
 
         await self._run(
             url,
@@ -262,7 +361,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     ):
         while True:
             try:
-                chunk = await resp.content.read(self.CHUNK_SIZE)
+                chunk = await resp.content.read(self._chunk_size)
             except asyncio.TimeoutError as err:
                 self.logger.warning(f"Socket read timeout: {type(err)}")
                 break
@@ -270,10 +369,21 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             if not chunk:
                 break
 
-            # FIXME(damb): This might not work if record_size != chunk_size;
-            # Note, that chunk_size must be a multiple of mseed record size.
             if last_record is not None and last_record in chunk:
-                chunk = chunk[: -self._record_size]
+                chunk = chunk[: -self._mseed_record_size]
+
+            if not self._mseed_record_size:
+                try:
+                    self._mseed_record_size = _get_mseed_record_size(
+                        io.BytesIO(chunk)
+                    )
+                except MiniseedParsingError as err:
+                    raise err
+                else:
+                    # align chunk_size with mseed record_size
+                    self._chunk_size = max(
+                        self._mseed_record_size, self._chunk_size
+                    )
 
             await buf.write(chunk)
 
@@ -281,7 +391,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         await buf.seek(0)
 
         while True:
-            chunk = await buf.read(self.CHUNK_SIZE)
+            chunk = await buf.read(self._chunk_size)
 
             if not chunk:
                 break
