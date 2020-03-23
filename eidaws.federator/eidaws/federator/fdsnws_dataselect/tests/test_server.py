@@ -178,6 +178,8 @@ def load_data():
 
 
 class TestFDSNDataselectServer:
+    FDSNWS_DATASELECT_PATH_QUERY = "/fdsnws/dataselect/1/query"
+
     @staticmethod
     def get_default_config():
         config_dict = copy.deepcopy(DEFAULT_CONFIG)
@@ -185,15 +187,150 @@ class TestFDSNDataselectServer:
 
         return get_config(SERVICE_ID, defaults=config_dict)
 
-    async def test_get_split_with_overlap(
+    async def test_get_single_stream_epoch(
         self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
     ):
 
+        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
                     "/eidaws/routing/1/query",
-                    "GET",
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-05",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
+        )
+        data = await resp.read()
+
+        assert data == load_data(
+            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+        )
+
+    async def test_get_multi_stream_epoch(
+        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+    ):
+
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                (
+                    "/eidaws/routing/1/query",
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH DAVOX -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.DAVOX..LHZ.2019-01-01.2019-01-05T00:06:09"
+                        ),
+                    ),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "DAVOX,HASLI",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-05",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
+        )
+        data = await resp.read()
+
+        assert data == load_data("CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05")
+
+    async def test_get_split_with_overlap(
+        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+    ):
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                (
+                    "/eidaws/routing/1/query",
+                    method,
                     web.Response(
                         status=200,
                         text=(
@@ -208,13 +345,13 @@ class TestFDSNDataselectServer:
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    "/fdsnws/dataselect/1/query",
-                    "GET",
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
                     web.Response(status=413),
                 ),
                 (
-                    "/fdsnws/dataselect/1/query",
-                    "GET",
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -223,8 +360,8 @@ class TestFDSNDataselectServer:
                     ),
                 ),
                 (
-                    "/fdsnws/dataselect/1/query",
-                    "GET",
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
@@ -257,3 +394,180 @@ class TestFDSNDataselectServer:
         data = await resp.read()
 
         assert data == load_data("CH.HASLI..LHZ.2019-01-01.2019-01-10")
+
+    async def test_get_split_without_overlap(
+        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+    ):
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                (
+                    "/eidaws/routing/1/query",
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-01T00:10:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-00T00:05:04"
+                        ),
+                    ),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01T05:05:00.2019-01-00T00:10:00"
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-01T00:10:00",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
+        )
+        data = await resp.read()
+
+        assert data == load_data(
+            "CH.HASLI..LHZ.2019-01-01.2019-01-01T00:10:00"
+        )
+
+    async def test_get_multi_split_with_overlap(
+        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+    ):
+
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                (
+                    "/eidaws/routing/1/query",
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-20T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+                        ),
+                    ),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
+                    ),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..LHZ.2019-01-10.2019-01-15"),
+                    ),
+                ),
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..LHZ.2019-01-15.2019-01-20"),
+                    ),
+                ),
+            ]
+        }
+
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "HASLI",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-20",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
+        )
+        data = await resp.read()
+
+        assert data == load_data("CH.HASLI..LHZ.2019-01-01.2019-01-20")
