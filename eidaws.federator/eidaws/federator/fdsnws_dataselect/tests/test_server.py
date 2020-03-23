@@ -187,6 +187,80 @@ class TestFDSNDataselectServer:
 
         return get_config(SERVICE_ID, defaults=config_dict)
 
+    async def test_get_no_route(self, make_aiohttp_client):
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                ("/eidaws/routing/1/query", method, web.Response(status=204,),)
+            ]
+        }
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "FOO",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-05",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 204
+
+    async def test_get_no_data(self, make_aiohttp_client):
+        method = "GET"
+        mocked_routing = {
+            "localhost": [
+                (
+                    "/eidaws/routing/1/query",
+                    method,
+                    web.Response(
+                        status=204,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH FOO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.FDSNWS_DATASELECT_PATH_QUERY,
+                    method,
+                    web.Response(status=204,),
+                ),
+            ]
+        }
+
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+        client = await make_aiohttp_client(
+            config_dict=self.get_default_config(),
+            mocked_routing_config=mocked_routing,
+        )
+
+        params = {
+            "net": "CH",
+            "sta": "FOO",
+            "loc": "--",
+            "cha": "LHZ",
+            "start": "2019-01-01",
+            "end": "2019-01-05",
+        }
+
+        resp = await client.get(_PATH_QUERY, params=params)
+        assert resp.status == 204
+
     async def test_get_single_stream_epoch(
         self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
     ):
