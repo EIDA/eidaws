@@ -246,7 +246,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         req_method,
         buf,
         splitting_const=2,
-        last_record=None,
         executor=None,
         **kwargs,
     ):
@@ -307,6 +306,13 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
+
+            last_record = None
+            await buf.seek(0, 2)
+            if self._mseed_record_size is not None:
+                await buf.seek(-self._mseed_record_size, 2)
+                last_record = await buf.read(self._mseed_record_size)
+
             await self._write_response_to_buffer(
                 buf, resp, executor=executor, last_record=last_record,
             )
@@ -341,19 +347,12 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             f"Stream epochs after splitting: {self._stream_epochs!r}"
         )
 
-        last_record = None
-        await buf.seek(0, 2)
-        if self._mseed_record_size is not None:
-            await buf.seek(-self._mseed_record_size, 2)
-            last_record = await buf.read(self._mseed_record_size)
-
         await self._run(
             url,
             splitted,
             query_params=kwargs["query_params"],
             req_method=kwargs["req_method"],
             buf=buf,
-            last_record=last_record,
         )
 
     async def _write_response_to_buffer(
@@ -369,9 +368,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             if not chunk:
                 break
 
-            if last_record is not None and last_record in chunk:
-                chunk = chunk[: -self._mseed_record_size]
-
             if not self._mseed_record_size:
                 try:
                     self._mseed_record_size = _get_mseed_record_size(
@@ -384,6 +380,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     self._chunk_size = max(
                         self._mseed_record_size, self._chunk_size
                     )
+
+            if last_record is not None and last_record in chunk:
+                chunk = chunk[self._mseed_record_size :]
 
             await buf.write(chunk)
 
