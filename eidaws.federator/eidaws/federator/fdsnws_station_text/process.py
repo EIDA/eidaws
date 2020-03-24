@@ -11,6 +11,7 @@ from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import CachingMixin, ClientRetryBudgetMixin
 from eidaws.federator.utils.process import (
+    with_exception_handling,
     BaseRequestProcessor,
     RequestProcessorError,
     BaseAsyncWorker,
@@ -50,6 +51,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         self._prepare_callback = _callable_or_raise(prepare_callback)
         self._write_callback = _callable_or_raise(write_callback)
 
+    @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
 
         while True:
@@ -253,15 +255,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
                 )
                 self._tasks.append(task)
 
-            await queue.join()
-
-            if not response.prepared:
-                raise FDSNHTTPError.create(
-                    self.nodata,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
+            await self._join_with_exception_handling(queue, response)
 
             await response.write_eof()
 

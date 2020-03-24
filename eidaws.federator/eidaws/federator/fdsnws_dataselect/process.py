@@ -21,6 +21,7 @@ from eidaws.federator.utils.mixin import (
     ClientRetryBudgetMixin,
 )
 from eidaws.federator.utils.process import (
+    with_exception_handling,
     BaseRequestProcessor,
     BaseAsyncWorker,
     RequestProcessorError,
@@ -180,6 +181,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         # NOTE(damb): chunk_size must be aligned with mseed record_size
         self._chunk_size = self._CHUNK_SIZE
 
+    @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
         def route_with_single_stream(route):
             streams = set([])
@@ -198,7 +200,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 ), "Cannot handle multiple streams within a single route."
 
                 req_id = self.request[FED_BASE_ID + ".request_id"]
-                # TODO(damb): Check if there is enough space left on device.
                 async with AioSpooledTemporaryFile(
                     max_size=self.config["buffer_rollover_size"],
                     prefix=str(req_id) + ".",
@@ -228,7 +229,9 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                                         self._response
                                     )
                                 else:
-                                    await self._response.prepare(self.request)
+                                    await self._response.prepare(
+                                        self.request
+                                    )
 
                             await self._write_buffer_to_response(
                                 buf, self._response, executor=executor
@@ -498,15 +501,7 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
                 )
                 self._tasks.append(task)
 
-            await queue.join()
-
-            if not response.prepared:
-                raise FDSNHTTPError.create(
-                    self.nodata,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
+            await self._join_with_exception_handling(queue, response)
 
             await response.write_eof()
 

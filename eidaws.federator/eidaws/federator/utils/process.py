@@ -6,6 +6,8 @@ import asyncio
 import datetime
 import functools
 import logging
+import sys
+import traceback
 
 from aiohttp import web
 
@@ -58,6 +60,35 @@ def cached(func):
             )
 
         return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def with_exception_handling(coro):
+    """
+    Method decorator providing general purpose exception handling for worker
+    tasks.
+    """
+
+    @functools.wraps(coro)
+    async def wrapper(self, *args, **kwargs):
+
+        try:
+            await coro(self, *args, **kwargs)
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            self.logger.critical(f"Local TaskWorker exception: {type(err)}")
+            self.logger.critical(
+                "Traceback information: "
+                + repr(
+                    traceback.format_exception(
+                        exc_type, exc_value, exc_traceback
+                    )
+                )
+            )
+            self._queue.task_done()
 
     return wrapper
 
@@ -306,6 +337,32 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
         for coro in self._await_on_close:
             await coro(**kwargs)
 
+    async def _join_with_exception_handling(self, queue, response):
+        try:
+            await asyncio.wait_for(
+                queue.join(), self.config["streaming_timeout"]
+            )
+        except asyncio.TimeoutError:
+            if not response.prepared:
+                self.logger.warning(
+                    "No valid results to be federated within streaming "
+                    f"timeout: {self.config['streaming_timeout']}s"
+                )
+                raise FDSNHTTPError.create(
+                    413,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+        if not response.prepared:
+            raise FDSNHTTPError.create(
+                self.nodata,
+                self.request,
+                request_submitted=self.request_submitted,
+                service_version=__version__,
+            )
+
     async def _teardown_tasks(self, **kwargs):
 
         return_exceptions = kwargs.get("return_exceptions", True)
@@ -313,6 +370,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
         self.logger.debug("Teardown worker tasks ...")
         for task in self._tasks:
             task.cancel()
+
         await asyncio.gather(*self._tasks, return_exceptions=return_exceptions)
 
     async def _gc_response_code_stats(self):

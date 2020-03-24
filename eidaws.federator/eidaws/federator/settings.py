@@ -65,3 +65,5 @@ FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL = None
 # Configuration with respect to temporary file buffers
 FED_DEFAULT_TMPDIR = None
 FED_DEFAULT_BUFFER_ROLLOVER_SIZE = 0  # bytes; if 0 rollover is disabled
+
+FED_DEFAULT_STREAMING_TIMEOUT = 600

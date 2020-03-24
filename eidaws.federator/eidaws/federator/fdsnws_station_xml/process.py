@@ -15,6 +15,7 @@ from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import CachingMixin, ClientRetryBudgetMixin
 from eidaws.federator.utils.process import (
+    with_exception_handling,
     BaseRequestProcessor,
     RequestProcessorError,
     BaseAsyncWorker,
@@ -95,6 +96,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         self._network_elements = {}
 
+    @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
 
         while True:
@@ -110,7 +112,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     )
                 )
 
-            responses = await asyncio.gather(*tasks)
+            responses = await asyncio.gather(*tasks, return_exceptions=False)
 
             for resp in responses:
 
@@ -444,15 +446,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
                 )
                 self._tasks.append(task)
 
-            await queue.join()
-
-            if not response.prepared:
-                raise FDSNHTTPError.create(
-                    self.nodata,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
+            await self._join_with_exception_handling(queue, response)
 
             footer = self.STATIONXML_FOOTER.encode("utf-8")
             await response.write(footer)
