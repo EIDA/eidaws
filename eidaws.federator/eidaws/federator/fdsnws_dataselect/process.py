@@ -229,9 +229,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                                         self._response
                                     )
                                 else:
-                                    await self._response.prepare(
-                                        self.request
-                                    )
+                                    await self._response.prepare(self.request)
 
                             await self._write_buffer_to_response(
                                 buf, self._response, executor=executor
@@ -309,15 +307,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
-
-            last_record = None
-            await buf.seek(0, 2)
-            if self._mseed_record_size is not None:
-                await buf.seek(-self._mseed_record_size, 2)
-                last_record = await buf.read(self._mseed_record_size)
-
             await self._write_response_to_buffer(
-                buf, resp, executor=executor, last_record=last_record,
+                buf, resp, executor=executor,
             )
 
     async def _handle_413(self, url, stream_epoch, **kwargs):
@@ -358,9 +349,13 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             buf=buf,
         )
 
-    async def _write_response_to_buffer(
-        self, buf, resp, executor, last_record=None
-    ):
+    async def _write_response_to_buffer(self, buf, resp, executor):
+        last_record = None
+        await buf.seek(0, 2)
+        if self._mseed_record_size is not None:
+            await buf.seek(-self._mseed_record_size, 2)
+            last_record = await buf.read(self._mseed_record_size)
+
         while True:
             try:
                 chunk = await resp.content.read(self._chunk_size)
@@ -383,7 +378,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     self._chunk_size = max(
                         self._mseed_record_size, self._chunk_size
                     )
-
             if last_record is not None and last_record in chunk:
                 chunk = chunk[self._mseed_record_size :]
 
