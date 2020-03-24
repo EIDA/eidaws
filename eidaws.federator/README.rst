@@ -31,4 +31,6 @@ Features
 - ``fdsnws-station`` requests run entirely in-memory
 - ``fdsnws-dataselect`` request are buffered in-memory for small chunks of
   data; larger chunks of data are dynamically moved to disk
+- ``fdsnws-dataselect`` response data is returned merged and fully aligned when
+  splitting large requests
 - Independent configuration of federated resources
