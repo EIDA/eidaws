@@ -163,6 +163,11 @@ def fdsnws_dataselect_content_type():
     return "application/vnd.fdsn.mseed"
 
 
+@pytest.fixture(scope="session")
+def eidaws_routing_path_query():
+    return "/eidaws/routing/1/query"
+
+
 @pytest.fixture
 def load_data():
 
@@ -187,11 +192,13 @@ class TestFDSNDataselectServer:
 
         return get_config(SERVICE_ID, defaults=config_dict)
 
-    async def test_get_no_route(self, make_aiohttp_client):
+    async def test_get_no_route(
+        self, make_aiohttp_client, eidaws_routing_path_query
+    ):
         method = "GET"
         mocked_routing = {
             "localhost": [
-                ("/eidaws/routing/1/query", method, web.Response(status=204,),)
+                (eidaws_routing_path_query, method, web.Response(status=204,),)
             ]
         }
         client = await make_aiohttp_client(
@@ -211,12 +218,14 @@ class TestFDSNDataselectServer:
         resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 204
 
-    async def test_get_no_data(self, make_aiohttp_client):
+    async def test_get_no_data(
+        self, make_aiohttp_client, eidaws_routing_path_query
+    ):
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=204,
@@ -262,14 +271,18 @@ class TestFDSNDataselectServer:
         assert resp.status == 204
 
     async def test_get_single_stream_epoch(
-        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+        self,
+        make_aiohttp_client,
+        fdsnws_dataselect_content_type,
+        load_data,
+        eidaws_routing_path_query,
     ):
 
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=200,
@@ -325,14 +338,18 @@ class TestFDSNDataselectServer:
         )
 
     async def test_get_multi_stream_epoch(
-        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+        self,
+        make_aiohttp_client,
+        fdsnws_dataselect_content_type,
+        load_data,
+        eidaws_routing_path_query,
     ):
 
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=200,
@@ -397,13 +414,17 @@ class TestFDSNDataselectServer:
         assert data == load_data("CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05")
 
     async def test_get_split_with_overlap(
-        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+        self,
+        make_aiohttp_client,
+        fdsnws_dataselect_content_type,
+        load_data,
+        eidaws_routing_path_query,
     ):
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=200,
@@ -470,13 +491,17 @@ class TestFDSNDataselectServer:
         assert data == load_data("CH.HASLI..LHZ.2019-01-01.2019-01-10")
 
     async def test_get_split_without_overlap(
-        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+        self,
+        make_aiohttp_client,
+        fdsnws_dataselect_content_type,
+        load_data,
+        eidaws_routing_path_query,
     ):
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=200,
@@ -547,14 +572,18 @@ class TestFDSNDataselectServer:
         )
 
     async def test_get_multi_split_with_overlap(
-        self, make_aiohttp_client, fdsnws_dataselect_content_type, load_data,
+        self,
+        make_aiohttp_client,
+        fdsnws_dataselect_content_type,
+        load_data,
+        eidaws_routing_path_query,
     ):
 
         method = "GET"
         mocked_routing = {
             "localhost": [
                 (
-                    "/eidaws/routing/1/query",
+                    eidaws_routing_path_query,
                     method,
                     web.Response(
                         status=200,
