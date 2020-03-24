@@ -215,6 +215,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                         query_params=query_params,
                         req_method=req_method,
                         buf=buf,
+                        splitting_factor=self.config["splitting_factor"],
                     )
 
                     if await buf.tell():
@@ -244,7 +245,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
         query_params,
         req_method,
         buf,
-        splitting_const=2,
+        splitting_factor,
         executor=None,
         **kwargs,
     ):
@@ -285,7 +286,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     await self._handle_413(
                         url,
                         se,
-                        splitting_const=splitting_const,
+                        splitting_factor=splitting_factor,
                         query_params=query_params,
                         req_method=req_method,
                         buf=buf,
@@ -312,19 +313,19 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
     async def _handle_413(self, url, stream_epoch, **kwargs):
 
         assert (
-            "splitting_const" in kwargs
+            "splitting_factor" in kwargs
             and "query_params" in kwargs
             and "req_method" in kwargs
             and "buf" in kwargs
         ), "Missing kwarg."
 
-        splitting_const = kwargs["splitting_const"]
+        splitting_factor = kwargs["splitting_factor"]
         buf = kwargs["buf"]
 
         splitted = sorted(
             _split_stream_epoch(
                 stream_epoch,
-                num=splitting_const,
+                num=splitting_factor,
                 default_endtime=self._endtime,
             )
         )
@@ -335,7 +336,8 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             self._stream_epochs.insert(i + idx, splitted[i])
 
         self.logger.debug(
-            f"Splitting {stream_epoch!r} (splitting_const={splitting_const}). "
+            f"Splitting {stream_epoch!r} "
+            f"(splitting_factor={splitting_factor}). "
             f"Stream epochs after splitting: {self._stream_epochs!r}"
         )
 
@@ -345,6 +347,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
             query_params=kwargs["query_params"],
             req_method=kwargs["req_method"],
             buf=buf,
+            splitting_factor=splitting_factor,
         )
 
     async def _write_response_to_buffer(self, buf, resp, executor):

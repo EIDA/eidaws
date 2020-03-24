@@ -9,6 +9,7 @@ from eidaws.federator.settings import (
     FED_DEFAULT_CONFIG_FILE,
     FED_DEFAULT_TMPDIR,
     FED_DEFAULT_BUFFER_ROLLOVER_SIZE,
+    FED_DEFAULT_SPLITTING_FACTOR,
 )
 from eidaws.federator.utils.app import (
     default_config,
@@ -42,6 +43,7 @@ DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
 DEFAULT_CONFIG.setdefault(
     "buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE
 )
+DEFAULT_CONFIG.setdefault("splitting_factor", FED_DEFAULT_SPLITTING_FACTOR)
 
 config_schema = default_config_schema
 config_schema["properties"]["tempdir"] = {
@@ -50,6 +52,10 @@ config_schema["properties"]["tempdir"] = {
 config_schema["properties"]["buffer_rollover_size"] = {
     "type": "integer",
     "minimum": 0,
+}
+config_schema["properties"]["splitting_factor"] = {
+    "type": "integer",
+    "minimum": 2,
 }
 
 

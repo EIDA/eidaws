@@ -67,3 +67,6 @@ FED_DEFAULT_TMPDIR = None
 FED_DEFAULT_BUFFER_ROLLOVER_SIZE = 0  # bytes; if 0 rollover is disabled
 
 FED_DEFAULT_STREAMING_TIMEOUT = 600
+
+# Default splitting factor for HTTP status code 413 handling
+FED_DEFAULT_SPLITTING_FACTOR = 2
