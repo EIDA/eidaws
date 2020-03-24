@@ -217,13 +217,6 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
     def client_retry_budget_threshold(self):
         return self.config["client_retry_budget_threshold"]
 
-    def _handle_error(self, error=None, **kwargs):
-        msg = kwargs.get("msg", error)
-        if msg is not None:
-            self.logger.warning(str(msg))
-
-    _handle_413 = _handle_error
-
     async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
         req_handler = RoutingRequestHandler(
             self._url_routing,
