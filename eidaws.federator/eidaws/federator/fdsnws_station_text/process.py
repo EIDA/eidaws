@@ -225,7 +225,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         await self._dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
-            connector=self.config["endpoint_http_conn_pool"],
+            connector=self.request.config_dict["endpoint_http_conn_pool"],
             timeout=timeout,
             connector_owner=False,
         ) as session:
