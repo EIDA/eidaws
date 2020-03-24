@@ -38,6 +38,7 @@ from eidaws.federator.settings import (
     FED_DEFAULT_CLIENT_MAX_SIZE,
     FED_DEFAULT_MAX_STREAM_EPOCH_DURATION,
     FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL,
+    FED_DEFAULT_STREAMING_TIMEOUT,
 )
 from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
@@ -127,6 +128,9 @@ config_schema = {
         "max_total_stream_epoch_duration": {
             "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]
         },
+        "streaming_timeout": {
+            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]
+        },
     },
     "additionalProperties": False,
 }
@@ -186,6 +190,9 @@ def default_config():
     default_config.setdefault(
         "max_total_stream_epoch_duration",
         FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL,
+    )
+    default_config.setdefault(
+        "streaming_timeout", FED_DEFAULT_STREAMING_TIMEOUT
     )
     # default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
 

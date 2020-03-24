@@ -47,6 +47,9 @@ eidaws.federator:
         default_timeout: 43200
   fdsnws.dataselect:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
+    # Number of worker tasks
+    pool_size: 10
+    buffer_rollover_size: 52428800
   eidaws.wfcatalog:
     url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
 ...

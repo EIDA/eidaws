@@ -6,12 +6,16 @@ import pathlib
 FED_BASE_ID = "eidaws.federator"
 FED_STATION_TEXT_SERVICE_ID = "fdsnws.station.text"
 FED_STATION_XML_SERVICE_ID = "fdsnws.station.xml"
+FED_DATASELECT_MINISEED_SERVICE_ID = "fdsnws.dataselect"
 
 FED_STATION_PATH = "/eidaws/station/"
 FED_STATION_PATH_TEXT = FED_STATION_PATH + "text/1"
 
 FED_STATION_PATH = "/eidaws/station/"
 FED_STATION_PATH_XML = FED_STATION_PATH + "xml/1"
+
+FED_DATASELECT_PATH = "/eidaws/dataselect/"
+FED_DATASELECT_PATH_MINISEED = FED_DATASELECT_PATH + "miniseed/1"
 
 # ----------------------------------------------------------------------------
 FED_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
@@ -58,3 +62,11 @@ FED_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
 # Configures HTTP 413 behaviour
 FED_DEFAULT_MAX_STREAM_EPOCH_DURATION = None
 FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL = None
+# Configuration with respect to temporary file buffers
+FED_DEFAULT_TMPDIR = None
+FED_DEFAULT_BUFFER_ROLLOVER_SIZE = 0  # bytes; if 0 rollover is disabled
+
+FED_DEFAULT_STREAMING_TIMEOUT = 600
+
+# Default splitting factor for HTTP status code 413 handling
+FED_DEFAULT_SPLITTING_FACTOR = 2

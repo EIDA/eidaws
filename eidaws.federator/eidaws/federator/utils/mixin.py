@@ -179,3 +179,18 @@ class ClientRetryBudgetMixin:
             garbage collected
         """
         await self.stats_retry_budget_client.gc(url)
+
+
+class ConfigMixin:
+    """
+    Simplifies configuration handling for any object with a ``request`` and a ``SERVICE_ID``
+    property.
+    """
+
+    SERVICE_ID = None
+
+    @property
+    def config(self):
+        assert self.SERVICE_ID, f"Undefined property: SERVICE_ID."
+
+        return self.request.config_dict["config"][self.SERVICE_ID]

@@ -6,6 +6,8 @@ import asyncio
 import datetime
 import functools
 import logging
+import sys
+import traceback
 
 from aiohttp import web
 
@@ -15,7 +17,7 @@ from eidaws.federator.utils.misc import (
     make_context_logger,
     Route,
 )
-from eidaws.federator.utils.mixin import ClientRetryBudgetMixin
+from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
@@ -62,7 +64,36 @@ def cached(func):
     return wrapper
 
 
-class BaseAsyncWorker(abc.ABC):
+def with_exception_handling(coro):
+    """
+    Method decorator providing general purpose exception handling for worker
+    tasks.
+    """
+
+    @functools.wraps(coro)
+    async def wrapper(self, *args, **kwargs):
+
+        try:
+            await coro(self, *args, **kwargs)
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            self.logger.critical(f"Local TaskWorker exception: {type(err)}")
+            self.logger.critical(
+                "Traceback information: "
+                + repr(
+                    traceback.format_exception(
+                        exc_type, exc_value, exc_traceback
+                    )
+                )
+            )
+            self._queue.task_done()
+
+    return wrapper
+
+
+class BaseAsyncWorker(abc.ABC, ConfigMixin):
     """
     Abstract base class for worker implementations.
     """
@@ -80,12 +111,20 @@ class BaseAsyncWorker(abc.ABC):
     async def run(self, req_method="GET", **kwargs):
         pass
 
+    async def _handle_error(self, error=None, **kwargs):
+        msg = kwargs.get("msg", error)
+        if msg is not None:
+            self.logger.warning(str(msg))
+
+    async def _handle_413(self, url, stream_epoch, **kwargs):
+        raise RequestProcessorError("HTTP code 413 handling not implemented.")
+
 
 class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
 
 
-class BaseRequestProcessor(ClientRetryBudgetMixin):
+class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for request processors.
     """
@@ -160,24 +199,23 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
 
     @property
     def pool_size(self):
-        return None
+        return self.config["pool_size"]
 
     @property
     def max_stream_epoch_duration(self):
-        return None
+        return _duration_to_timedelta(
+            days=self.config["max_stream_epoch_duration"]
+        )
 
     @property
     def max_total_stream_epoch_duration(self):
-        return None
+        return _duration_to_timedelta(
+            days=self.config["max_total_stream_epoch_duration"]
+        )
 
     @property
     def client_retry_budget_threshold(self):
-        raise NotImplementedError
-
-    def _handle_error(self, result):
-        self.logger.warning(result)
-
-    _handle_413 = _handle_error
+        return self.config["client_retry_budget_threshold"]
 
     async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
         req_handler = RoutingRequestHandler(
@@ -265,8 +303,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
             f"Number of (demuxed) routes received: {len(routes)}"
         )
 
-        response = await self._make_response(routes, timeout=timeout
-        )
+        response = await self._make_response(routes, timeout=timeout)
 
         await asyncio.shield(self.finalize())
 
@@ -293,6 +330,32 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
         for coro in self._await_on_close:
             await coro(**kwargs)
 
+    async def _join_with_exception_handling(self, queue, response):
+        try:
+            await asyncio.wait_for(
+                queue.join(), self.config["streaming_timeout"]
+            )
+        except asyncio.TimeoutError:
+            if not response.prepared:
+                self.logger.warning(
+                    "No valid results to be federated within streaming "
+                    f"timeout: {self.config['streaming_timeout']}s"
+                )
+                raise FDSNHTTPError.create(
+                    413,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+        if not response.prepared:
+            raise FDSNHTTPError.create(
+                self.nodata,
+                self.request,
+                request_submitted=self.request_submitted,
+                service_version=__version__,
+            )
+
     async def _teardown_tasks(self, **kwargs):
 
         return_exceptions = kwargs.get("return_exceptions", True)
@@ -300,6 +363,7 @@ class BaseRequestProcessor(ClientRetryBudgetMixin):
         self.logger.debug("Teardown worker tasks ...")
         for task in self._tasks:
             task.cancel()
+
         await asyncio.gather(*self._tasks, return_exceptions=return_exceptions)
 
     async def _gc_response_code_stats(self):

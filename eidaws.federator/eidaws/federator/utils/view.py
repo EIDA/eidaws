@@ -10,34 +10,32 @@ from webargs.aiohttpparser import parser
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.strict import keyword_parser
 from eidaws.federator.utils.misc import make_context_logger
+from eidaws.federator.utils.mixin import ConfigMixin
 from eidaws.federator.utils.parser import fdsnws_parser
 from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
 
 
-class BaseView(web.View, CorsViewMixin):
+class BaseView(web.View, CorsViewMixin, ConfigMixin):
 
     LOGGER = FED_BASE_ID + ".view"
 
-    SERVICE_ID = None
-
-    def __init__(self, request, schema, processor_cls, service_id=None):
+    def __init__(self, request, schema, processor_cls):
         super().__init__(request)
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
 
         self._schema = schema
         self._processor_cls = processor_cls
-        self._service_id = service_id or self.SERVICE_ID
 
-        self._client_timeout = aiohttp.ClientTimeout(
+        assert self.SERVICE_ID, f"Invalid service_id: {self.SERVICE_ID}"
+
+    @property
+    def client_timeout(self):
+        return aiohttp.ClientTimeout(
             connect=self.config["endpoint_timeout_connect"],
             sock_connect=self.config["endpoint_timeout_sock_connect"],
             sock_read=self.config["endpoint_timeout_sock_read"],
         )
-
-    @property
-    def config(self):
-        return self.request.config_dict["config"][self._service_id]
 
     async def get(self):
         # strict parameter validation
@@ -70,7 +68,7 @@ class BaseView(web.View, CorsViewMixin):
 
         processor.post = False
 
-        return await processor.federate(timeout=self._client_timeout)
+        return await processor.federate(timeout=self.client_timeout)
 
     async def post(self):
         # strict parameter validation
@@ -103,4 +101,4 @@ class BaseView(web.View, CorsViewMixin):
 
         processor.post = True
 
-        return await processor.federate(timeout=self._client_timeout)
+        return await processor.federate(timeout=self.client_timeout)
