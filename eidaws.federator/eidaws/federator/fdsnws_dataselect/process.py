@@ -14,7 +14,6 @@ from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_DATASELECT_MINISEED_SERVICE_ID,
 )
-from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import (
     CachingMixin,
@@ -28,7 +27,6 @@ from eidaws.federator.utils.process import (
 )
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.federator.utils.request import FdsnRequestHandler
-from eidaws.federator.version import __version__
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
