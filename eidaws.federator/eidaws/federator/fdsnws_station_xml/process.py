@@ -64,7 +64,7 @@ def group_routes_by(routes, key="network"):
     return retval
 
 
-class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
+class _StationXMLAsyncWorker(BaseAsyncWorker):
     """
     A worker task implementation operating on `StationXML
     <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
@@ -287,11 +287,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                 f"Error while executing request: error={type(err)}, "
                 f"url={req_handler.url}, method={req_method}"
             )
-
-            try:
-                await self.update_cretry_budget(req_handler.url, 503)
-            except Exception:
-                pass
+            await self.update_cretry_budget(req_handler.url, 503)
 
             return None
 
@@ -323,11 +319,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
         self.logger.debug(msg)
 
-        try:
-            await self.update_cretry_budget(req_handler.url, resp.status)
-        except Exception:
-            pass
-
+        await self.update_cretry_budget(req_handler.url, resp.status)
         return resp
 
     @staticmethod

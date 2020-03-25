@@ -23,7 +23,7 @@ from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 _QUERY_FORMAT = "text"
 
 
-class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
+class _StationTextAsyncWorker(BaseAsyncWorker):
     """
     A worker task which fetches data and writes the results to the ``response``
     object.
@@ -75,13 +75,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
                     f"url={req_handler.url}, method={req_method}"
                 )
 
-                try:
-                    await self.update_cretry_budget(req_handler.url, 503)
-                except Exception:
-                    pass
-                finally:
-                    self._queue.task_done()
-
+                await self.update_cretry_budget(req_handler.url, 503)
                 continue
 
             msg = (
@@ -110,6 +104,8 @@ class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
                     self._queue.task_done()
                     continue
+            finally:
+                await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
             data = await self._parse_resp(resp)
@@ -127,11 +123,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
                     if self._write_callback is not None:
                         self._write_callback(data)
-
-            try:
-                await self.update_cretry_budget(req_handler.url, resp.status)
-            except Exception:
-                pass
 
             self._queue.task_done()
 

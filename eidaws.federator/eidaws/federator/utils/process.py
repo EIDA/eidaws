@@ -93,7 +93,7 @@ def with_exception_handling(coro):
     return wrapper
 
 
-class BaseAsyncWorker(abc.ABC, ConfigMixin):
+class BaseAsyncWorker(abc.ABC, ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for worker implementations.
     """

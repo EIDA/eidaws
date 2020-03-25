@@ -130,7 +130,7 @@ def _split_stream_epoch(stream_epoch, num, default_endtime):
     return stream_epoch.slice(num=num, default_endtime=default_endtime)
 
 
-class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
+class _DataselectAsyncWorker(BaseAsyncWorker):
     """
     A worker task implementation for ``fdsnws-dataselect`` ``format=miniseed``.
     The worker implements splitting and aligning facilities.
@@ -397,16 +397,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker, ClientRetryBudgetMixin):
 
             if self._write_callback is not None:
                 self._write_callback(chunk)
-
-    async def update_cretry_budget(self, url, code):
-        """
-        Supress Redis errors.
-        """
-        try:
-            await super().update_cretry_budget(url, code)
-        except Exception:
-            pass
-
 
 BaseAsyncWorker.register(_DataselectAsyncWorker)
 

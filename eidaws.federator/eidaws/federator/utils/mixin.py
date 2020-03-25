@@ -158,7 +158,7 @@ class ClientRetryBudgetMixin:
         """
         return 100 * await self.stats_retry_budget_client.get_error_ratio(url)
 
-    @with_redis_exception_handling(propagate_exceptions=True)
+    @with_redis_exception_handling()
     async def update_cretry_budget(self, url, code):
         """
         Add ``code`` to the response code time series referenced by
