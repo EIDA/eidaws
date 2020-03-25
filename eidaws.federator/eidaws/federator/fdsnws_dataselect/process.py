@@ -398,6 +398,7 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
             if self._write_callback is not None:
                 self._write_callback(chunk)
 
+
 BaseAsyncWorker.register(_DataselectAsyncWorker)
 
 

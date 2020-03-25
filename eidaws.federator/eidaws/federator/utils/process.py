@@ -116,7 +116,7 @@ class BaseAsyncWorker(abc.ABC, ClientRetryBudgetMixin, ConfigMixin):
         if msg is not None:
             self.logger.warning(str(msg))
 
-    async def _handle_413(self, url, stream_epoch, **kwargs):
+    async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
         raise RequestProcessorError("HTTP code 413 handling not implemented.")
 
 

@@ -283,10 +283,11 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         try:
             resp = await req(**kwargs)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            self.logger.warning(
+            msg = (
                 f"Error while executing request: error={type(err)}, "
                 f"url={req_handler.url}, method={req_method}"
             )
+            self._handle_error(msg=msg)
             await self.update_cretry_budget(req_handler.url, 503)
 
             return None
@@ -301,11 +302,9 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
             resp.raise_for_status()
         except aiohttp.ClientResponseError:
             if resp.status == 413:
-                raise RequestProcessorError(
-                    "HTTP code 413 handling not implemented."
-                )
-
-            self.logger.warning(msg)
+                self._handle_413()
+            else:
+                self._handle_error(msg=msg)
 
             return None
         else:
@@ -313,7 +312,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                 if resp.status in FDSNWS_NO_CONTENT_CODES:
                     self.logger.info(msg)
                 else:
-                    self.logger.warning(msg)
+                    self._handle_error(msg=msg)
 
                 return None
 
