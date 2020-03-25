@@ -134,12 +134,6 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
     ACCESS = "any"
 
     def __init__(self, request, url_routing, **kwargs):
-        """
-        :param float retry_budget_client: Per client retry-budget in percent.
-            The value defines the cut-off error ratio above requests to
-            datacenters (DC) are dropped.
-        """
-
         self.request = request
 
         self._url_routing = url_routing
