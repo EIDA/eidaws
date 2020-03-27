@@ -15,12 +15,16 @@ from eidaws.federator.fdsnws_station_xml.route import (
     FED_STATION_XML_PATH_QUERY,
 )
 from eidaws.federator.utils.pytest_plugin import (
+    fdsnws_error_content_type,
     fdsnws_station_xml_content_type,
     eidaws_routing_path_query,
     load_data,
     make_federated_eida,
 )
-from eidaws.federator.utils.tests.server_mixin import _TestRoutingMixin
+from eidaws.federator.utils.tests.server_mixin import (
+    _TestKeywordParserMixin,
+    _TestRoutingMixin,
+)
 from eidaws.utils.settings import FDSNWS_STATION_PATH_QUERY
 
 
@@ -36,7 +40,7 @@ def xml_schema(load_data):
     return etree.XMLSchema(xmlschema_doc)
 
 
-class TestFDSNStationXMLServer(_TestRoutingMixin):
+class TestFDSNStationXMLServer(_TestKeywordParserMixin, _TestRoutingMixin):
     FED_PATH_QUERY = FED_STATION_XML_PATH_QUERY
     PATH_QUERY = FDSNWS_STATION_PATH_QUERY
 

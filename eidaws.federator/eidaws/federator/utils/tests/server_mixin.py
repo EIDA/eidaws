@@ -114,3 +114,69 @@ class _TestRoutingMixin:
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
+
+
+class _TestKeywordParserMixin:
+    """
+    Keyword parser specific tests for test classes providing both the property
+    ``FED_PATH_QUERY`` and a ``create_app`` method.
+    """
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            ("GET", {"foo": "bar"},),
+            ("POST", b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
+        ],
+    )
+    async def test_invalid_args(
+        self,
+        make_federated_eida,
+        fdsnws_error_content_type,
+        method,
+        params_or_data,
+    ):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 400
+        assert (
+            f"ValidationError: Invalid request query parameters: {{'foo'}}"
+            in await resp.text()
+        )
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
+        )
+
+    async def test_post_empty(
+        self, make_federated_eida, fdsnws_error_content_type,
+    ):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        data = b""
+        resp = await client.post(self.FED_PATH_QUERY, data=data)
+
+        assert resp.status == 400
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
+        )
+
+    async def test_post_equal(
+        self, make_federated_eida, fdsnws_error_content_type
+    ):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        data = b"="
+        resp = await client.post(self.FED_PATH_QUERY, data=data)
+
+        assert resp.status == 400
+        assert "ValidationError: RTFM :)." in await resp.text()
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
+        )

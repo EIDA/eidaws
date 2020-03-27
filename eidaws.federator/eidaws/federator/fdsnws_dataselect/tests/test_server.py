@@ -12,15 +12,19 @@ from eidaws.federator.fdsnws_dataselect.route import FED_DATASELECT_PATH_QUERY
 from eidaws.federator.utils.misc import get_config
 from eidaws.federator.utils.pytest_plugin import (
     fdsnws_dataselect_content_type,
+    fdsnws_error_content_type,
     eidaws_routing_path_query,
     load_data,
     make_federated_eida,
 )
-from eidaws.federator.utils.tests.server_mixin import _TestRoutingMixin
+from eidaws.federator.utils.tests.server_mixin import (
+    _TestKeywordParserMixin,
+    _TestRoutingMixin,
+)
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
 
-class TestFDSNDataselectServer(_TestRoutingMixin):
+class TestFDSNDataselectServer(_TestKeywordParserMixin, _TestRoutingMixin):
     FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
     PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
 

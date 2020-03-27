@@ -168,9 +168,13 @@ def fdsnws_station_xml_content_type():
 
 
 @pytest.fixture(scope="session")
+def fdsnws_error_content_type():
+    return "text/plain; charset=utf-8"
+
+
+@pytest.fixture(scope="session")
 def eidaws_routing_path_query():
     return "/eidaws/routing/1/query"
-
 
 @pytest.fixture
 def load_data(request):
