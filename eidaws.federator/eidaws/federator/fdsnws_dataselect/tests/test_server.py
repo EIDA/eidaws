@@ -18,13 +18,16 @@ from eidaws.federator.utils.pytest_plugin import (
     make_federated_eida,
 )
 from eidaws.federator.utils.tests.server_mixin import (
+    _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
 )
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
 
-class TestFDSNDataselectServer(_TestKeywordParserMixin, _TestRoutingMixin):
+class TestFDSNDataselectServer(
+    _TestCORSMixin, _TestKeywordParserMixin, _TestRoutingMixin
+):
     FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
     PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
 

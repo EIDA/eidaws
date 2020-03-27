@@ -22,6 +22,7 @@ from eidaws.federator.utils.pytest_plugin import (
     make_federated_eida,
 )
 from eidaws.federator.utils.tests.server_mixin import (
+    _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
 )
@@ -40,7 +41,9 @@ def xml_schema(load_data):
     return etree.XMLSchema(xmlschema_doc)
 
 
-class TestFDSNStationXMLServer(_TestKeywordParserMixin, _TestRoutingMixin):
+class TestFDSNStationXMLServer(
+    _TestCORSMixin, _TestKeywordParserMixin, _TestRoutingMixin
+):
     FED_PATH_QUERY = FED_STATION_XML_PATH_QUERY
     PATH_QUERY = FDSNWS_STATION_PATH_QUERY
 

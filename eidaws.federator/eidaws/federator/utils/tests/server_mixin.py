@@ -180,3 +180,76 @@ class _TestKeywordParserMixin:
             "Content-Type" in resp.headers
             and resp.headers["Content-Type"] == fdsnws_error_content_type
         )
+
+
+class _TestCORSMixin:
+    """
+    CORS related tests for test classes providing both the property
+    ``FED_PATH_QUERY`` and a ``create_app`` method.
+    """
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            ("GET", {"foo": "bar"},),
+            ("POST", b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
+        ],
+    )
+    async def test_get_cors_simple(
+        self, make_federated_eida, method, params_or_data
+    ):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        origin = "http://foo.example.com"
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(
+            self.FED_PATH_QUERY, headers={"Origin": origin}, **kwargs
+        )
+
+        assert resp.status == 400
+        assert (
+            "Access-Control-Expose-Headers" in resp.headers
+            and resp.headers["Access-Control-Expose-Headers"] == ""
+        )
+        assert (
+            "Access-Control-Allow-Origin" in resp.headers
+            and resp.headers["Access-Control-Allow-Origin"] == origin
+        )
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_cors_preflight(self, make_federated_eida, method):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        origin = "http://foo.example.com"
+        headers = {"Origin": origin, "Access-Control-Request-Method": method}
+
+        resp = await client.options(self.FED_PATH_QUERY, headers=headers)
+
+        assert resp.status == 200
+        assert (
+            "Access-Control-Allow-Methods" in resp.headers
+            and resp.headers["Access-Control-Allow-Methods"] == method
+        )
+        assert (
+            "Access-Control-Allow-Origin" in resp.headers
+            and resp.headers["Access-Control-Allow-Origin"] == origin
+        )
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_cors_preflight_forbidden(self, make_federated_eida, method):
+        client, _, _ = await make_federated_eida(self.create_app())
+
+        origin = "http://foo.example.com"
+
+        resp = await client.options(
+            self.FED_PATH_QUERY, headers={"Origin": origin}
+        )
+        assert resp.status == 403
+
+        resp = await client.options(
+            self.FED_PATH_QUERY,
+            headers={"Access-Control-Request-Method": method},
+        )
+        assert resp.status == 403
