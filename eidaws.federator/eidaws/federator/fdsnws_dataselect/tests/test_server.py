@@ -2,6 +2,7 @@
 
 import copy
 import functools
+import pytest
 
 from aiohttp import web
 
@@ -15,12 +16,12 @@ from eidaws.federator.utils.pytest_plugin import (
     load_data,
     make_federated_eida,
 )
-
-_PATH_QUERY = FED_DATASELECT_PATH_QUERY
+from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
 
 class TestFDSNDataselectServer:
-    FDSNWS_DATASELECT_PATH_QUERY = "/fdsnws/dataselect/1/query"
+    FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
+    PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
 
     @staticmethod
     def get_default_config():
@@ -115,15 +116,33 @@ class TestFDSNDataselectServer:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
-    async def test_get_single_stream_epoch(
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-05",
+                },
+            ),
+            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-05",),
+        ],
+    )
+    async def test_single_stream_epoch(
         self,
         make_federated_eida,
+        eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
-        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
 
-        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
@@ -143,8 +162,8 @@ class TestFDSNDataselectServer:
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -161,16 +180,10 @@ class TestFDSNDataselectServer:
             mocked_endpoint_config=mocked_endpoints,
         )
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-05",
-        }
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
 
-        resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 200
         assert (
             "Content-Type" in resp.headers
@@ -185,15 +198,39 @@ class TestFDSNDataselectServer:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
-    async def test_get_multi_stream_epoch(
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "DAVOX,HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-05",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"CH HASLI -- LHZ 2019-01-01 2019-01-05\n"
+                    b"CH DAVOX -- LHZ 2019-01-01 2019-01-05"
+                ),
+            ),
+        ],
+    )
+    async def test_multi_stream_epoch(
         self,
         make_federated_eida,
         fdsnws_dataselect_content_type,
         load_data,
         eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
 
-        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
@@ -214,8 +251,8 @@ class TestFDSNDataselectServer:
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -224,8 +261,8 @@ class TestFDSNDataselectServer:
                     ),
                 ),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -242,16 +279,10 @@ class TestFDSNDataselectServer:
             mocked_endpoint_config=mocked_endpoints,
         )
 
-        params = {
-            "net": "CH",
-            "sta": "DAVOX,HASLI",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-05",
-        }
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
 
-        resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 200
         assert (
             "Content-Type" in resp.headers
@@ -264,14 +295,32 @@ class TestFDSNDataselectServer:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
-    async def test_get_split_with_overlap(
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-10",
+                },
+            ),
+            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-10",),
+        ],
+    )
+    async def test_split_with_overlap(
         self,
         make_federated_eida,
+        eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
-        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
-        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
@@ -290,14 +339,10 @@ class TestFDSNDataselectServer:
 
         mocked_endpoints = {
             "eida.ethz.ch": [
+                (self.PATH_QUERY, "GET", web.Response(status=413),),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=413),
-                ),
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -306,8 +351,8 @@ class TestFDSNDataselectServer:
                     ),
                 ),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
@@ -322,16 +367,10 @@ class TestFDSNDataselectServer:
             mocked_endpoint_config=mocked_endpoints,
         )
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-10",
-        }
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
 
-        resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 200
         assert (
             "Content-Type" in resp.headers
@@ -344,14 +383,32 @@ class TestFDSNDataselectServer:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
-    async def test_get_split_without_overlap(
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-01T00:10:00",
+                },
+            ),
+            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-01T00:10:00",),
+        ],
+    )
+    async def test_split_without_overlap(
         self,
         make_federated_eida,
+        eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
-        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
-        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
@@ -370,14 +427,10 @@ class TestFDSNDataselectServer:
 
         mocked_endpoints = {
             "eida.ethz.ch": [
+                (self.PATH_QUERY, "GET", web.Response(status=413),),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=413),
-                ),
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -386,8 +439,8 @@ class TestFDSNDataselectServer:
                     ),
                 ),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -404,16 +457,10 @@ class TestFDSNDataselectServer:
             mocked_endpoint_config=mocked_endpoints,
         )
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-01T00:10:00",
-        }
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
 
-        resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 200
         assert (
             "Content-Type" in resp.headers
@@ -428,15 +475,33 @@ class TestFDSNDataselectServer:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
-    async def test_get_multi_split_with_overlap(
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-20",
+                },
+            ),
+            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-20",),
+        ],
+    )
+    async def test_split_with_overlap(
         self,
         make_federated_eida,
         fdsnws_dataselect_content_type,
         load_data,
         eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
 
-        method = "GET"
         mocked_routing = {
             "localhost": [
                 (
@@ -455,19 +520,11 @@ class TestFDSNDataselectServer:
 
         mocked_endpoints = {
             "eida.ethz.ch": [
+                (self.PATH_QUERY, "GET", web.Response(status=413),),
+                (self.PATH_QUERY, "GET", web.Response(status=413),),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=413),
-                ),
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=413),
-                ),
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data(
@@ -476,29 +533,25 @@ class TestFDSNDataselectServer:
                     ),
                 ),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
                     ),
                 ),
+                (self.PATH_QUERY, "GET", web.Response(status=413),),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=413),
-                ),
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-10.2019-01-15"),
                     ),
                 ),
                 (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
+                    self.PATH_QUERY,
+                    "GET",
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-15.2019-01-20"),
@@ -513,16 +566,10 @@ class TestFDSNDataselectServer:
             mocked_endpoint_config=mocked_endpoints,
         )
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-20",
-        }
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
 
-        resp = await client.get(_PATH_QUERY, params=params)
         assert resp.status == 200
         assert (
             "Content-Type" in resp.headers
