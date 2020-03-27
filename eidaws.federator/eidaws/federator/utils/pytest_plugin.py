@@ -176,7 +176,7 @@ def eidaws_routing_path_query():
 def load_data(request):
     path_data = pathlib.Path(request.fspath.dirname) / "data"
 
-    def _load_data(fname):
-        return (path_data / fname).read_bytes()
+    def _load_data(fname, reader='read_bytes'):
+        return getattr((path_data / fname), reader)()
 
     return _load_data
