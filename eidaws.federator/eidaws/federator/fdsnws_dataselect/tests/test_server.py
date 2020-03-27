@@ -16,10 +16,11 @@ from eidaws.federator.utils.pytest_plugin import (
     load_data,
     make_federated_eida,
 )
+from eidaws.federator.utils.tests.server_mixin import _TestRoutingMixin
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
 
-class TestFDSNDataselectServer:
+class TestFDSNDataselectServer(_TestRoutingMixin):
     FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
     PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
 
@@ -37,84 +38,6 @@ class TestFDSNDataselectServer:
             config_dict = cls.get_default_config()
 
         return functools.partial(create_app, config_dict)
-
-    async def test_get_no_route(
-        self, make_federated_eida, eidaws_routing_path_query
-    ):
-        method = "GET"
-        mocked_routing = {
-            "localhost": [
-                (eidaws_routing_path_query, method, web.Response(status=204,),)
-            ]
-        }
-        client, faked_routing, faked_endpoints = await make_federated_eida(
-            self.create_app(), mocked_routing_config=mocked_routing,
-        )
-
-        params = {
-            "net": "CH",
-            "sta": "FOO",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-05",
-        }
-
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 204
-
-        faked_routing.assert_no_unused_routes()
-
-    async def test_get_no_data(
-        self, make_federated_eida, eidaws_routing_path_query
-    ):
-        method = "GET"
-        mocked_routing = {
-            "localhost": [
-                (
-                    eidaws_routing_path_query,
-                    method,
-                    web.Response(
-                        status=200,
-                        text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH FOO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
-                        ),
-                    ),
-                )
-            ]
-        }
-
-        mocked_endpoints = {
-            "eida.ethz.ch": [
-                (
-                    self.FDSNWS_DATASELECT_PATH_QUERY,
-                    method,
-                    web.Response(status=204,),
-                ),
-            ]
-        }
-
-        client, faked_routing, faked_endpoints = await make_federated_eida(
-            self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
-        )
-
-        params = {
-            "net": "CH",
-            "sta": "FOO",
-            "loc": "--",
-            "cha": "LHZ",
-            "start": "2019-01-01",
-            "end": "2019-01-05",
-        }
-
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 204
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
