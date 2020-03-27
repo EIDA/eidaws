@@ -163,6 +163,11 @@ def fdsnws_dataselect_content_type():
 
 
 @pytest.fixture(scope="session")
+def fdsnws_station_xml_content_type():
+    return "application/xml"
+
+
+@pytest.fixture(scope="session")
 def eidaws_routing_path_query():
     return "/eidaws/routing/1/query"
 
