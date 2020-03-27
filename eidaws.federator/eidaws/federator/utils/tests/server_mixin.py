@@ -4,13 +4,6 @@ import pytest
 
 from aiohttp import web
 
-from eidaws.federator.utils.pytest_plugin import (
-    fdsnws_station_xml_content_type,
-    eidaws_routing_path_query,
-    load_data,
-    make_federated_eida,
-)
-
 # TODO(damb): Test if routing returns 500, ClientError etc
 
 
