@@ -272,7 +272,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -356,7 +356,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -376,6 +376,310 @@ class TestFDSNStationXMLServer(
                     ),
                 )
             ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
+        )
+
+        xml = etree.parse(io.BytesIO(await resp.read()))
+        assert xml_schema.validate(xml)
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "sta": "DBN,HGN",
+                    "cha": "BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "xml",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"level=channel\nformat=xml\n"
+                    b"NL HGN * BHZ 2013-11-10 2013-11-11\n"
+                    b"NL DBN * BHZ 2013-11-10 2013-11-11\n"
+                ),
+            ),
+        ],
+    )
+    async def test_single_net_multi_stas(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        fdsnws_station_xml_content_type,
+        xml_schema,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.DBN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
+        )
+
+        xml = etree.parse(io.BytesIO(await resp.read()))
+        assert xml_schema.validate(xml)
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "sta": "HGN",
+                    "cha": "BHN,BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "xml",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"level=channel\nformat=xml\n"
+                    b"NL HGN * BHN 2013-11-10 2013-11-11\n"
+                    b"NL HGN * BHZ 2013-11-10 2013-11-11\n"
+                ),
+            ),
+        ],
+    )
+    async def test_single_net_single_sta_multi_chas(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        fdsnws_station_xml_content_type,
+        xml_schema,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL HGN -- BHN 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHN.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
+        )
+
+        xml = etree.parse(io.BytesIO(await resp.read()))
+        assert xml_schema.validate(xml)
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH,NL",
+                    "sta": "HASLI,HGN",
+                    "cha": "BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "xml",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"level=channel\nformat=xml\n"
+                    b"CH HASLI * BHZ 2013-11-10 2013-11-11\n"
+                    b"NL DBN * BHZ 2013-11-10 2013-11-11\n"
+                ),
+            ),
+        ],
+    )
+    async def test_multi_nets_multi_dcs(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        fdsnws_station_xml_content_type,
+        xml_schema,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/station/1/query\n"
+                            "CH  -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "\n"
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "CH.HASLI..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ],
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ],
         }
 
         client, faked_routing, faked_endpoints = await make_federated_eida(
