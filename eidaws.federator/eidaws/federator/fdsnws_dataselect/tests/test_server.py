@@ -158,9 +158,9 @@ class TestFDSNDataselectServer(
     async def test_multi_stream_epoch(
         self,
         make_federated_eida,
+        eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
-        eidaws_routing_path_query,
         method,
         params_or_data,
     ):
@@ -225,6 +225,105 @@ class TestFDSNDataselectServer(
         data = await resp.read()
 
         assert data == load_data("CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05")
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH,GR",
+                    "sta": "BFO,HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-05",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"GR BFO -- LHZ 2019-01-01 2019-01-05\n"
+                    b"CH HASLI -- LHZ 2019-01-01 2019-01-05"
+                ),
+            ),
+        ],
+    )
+    async def test_multi_endpoints(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        fdsnws_dataselect_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.bgr.de/fdsnws/dataselect/1/query\n"
+                            "GR BFO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "\n"
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        mocked_endpoints = {
+            "eida.bgr.de": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        body=load_data("GR.BFO..LHZ.2019-01-01.2019-01-05"),
+                    ),
+                ),
+            ],
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+                        ),
+                    ),
+                ),
+            ],
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 200
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
+        )
+        data = await resp.read()
+
+        assert data == load_data("CH,GR.BFO,HASLI..LHZ.2019-01-01.2019-01-05")
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
