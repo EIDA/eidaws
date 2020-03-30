@@ -253,3 +253,337 @@ class _TestCORSMixin:
             headers={"Access-Control-Request-Method": method},
         )
         assert resp.status == 403
+
+
+class _TestCommonServerConfig:
+    """
+    Server configuration tests for test classes providing the properties
+    ``FED_PATH_QUERY`` and ``PATH_QUERY`` and both a ``create_app`` and a
+    ``get_config`` method.
+    """
+
+    async def test_client_max_size(
+        self, make_federated_eida,
+    ):
+
+        # avoid large POST requests
+        client_max_size = 32
+        config_dict = self.get_config(**{"client_max_size": client_max_size})
+
+        client, _, _ = await make_federated_eida(
+            self.create_app(config_dict=config_dict)
+        )
+
+        data = b"level=channel\n" b"\n" b"CH * * * 2020-01-01 2020-01-02"
+
+        assert client_max_size < len(data)
+
+        resp = await client.post(self.FED_PATH_QUERY, data=data)
+
+        assert resp.status == 413
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_max_stream_epoch_duration(
+        self, make_federated_eida, eidaws_routing_path_query, method,
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(**{"max_stream_epoch_duration": 1})
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHA 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "example.com": [
+                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+            ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        _method = method.lower()
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHA",
+                "start": "2020-01-01",
+                "end": "2020-01-02",
+            }
+            if _method == "get"
+            else b"NET STA LOC CHA 2020-01-01 2020-01-02"
+        )
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 204
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHA 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        client, faked_routing, _ = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+        )
+
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHA",
+                "start": "2020-01-01",
+                "end": "2020-01-02T00:00:01",
+            }
+            if _method == "get"
+            else b"NET STA LOC CHA 2020-01-01 2020-01-02T00:00:01"
+        )
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 413
+
+        faked_routing.assert_no_unused_routes()
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_max_total_stream_epoch_duration(
+        self, make_federated_eida, eidaws_routing_path_query, method
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(**{"max_total_stream_epoch_duration": 3})
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHAE 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "example.com": [
+                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+            ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        _method = method.lower()
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHA?",
+                "start": "2020-01-01",
+                "end": "2020-01-02",
+            }
+            if _method == "get"
+            else b"NET STA LOC CHA? 2020-01-01 2020-01-02"
+        )
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 204
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHAE 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        client, faked_routing, _ = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+        )
+
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHA?",
+                "start": "2020-01-01",
+                "end": "2020-01-02T00:00:01",
+            }
+            if _method == "get"
+            else b"NET STA LOC CHA? 2020-01-01 2020-01-02T00:00:01"
+        )
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 413
+
+        faked_routing.assert_no_unused_routes()
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    async def test_max_stream_epoch_durations(
+        self, make_federated_eida, eidaws_routing_path_query, method
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(
+            **{
+                "max_stream_epoch_durations": 2,
+                "max_total_stream_epoch_duration": 3,
+            }
+        )
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "example.com": [
+                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+            ]
+        }
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        _method = method.lower()
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHAZ",
+                "start": "2020-01-01",
+                "end": "2020-01-03",
+            }
+            if _method == "get"
+            else b"NET STA LOC CHAZ 2020-01-01 2020-01-03"
+        )
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 204
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://example.com" + self.PATH_QUERY + "\n"
+                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        client, faked_routing, _ = await make_federated_eida(
+            self.create_app(config_dict=config_dict),
+            mocked_routing_config=mocked_routing,
+        )
+
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+        params_or_data = (
+            {
+                "net": "NET",
+                "sta": "STA",
+                "loc": "LOC",
+                "cha": "CHAN,CHAZ",
+                "start": "2020-01-01",
+                "end": "2020-01-03",
+            }
+            if _method == "get"
+            else (
+                b"NET STA LOC CHAN 2020-01-01 2020-01-03T00:00:00\n"
+                b"NET STA LOC CHAZ 2020-01-01 2020-01-03T00:00:00"
+            )
+        )
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        assert resp.status == 413
+
+        faked_routing.assert_no_unused_routes()

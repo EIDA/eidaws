@@ -22,6 +22,7 @@ from eidaws.federator.utils.pytest_plugin import (
     make_federated_eida,
 )
 from eidaws.federator.utils.tests.server_mixin import (
+    _TestCommonServerConfig,
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
@@ -42,15 +43,18 @@ def xml_schema(load_data):
 
 
 class TestFDSNStationXMLServer(
-    _TestCORSMixin, _TestKeywordParserMixin, _TestRoutingMixin
+    _TestCommonServerConfig,
+    _TestCORSMixin,
+    _TestKeywordParserMixin,
+    _TestRoutingMixin,
 ):
     FED_PATH_QUERY = FED_STATION_XML_PATH_QUERY
     PATH_QUERY = FDSNWS_STATION_PATH_QUERY
 
     @staticmethod
-    def get_default_config():
+    def get_config(**kwargs):
         config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict["pool_size"] = 1
+        config_dict.update(kwargs)
 
         return get_config(SERVICE_ID, defaults=config_dict)
 
@@ -58,7 +62,7 @@ class TestFDSNStationXMLServer(
     def create_app(cls, config_dict=None):
 
         if config_dict is None:
-            config_dict = cls.get_default_config()
+            config_dict = cls.get_config(**{"pool_size": 1})
 
         return functools.partial(create_app, config_dict)
 
