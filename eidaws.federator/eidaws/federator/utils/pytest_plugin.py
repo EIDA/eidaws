@@ -10,6 +10,8 @@ from aiohttp import web
 from aiohttp.resolver import DefaultResolver
 from aiohttp.test_utils import unused_port
 
+from eidaws.federator.utils.misc import RedisError
+
 
 class FakeResolver:
     _LOCAL_HOST = {
@@ -152,7 +154,12 @@ def make_federated_eida(aiohttp_client):
         endpoint_connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
         app["endpoint_http_conn_pool"] = endpoint_connector
 
-        return await aiohttp_client(app), faked_routing, faked_endpoints
+        try:
+            client = await aiohttp_client(app)
+        except RedisError as err:
+            pytest.skip(str(err))
+
+        return client, faked_routing, faked_endpoints
 
     return _make_federated_eida
 
