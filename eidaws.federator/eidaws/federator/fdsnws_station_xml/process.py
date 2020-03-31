@@ -274,12 +274,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         )
         req_handler.format = _QUERY_FORMAT
 
-        req = (
-            req_handler.get(self._session)
-            if req_method == "GET"
-            else req_handler.post(self._session)
-        )
-
+        req = getattr(req_handler, req_method.lower())(self._session)
         try:
             resp = await req(**kwargs)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:

@@ -38,6 +38,8 @@ FED_DEFAULT_REDIS_POOL_TIMEOUT = None
 
 FED_DEFAULT_POOL_SIZE = None
 
+# Default request method for endpoint requests
+FED_DEFAULT_REQUEST_METHOD = "GET"
 # Per client retry-budget cut-off error ratio in percent before requests to
 # endpoints are being dropped.
 FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES = 1.0

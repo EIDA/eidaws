@@ -297,7 +297,11 @@ class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
             f"Number of (demuxed) routes received: {len(routes)}"
         )
 
-        response = await self._make_response(routes, timeout=timeout)
+        response = await self._make_response(
+            routes,
+            req_method=self.config["endpoint_request_method"],
+            timeout=timeout,
+        )
 
         await asyncio.shield(self.finalize())
 

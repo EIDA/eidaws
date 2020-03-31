@@ -62,12 +62,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
             )
             req_handler.format = _QUERY_FORMAT
 
-            req = (
-                req_handler.get(self._session)
-                if req_method == "GET"
-                else req_handler.post(self._session)
-            )
-
+            req = getattr(req_handler, req_method.lower())(self._session)
             try:
                 resp = await req(**kwargs)
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
@@ -187,7 +182,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         await response.write(header + b"\n")
         self.dump_to_cache_buffer(header + b"\n")
 
-
     async def _make_response(
         self,
         routes,
@@ -200,6 +194,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
         """
         Return a federated response.
         """
+
         async def dispatch(queue, routes, **kwargs):
             """
             Dispatch jobs.

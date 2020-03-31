@@ -20,6 +20,7 @@ from eidaws.federator.utils.parser import setup_parser_error_handler
 from eidaws.federator.settings import (
     FED_DEFAULT_URL_ROUTING,
     FED_DEFAULT_NETLOC_PROXY,
+    FED_DEFAULT_REQUEST_METHOD,
     FED_DEFAULT_ENDPOINT_CONN_LIMIT,
     FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
     FED_DEFAULT_TIMEOUT_CONNECT,
@@ -54,6 +55,10 @@ config_schema = {
             "pattern": "^https?://",
         },
         "routing_connection_limit": {"type": "integer", "minimum": 1},
+        "endpoint_request_method": {
+            "type": "string",
+            "pattern": "^(GET|POST)$",
+        },
         "endpoint_connection_limit": {"type": "integer", "minimum": 1},
         "endpoint_connection_limit_per_host": {
             "type": "integer",
@@ -145,6 +150,9 @@ def default_config():
     default_config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
     default_config.setdefault(
         "routing_connection_limit", FED_DEFAULT_ROUTING_CONN_LIMIT
+    )
+    default_config.setdefault(
+        "endpoint_request_method", FED_DEFAULT_REQUEST_METHOD
     )
     default_config.setdefault(
         "endpoint_connection_limit", FED_DEFAULT_ENDPOINT_CONN_LIMIT
