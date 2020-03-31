@@ -15,10 +15,7 @@ from eidaws.federator.settings import (
     FED_DATASELECT_MINISEED_SERVICE_ID,
 )
 from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import (
-    CachingMixin,
-    ClientRetryBudgetMixin,
-)
+from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
     with_exception_handling,
     BaseRequestProcessor,
