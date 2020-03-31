@@ -197,6 +197,22 @@ def load_data(request):
     return _load_data
 
 
+@pytest.fixture(
+    params=[
+        {"pool_size": 1, "endpoint_request_method": "GET"},
+        {"pool_size": 1, "endpoint_request_method": "POST"},
+    ],
+    ids=["req_method=GET", "req_method=POST"]
+)
+def server_config(request):
+    def _get_config(config_factory, **kwargs):
+        kwargs.update(request.param)
+        config = config_factory(**kwargs)
+        return config
+
+    return _get_config
+
+
 @pytest.fixture
 def tester(make_federated_eida, content_tester):
     async def _tester(

@@ -13,11 +13,12 @@ from eidaws.federator.fdsnws_station_text.route import (
 )
 from eidaws.federator.utils.misc import get_config
 from eidaws.federator.utils.pytest_plugin import (
+    eidaws_routing_path_query,
     fdsnws_error_content_type,
     fdsnws_station_text_content_type,
-    eidaws_routing_path_query,
     load_data,
     make_federated_eida,
+    server_config,
     tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
@@ -48,6 +49,8 @@ class TestFDSNStationTextServer(
     FED_PATH_QUERY = FED_STATION_TEXT_PATH_QUERY
     PATH_QUERY = FDSNWS_STATION_PATH_QUERY
 
+    _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
+
     @staticmethod
     def get_config(**kwargs):
         config_dict = copy.deepcopy(DEFAULT_CONFIG)
@@ -59,9 +62,13 @@ class TestFDSNStationTextServer(
     def create_app(cls, config_dict=None):
 
         if config_dict is None:
-            config_dict = cls.get_config(**{"pool_size": 1})
+            config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
+
+    @staticmethod
+    def lookup_config(key, config_dict):
+        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -84,6 +91,7 @@ class TestFDSNStationTextServer(
     )
     async def test_single_sncl_level_network(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_station_text_content_type,
@@ -91,7 +99,6 @@ class TestFDSNStationTextServer(
         method,
         params_or_data,
     ):
-
         mocked_routing = {
             "localhost": [
                 (
@@ -108,11 +115,12 @@ class TestFDSNStationTextServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
                         text=load_data(
@@ -133,7 +141,7 @@ class TestFDSNStationTextServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -161,6 +169,7 @@ class TestFDSNStationTextServer(
     )
     async def test_single_sncl_level_station(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_station_text_content_type,
@@ -185,11 +194,12 @@ class TestFDSNStationTextServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
                         text=load_data(
@@ -210,7 +220,7 @@ class TestFDSNStationTextServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -239,6 +249,7 @@ class TestFDSNStationTextServer(
     )
     async def test_single_sncl_level_station(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_station_text_content_type,
@@ -263,11 +274,12 @@ class TestFDSNStationTextServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
                         text=load_data(
@@ -288,7 +300,7 @@ class TestFDSNStationTextServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -321,6 +333,7 @@ class TestFDSNStationTextServer(
     )
     async def test_single_net_multi_stas(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_station_text_content_type,
@@ -344,11 +357,14 @@ class TestFDSNStationTextServer(
                 )
             ]
         }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config("endpoint_request_method", config_dict)
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         text=load_data(
@@ -359,7 +375,7 @@ class TestFDSNStationTextServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         text=load_data(
@@ -380,7 +396,7 @@ class TestFDSNStationTextServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -413,6 +429,7 @@ class TestFDSNStationTextServer(
     )
     async def test_multi_nets_multi_dcs(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_station_text_content_type,
@@ -438,11 +455,14 @@ class TestFDSNStationTextServer(
                 )
             ]
         }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config("endpoint_request_method", config_dict)
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         text=load_data(
@@ -455,7 +475,7 @@ class TestFDSNStationTextServer(
             "www.orfeus-eu.org": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         text=load_data(
@@ -476,7 +496,7 @@ class TestFDSNStationTextServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,

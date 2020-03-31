@@ -16,6 +16,7 @@ from eidaws.federator.utils.pytest_plugin import (
     eidaws_routing_path_query,
     load_data,
     make_federated_eida,
+    server_config,
     tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
@@ -45,6 +46,8 @@ class TestFDSNDataselectServer(
     FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
     PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
 
+    _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
+
     @staticmethod
     def get_config(**kwargs):
         config_dict = copy.deepcopy(DEFAULT_CONFIG)
@@ -56,9 +59,13 @@ class TestFDSNDataselectServer(
     def create_app(cls, config_dict=None):
 
         if config_dict is None:
-            config_dict = cls.get_config(**{"pool_size": 1})
+            config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
+
+    @staticmethod
+    def lookup_config(key, config_dict):
+        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -79,6 +86,7 @@ class TestFDSNDataselectServer(
     )
     async def test_single_stream_epoch(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
@@ -103,11 +111,12 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
                         body=load_data(
@@ -127,7 +136,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -158,6 +167,7 @@ class TestFDSNDataselectServer(
     )
     async def test_multi_stream_epoch(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
@@ -183,11 +193,15 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -197,7 +211,7 @@ class TestFDSNDataselectServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -217,7 +231,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -248,6 +262,7 @@ class TestFDSNDataselectServer(
     )
     async def test_multi_endpoints(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
@@ -275,11 +290,15 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.bgr.de": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data("GR.BFO..LHZ.2019-01-01.2019-01-05"),
@@ -289,7 +308,7 @@ class TestFDSNDataselectServer(
             "eida.ethz.ch": [
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -309,7 +328,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -334,6 +353,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_with_overlap(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
@@ -357,12 +377,16 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (self.PATH_QUERY, "GET", web.Response(status=413),),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -372,7 +396,7 @@ class TestFDSNDataselectServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
