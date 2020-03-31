@@ -20,6 +20,7 @@ from eidaws.federator.utils.pytest_plugin import (
     eidaws_routing_path_query,
     load_data,
     make_federated_eida,
+    tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
     _TestCommonServerConfig,
@@ -40,6 +41,15 @@ def xml_schema(load_data):
     xsd = load_data("fdsn-station-1.0.xsd")
     xmlschema_doc = etree.parse(io.BytesIO(xsd))
     return etree.XMLSchema(xmlschema_doc)
+
+
+@pytest.fixture
+def content_tester(xml_schema):
+    async def _content_tester(resp, expected=None):
+        xml = etree.parse(io.BytesIO(await resp.read()))
+        assert xml_schema.validate(xml)
+
+    return _content_tester
 
 
 class TestFDSNStationXMLServer(
@@ -87,10 +97,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_sncl_level_network(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -126,27 +135,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -170,10 +171,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_sncl_level_station(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -210,27 +210,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -255,10 +247,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_sncl_level_channel(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -294,27 +285,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -339,10 +322,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_sncl_level_response(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -378,27 +360,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -427,10 +401,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_net_multi_stas(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -478,27 +451,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -527,10 +492,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_single_net_single_sta_multi_chas(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -578,27 +542,19 @@ class TestFDSNStationXMLServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -627,10 +583,9 @@ class TestFDSNStationXMLServer(
     )
     async def test_multi_nets_multi_dcs(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_station_xml_content_type,
-        xml_schema,
         load_data,
         method,
         params_or_data,
@@ -682,24 +637,16 @@ class TestFDSNStationXMLServer(
             ],
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_xml_content_type,
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_xml_content_type
-        )
-
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()

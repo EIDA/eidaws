@@ -16,6 +16,7 @@ from eidaws.federator.utils.pytest_plugin import (
     eidaws_routing_path_query,
     load_data,
     make_federated_eida,
+    tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
     _TestCommonServerConfig,
@@ -24,6 +25,15 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestRoutingMixin,
 )
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
+
+
+@pytest.fixture
+def content_tester(load_data):
+    async def _content_tester(resp, expected=None):
+        assert expected is not None
+        assert await resp.read() == load_data(expected)
+
+    return _content_tester
 
 
 class TestFDSNDataselectServer(
@@ -69,7 +79,7 @@ class TestFDSNDataselectServer(
     )
     async def test_single_stream_epoch(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
@@ -108,29 +118,20 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data(
-            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-        )
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -157,7 +158,7 @@ class TestFDSNDataselectServer(
     )
     async def test_multi_stream_epoch(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
@@ -207,27 +208,20 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data("CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05")
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -254,7 +248,7 @@ class TestFDSNDataselectServer(
     )
     async def test_multi_endpoints(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
@@ -306,27 +300,20 @@ class TestFDSNDataselectServer(
             ],
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH,GR.BFO,HASLI..LHZ.2019-01-01.2019-01-05",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data("CH,GR.BFO,HASLI..LHZ.2019-01-01.2019-01-05")
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -347,7 +334,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_with_overlap(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
@@ -394,27 +381,20 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-10",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data("CH.HASLI..LHZ.2019-01-01.2019-01-10")
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -435,7 +415,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_without_overlap(
         self,
-        make_federated_eida,
+        tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
         load_data,
@@ -484,29 +464,20 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-01T00:10:00",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data(
-            "CH.HASLI..LHZ.2019-01-01.2019-01-01T00:10:00"
-        )
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -527,7 +498,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_with_overlap(
         self,
-        make_federated_eida,
+        tester,
         fdsnws_dataselect_content_type,
         load_data,
         eidaws_routing_path_query,
@@ -593,24 +564,17 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        client, faked_routing, faked_endpoints = await make_federated_eida(
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-20",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
             self.create_app(),
-            mocked_routing_config=mocked_routing,
-            mocked_endpoint_config=mocked_endpoints,
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_dataselect_content_type
-        )
-        data = await resp.read()
-
-        assert data == load_data("CH.HASLI..LHZ.2019-01-01.2019-01-20")
-
-        faked_routing.assert_no_unused_routes()
-        faked_endpoints.assert_no_unused_routes()

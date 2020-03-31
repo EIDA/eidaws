@@ -175,8 +175,11 @@ def fdsnws_station_xml_content_type():
 
 
 @pytest.fixture(scope="session")
-def fdsnws_error_content_type():
+def fdsnws_station_text_content_type():
     return "text/plain; charset=utf-8"
+
+
+fdsnws_error_content_type = fdsnws_station_text_content_type
 
 
 @pytest.fixture(scope="session")
@@ -191,3 +194,40 @@ def load_data(request):
         return getattr((path_data / fname), reader)()
 
     return _load_data
+
+
+@pytest.fixture
+def tester(make_federated_eida, content_tester):
+    async def _tester(
+        path,
+        method,
+        params_or_data,
+        app_factory,
+        mocked_routing,
+        mocked_endpoints,
+        expected,
+    ):
+
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            app_factory(),
+            mocked_routing_config=mocked_routing,
+            mocked_endpoint_config=mocked_endpoints,
+        )
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(path, **kwargs)
+
+        assert resp.status == expected["status"]
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == expected["content_type"]
+        )
+
+        await content_tester(resp, expected=expected.get("result"))
+
+        faked_routing.assert_no_unused_routes()
+        faked_endpoints.assert_no_unused_routes()
+
+    return _tester
+
