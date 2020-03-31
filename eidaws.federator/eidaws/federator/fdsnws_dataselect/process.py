@@ -428,18 +428,6 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
         )
         await response.prepare(self.request)
 
-    async def _dispatch(self, queue, routes, **kwargs):
-        """
-        Dispatch jobs.
-        """
-
-        # granular request strategy
-        for route in routes:
-            self.logger.debug(f"Creating job for route: {route!r}")
-
-            job = (route, self.query_params)
-            await queue.put(job)
-
     async def _make_response(
         self,
         routes,
@@ -453,12 +441,24 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
         Return a federated response.
         """
 
+        async def dispatch(queue, routes, **kwargs):
+            """
+            Dispatch jobs.
+            """
+
+            # granular request strategy
+            for route in routes:
+                self.logger.debug(f"Creating job for route: {route!r}")
+
+                job = (route, self.query_params)
+                await queue.put(job)
+
         queue = asyncio.Queue()
         response = web.StreamResponse()
 
         lock = asyncio.Lock()
 
-        await self._dispatch(queue, routes)
+        await dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
             connector=self.request.config_dict["endpoint_http_conn_pool"],

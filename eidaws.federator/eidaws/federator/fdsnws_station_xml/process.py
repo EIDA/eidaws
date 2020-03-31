@@ -372,21 +372,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         await response.write(header)
         self.dump_to_cache_buffer(header)
 
-    async def _dispatch(self, queue, routes, **kwargs):
-        """
-        Dispatch jobs.
-        """
-
-        grouped_routes = group_routes_by(routes, key="network")
-
-        for net, _routes in grouped_routes.items():
-            self.logger.debug(
-                f"Creating job: Network={net}, route={_routes!r}"
-            )
-
-            job = (_routes, self.query_params, net)
-            await queue.put(job)
-
     async def _make_response(
         self,
         routes,
@@ -399,13 +384,27 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         """
         Return a federated response.
         """
+        async def dispatch(queue, routes, **kwargs):
+            """
+            Dispatch jobs.
+            """
+
+            grouped_routes = group_routes_by(routes, key="network")
+
+            for net, _routes in grouped_routes.items():
+                self.logger.debug(
+                    f"Creating job: Network={net}, route={_routes!r}"
+                )
+
+                job = (_routes, self.query_params, net)
+                await queue.put(job)
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
 
         lock = asyncio.Lock()
 
-        await self._dispatch(queue, routes)
+        await dispatch(queue, routes)
 
         async with aiohttp.ClientSession(
             connector=self.request.config_dict["endpoint_http_conn_pool"],
