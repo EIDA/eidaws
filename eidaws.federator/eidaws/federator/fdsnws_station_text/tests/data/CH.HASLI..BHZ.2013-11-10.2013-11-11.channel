@@ -1,0 +1,2 @@
+#Network|Station|Location|Channel|Latitude|Longitude|Elevation|Depth|Azimuth|Dip|SensorDescription|Scale|ScaleFreq|ScaleUnits|SampleRate|StartTime|EndTime
+CH|HASLI||BHZ|46.75681|8.15117|1280.0|-0.2|0.0|-90.0|STS2_gen3|627615000.0|1.0|M/S|40.0|1999-06-16T00:00:00|
