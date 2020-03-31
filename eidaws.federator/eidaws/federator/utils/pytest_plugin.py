@@ -186,11 +186,12 @@ fdsnws_error_content_type = fdsnws_station_text_content_type
 def eidaws_routing_path_query():
     return "/eidaws/routing/1/query"
 
+
 @pytest.fixture
 def load_data(request):
     path_data = pathlib.Path(request.fspath.dirname) / "data"
 
-    def _load_data(fname, reader='read_bytes'):
+    def _load_data(fname, reader="read_bytes"):
         return getattr((path_data / fname), reader)()
 
     return _load_data
@@ -230,4 +231,3 @@ def tester(make_federated_eida, content_tester):
         faked_endpoints.assert_no_unused_routes()
 
     return _tester
-
