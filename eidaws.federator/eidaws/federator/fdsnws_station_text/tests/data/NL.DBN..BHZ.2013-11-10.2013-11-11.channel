@@ -1,0 +1,2 @@
+#Network|Station|Location|Channel|Latitude|Longitude|Elevation|Depth|Azimuth|Dip|SensorDescription|Scale|ScaleFreq|ScaleUnits|SampleRate|StartTime|EndTime
+NL|DBN||BHZ|52.1017|5.1767|3.0|0.0|0.0|-90.0|SL210|32310000.0|1.0|M/S|20.0|1997-11-25T00:00:00|2018-06-30T23:59:00

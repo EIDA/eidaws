@@ -1,300 +1,483 @@
 # -*- coding: utf-8 -*-
 
-import asyncio
 import copy
+import functools
 import pytest
+
+from aiohttp import web
 
 from eidaws.federator.fdsnws_station_text import create_app, SERVICE_ID
 from eidaws.federator.fdsnws_station_text.app import DEFAULT_CONFIG
-from eidaws.federator.utils.misc import get_config
 from eidaws.federator.fdsnws_station_text.route import (
     FED_STATION_TEXT_PATH_QUERY,
 )
-
-
-# TODO(damb): Check if both Redis and eida-federator.ethz.ch's Stationlite are
-# up and running. Else skip tests.
-
-
-_PATH_QUERY = FED_STATION_TEXT_PATH_QUERY
+from eidaws.federator.utils.misc import get_config
+from eidaws.federator.utils.pytest_plugin import (
+    fdsnws_error_content_type,
+    fdsnws_station_text_content_type,
+    eidaws_routing_path_query,
+    load_data,
+    make_federated_eida,
+    tester,
+)
+from eidaws.federator.utils.tests.server_mixin import (
+    _TestCommonServerConfig,
+    _TestCORSMixin,
+    _TestKeywordParserMixin,
+    _TestRoutingMixin,
+)
+from eidaws.utils.settings import FDSNWS_STATION_PATH_QUERY
 
 
 @pytest.fixture
-def make_aiohttp_client(aiohttp_client):
+def content_tester(load_data):
+    async def _content_tester(resp, expected=None):
+        assert expected is not None
+        assert await resp.text() == load_data(expected, reader="read_text")
 
-    config_dict = get_config(SERVICE_ID, defaults=DEFAULT_CONFIG)
-
-    async def _make_aiohttp_client(config_dict=config_dict):
-
-        app = create_app(config_dict)
-        return await aiohttp_client(app)
-
-    return _make_aiohttp_client
+    return _content_tester
 
 
-@pytest.fixture(scope="session")
-def fdsnws_station_text_content_type():
-    return "text/plain; charset=utf-8"
+class TestFDSNStationTextServer(
+    _TestCommonServerConfig,
+    _TestCORSMixin,
+    _TestKeywordParserMixin,
+    _TestRoutingMixin,
+):
 
+    FED_PATH_QUERY = FED_STATION_TEXT_PATH_QUERY
+    PATH_QUERY = FDSNWS_STATION_PATH_QUERY
 
-class TestFDSNStationTextServer:
-    async def test_post_single_sncl(
-        self, make_aiohttp_client, fdsnws_station_text_content_type
+    @staticmethod
+    def get_config(**kwargs):
+        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        config_dict.update(kwargs)
+
+        return get_config(SERVICE_ID, defaults=config_dict)
+
+    @classmethod
+    def create_app(cls, config_dict=None):
+
+        if config_dict is None:
+            config_dict = cls.get_config(**{"pool_size": 1})
+
+        return functools.partial(create_app, config_dict)
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "network",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                b"level=network\nformat=text\nNL * * * 2013-11-10 2013-11-11",
+            ),
+        ],
+    )
+    async def test_single_sncl_level_network(
+        self,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
     ):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict[
-            "url_routing"
-        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
-        config_dict["pool_size"] = 1
 
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        data = b"NL HGN ?? * 2013-10-10 2013-10-11"
-        resp = await client.post(_PATH_QUERY, data=data)
-
-        assert resp.status == 200
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_station_text_content_type
-        )
-
-        # XXX(damb): This is a workaround in order to avoid the message
-        # "Exception ignored in: <coroutine object ...>"
-        await asyncio.sleep(0.01)
-
-
-class TestFDSNStationTextServerConfig:
-    async def test_client_max_size(self, make_aiohttp_client):
-
-        client_max_size = 32
-        # avoid large request
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict["client_max_size"] = client_max_size
-
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        data = b"level=channel\n" b"\n" b"CH * * * 2020-01-01 2020-01-02"
-
-        assert client_max_size < len(data)
-
-        resp = await client.post(_PATH_QUERY, data=data)
-
-        assert resp.status == 413
-        assert "Request Entity Too Large" in await resp.text()
-
-    async def test_max_stream_epoch_duration(self, make_aiohttp_client):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict[
-            "url_routing"
-        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
-        config_dict["max_stream_epoch_duration"] = 1
-
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BHZ",
-            "start": "2020-01-01",
-            "end": "2020-01-02",
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 200
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BHZ",
-            "start": "2020-01-01",
-            "end": "2020-01-02T00:00:01",
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL....2013-11-10.2013-11-11.network",
+                            reader="read_text",
+                        ),
+                    ),
+                )
+            ]
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 413
 
-    async def test_max_total_stream_epoch_duration(self, make_aiohttp_client):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict[
-            "url_routing"
-        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
-        config_dict["max_total_stream_epoch_duration"] = 3
-
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BH?",
-            "start": "2020-01-01",
-            "end": "2020-01-02",
-            "level": "channel",
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "NL....2013-11-10.2013-11-11.network",
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 200
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+        )
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BH?",
-            "start": "2020-01-01",
-            "end": "2020-01-02T00:00:01",
-            "level": "channel",
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "sta": "HGN",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "station",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                b"level=station\nformat=text\nNL HGN * * 2013-11-10 2013-11-11",
+            ),
+        ],
+    )
+    async def test_single_sncl_level_station(
+        self,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL HGN * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 413
 
-    async def test_max_stream_epoch_durations(self, make_aiohttp_client):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict[
-            "url_routing"
-        ] = "http://eida-federator.ethz.ch/eidaws/routing/1/query"
-        config_dict["max_stream_epoch_durations"] = 2
-        config_dict["max_total_stream_epoch_duration"] = 3
-
-        client = await make_aiohttp_client(
-            config_dict=get_config(SERVICE_ID, defaults=config_dict)
-        )
-
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BHZ",
-            "start": "2020-01-01",
-            "end": "2020-01-03",
-            "level": "channel",
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN...2013-11-10.2013-11-11.station",
+                            reader="read_text",
+                        ),
+                    ),
+                )
+            ]
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 200
 
-        params = {
-            "net": "CH",
-            "sta": "HASLI",
-            "cha": "BHZ,BHN",
-            "start": "2020-01-01",
-            "end": "2020-01-03",
-            "level": "channel",
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "NL.HGN...2013-11-10.2013-11-11.station",
         }
-        resp = await client.get(_PATH_QUERY, params=params)
-        assert resp.status == 413
-
-
-class TestFDSNStationTextServerKeywordParser:
-    async def test_get_with_strict_args_invalid(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        resp = await client.get(_PATH_QUERY, params={"foo": "bar"})
-
-        assert resp.status == 400
-        assert (
-            f"ValidationError: Invalid request query parameters: {{'foo'}}"
-            in await resp.text()
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
 
-    async def test_post_with_strict_args_invalid(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "sta": "HGN",
+                    "cha": "BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                b"level=channel\nformat=text\nNL HGN * BHZ 2013-11-10 2013-11-11",
+            ),
+        ],
+    )
+    async def test_single_sncl_level_station(
+        self,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
 
-        data = b"foo=bar\n\nNL HGN ?? * 2013-10-10 2013-10-11"
-        resp = await client.post(_PATH_QUERY, data=data)
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
 
-        assert resp.status == 400
-        assert (
-            f"ValidationError: Invalid request query parameters: {{'foo'}}"
-            in await resp.text()
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
 
-    async def test_post_empty(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "sta": "DBN,HGN",
+                    "cha": "BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"level=channel\nformat=text\n"
+                    b"NL HGN * BHZ 2013-11-10 2013-11-11\n"
+                    b"NL DBN * BHZ 2013-11-10 2013-11-11\n"
+                ),
+            ),
+        ],
+    )
+    async def test_single_net_multi_stas(
+        self,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.DBN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ]
+        }
 
-        data = b""
-        resp = await client.post(_PATH_QUERY, data=data)
-
-        assert resp.status == 400
-
-    async def test_post_equal(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        data = b"="
-        resp = await client.post(_PATH_QUERY, data=data)
-
-        assert resp.status == 400
-        assert "ValidationError: RTFM :)." in await resp.text()
-
-
-class TestFDSNStationTextServerCORS:
-    async def test_get_cors_simple(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        origin = "http://foo.example.com"
-
-        resp = await client.get(
-            _PATH_QUERY, headers={"Origin": origin}, params={"foo": "bar"}
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "NL.DBN,HGN..BHZ.2013-11-10.2013-11-11.channel",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
 
-        assert resp.status == 400
-        assert (
-            "Access-Control-Expose-Headers" in resp.headers
-            and resp.headers["Access-Control-Expose-Headers"] == ""
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH,NL",
+                    "sta": "HASLI,HGN",
+                    "cha": "BHZ",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "channel",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"level=channel\nformat=text\n"
+                    b"CH HASLI * BHZ 2013-11-10 2013-11-11\n"
+                    b"NL DBN * BHZ 2013-11-10 2013-11-11\n"
+                ),
+            ),
+        ],
+    )
+    async def test_multi_nets_multi_dcs(
+        self,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/station/1/query\n"
+                            "CH HASLI -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "\n"
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "CH.HASLI..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ],
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    "GET",
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ],
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "CH,NL.HASLI,HGN..BHZ.2013-11-10.2013-11-11.channel",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )
-        assert (
-            "Access-Control-Allow-Origin" in resp.headers
-            and resp.headers["Access-Control-Allow-Origin"] == origin
-        )
-
-    async def test_post_cors_simple(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        origin = "http://foo.example.com"
-
-        data = b""
-        resp = await client.post(
-            _PATH_QUERY, headers={"Origin": origin}, data=data
-        )
-
-        assert resp.status == 400
-        assert (
-            "Access-Control-Expose-Headers" in resp.headers
-            and resp.headers["Access-Control-Expose-Headers"] == ""
-        )
-        assert (
-            "Access-Control-Allow-Origin" in resp.headers
-            and resp.headers["Access-Control-Allow-Origin"] == origin
-        )
-
-    async def test_cors_preflight(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        origin = "http://foo.example.com"
-        method = "GET"
-        headers = {"Origin": origin, "Access-Control-Request-Method": method}
-
-        resp = await client.options(_PATH_QUERY, headers=headers)
-
-        assert resp.status == 200
-        assert (
-            "Access-Control-Allow-Methods" in resp.headers
-            and resp.headers["Access-Control-Allow-Methods"] == method
-        )
-        assert (
-            "Access-Control-Allow-Origin" in resp.headers
-            and resp.headers["Access-Control-Allow-Origin"] == origin
-        )
-
-    async def test_cors_preflight_forbidden(self, make_aiohttp_client):
-        client = await make_aiohttp_client()
-
-        origin = "http://foo.example.com"
-
-        resp = await client.options(_PATH_QUERY, headers={"Origin": origin})
-        assert resp.status == 403
-
-        resp = await client.options(
-            _PATH_QUERY, headers={"Access-Control-Request-Method": "GET"}
-        )
-        assert resp.status == 403
