@@ -8,14 +8,13 @@ FED_STATION_TEXT_SERVICE_ID = "fdsnws.station.text"
 FED_STATION_XML_SERVICE_ID = "fdsnws.station.xml"
 FED_DATASELECT_MINISEED_SERVICE_ID = "fdsnws.dataselect"
 
-FED_STATION_PATH = "/eidaws/station/"
-FED_STATION_PATH_TEXT = FED_STATION_PATH + "text/1"
+FED_STATION_PATH = "/eidaws/station"
+FED_STATION_PATH_TEXT = FED_STATION_PATH + "/text/1"
 
-FED_STATION_PATH = "/eidaws/station/"
-FED_STATION_PATH_XML = FED_STATION_PATH + "xml/1"
+FED_STATION_PATH_XML = FED_STATION_PATH + "/xml/1"
 
-FED_DATASELECT_PATH = "/eidaws/dataselect/"
-FED_DATASELECT_PATH_MINISEED = FED_DATASELECT_PATH + "miniseed/1"
+FED_DATASELECT_PATH = "/eidaws/dataselect"
+FED_DATASELECT_PATH_MINISEED = FED_DATASELECT_PATH + "/miniseed/1"
 
 # ----------------------------------------------------------------------------
 FED_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
