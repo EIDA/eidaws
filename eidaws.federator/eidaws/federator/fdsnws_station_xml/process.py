@@ -11,7 +11,6 @@ from aiohttp import web
 from lxml import etree
 
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_XML_SERVICE_ID
-from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.process import (
     _patch_response_write,
     BaseRequestProcessor,
@@ -79,15 +78,17 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         write_lock,
         prepare_callback=None,
         level="station",
+        **kwargs,
     ):
-        super().__init__(request)
-
-        self._queue = queue
-        self._session = session
-        self._response = response
-
-        self._lock = write_lock
-        self._prepare_callback = _callable_or_raise(prepare_callback)
+        super().__init__(
+            request,
+            queue,
+            session,
+            response,
+            write_lock,
+            prepare_callback=prepare_callback,
+            **kwargs,
+        )
 
         self._level = level
 
@@ -139,7 +140,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                         )
                         await self._response.write(data)
 
-            self._queue.task_done()
+            await self.finalize()
 
     async def _parse_response(self, resp):
         if resp is None:
