@@ -12,8 +12,8 @@ from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
     with_exception_handling,
     BaseRequestProcessor,
-    BaseAsyncWorker,
 )
+from eidaws.federator.utils.worker import BaseAsyncWorker
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 

@@ -19,8 +19,11 @@ from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
     with_exception_handling,
     BaseRequestProcessor,
+)
+from eidaws.federator.utils.worker import (
+    _split_stream_epoch,
     BaseAsyncWorker,
-    RequestProcessorError,
+    WorkerError,
 )
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -30,7 +33,7 @@ from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 _QUERY_FORMAT = "miniseed"
 
 
-class MiniseedParsingError(RequestProcessorError):
+class MiniseedParsingError(WorkerError):
     """Error while parsing miniseed data: {}."""
 
 
@@ -121,10 +124,6 @@ def _get_mseed_record_size(fd):
     )
 
     return 2 ** record_size_exponent
-
-
-def _split_stream_epoch(stream_epoch, num, default_endtime):
-    return stream_epoch.slice(num=num, default_endtime=default_endtime)
 
 
 class _DataselectAsyncWorker(BaseAsyncWorker):

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import abc
 import aiohttp
 import asyncio
 import datetime
@@ -91,33 +90,6 @@ def with_exception_handling(coro):
             self._queue.task_done()
 
     return wrapper
-
-
-class BaseAsyncWorker(abc.ABC, ClientRetryBudgetMixin, ConfigMixin):
-    """
-    Abstract base class for worker implementations.
-    """
-
-    LOGGER = FED_BASE_ID + ".worker"
-
-    def __init__(self, request):
-
-        self.request = request
-
-        self._logger = logging.getLogger(self.LOGGER)
-        self.logger = make_context_logger(self._logger, self.request)
-
-    @abc.abstractmethod
-    async def run(self, req_method="GET", **kwargs):
-        pass
-
-    async def _handle_error(self, error=None, **kwargs):
-        msg = kwargs.get("msg", error)
-        if msg is not None:
-            self.logger.warning(str(msg))
-
-    async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
-        raise RequestProcessorError("HTTP code 413 handling not implemented.")
 
 
 class RequestProcessorError(ErrorWithTraceback):
