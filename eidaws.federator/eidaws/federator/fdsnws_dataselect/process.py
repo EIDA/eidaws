@@ -133,7 +133,8 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    # minimum chunk size
+    # minimum chunk size; the chunk size must be aligned with the mseed
+    # record_size
     _CHUNK_SIZE = 4096
 
     def __init__(
@@ -158,13 +159,11 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
         )
 
         self._mseed_record_size = None
-        # NOTE(damb): chunk_size must be aligned with mseed record_size
-        self._chunk_size = self._CHUNK_SIZE
 
     async def _write_response_to_buffer(self, buf, resp, executor):
         last_record = None
         await buf.seek(0, 2)
-        if self._mseed_record_size is not None:
+        if await buf.tell():
             await buf.seek(-self._mseed_record_size, 2)
             last_record = await buf.read(self._mseed_record_size)
 
@@ -190,8 +189,11 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
                     self._chunk_size = max(
                         self._mseed_record_size, self._chunk_size
                     )
-            if last_record is not None and last_record in chunk:
-                chunk = chunk[self._mseed_record_size :]
+
+            if last_record is not None:
+                if last_record in chunk:
+                    chunk = chunk[self._mseed_record_size :]
+                last_record = None
 
             await buf.write(chunk)
 

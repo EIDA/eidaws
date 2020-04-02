@@ -133,6 +133,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         self._query_format = query_format
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
+        self._chunk_size = self._CHUNK_SIZE
         self._stream_epochs = []
 
     @with_exception_handling
