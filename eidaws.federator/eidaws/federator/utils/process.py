@@ -16,7 +16,11 @@ from eidaws.federator.utils.misc import (
     make_context_logger,
     Route,
 )
-from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
+from eidaws.federator.utils.mixin import (
+    CachingMixin,
+    ClientRetryBudgetMixin,
+    ConfigMixin,
+)
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
@@ -92,11 +96,22 @@ def with_exception_handling(coro):
     return wrapper
 
 
+def _patch_response_write(response, write_callback):
+
+    response_write = response.write
+
+    async def write(*args, **kwargs):
+        await response_write(*args, **kwargs)
+        write_callback(*args, **kwargs)
+
+    response.write = write
+
+
 class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
 
 
-class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
+class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for request processors.
     """

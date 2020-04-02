@@ -12,8 +12,8 @@ from lxml import etree
 
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_XML_SERVICE_ID
 from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
+    _patch_response_write,
     with_exception_handling,
     BaseRequestProcessor,
 )
@@ -76,7 +76,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         response,
         write_lock,
         prepare_callback=None,
-        write_callback=None,
         level="station",
     ):
         super().__init__(request)
@@ -87,7 +86,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
 
         self._lock = write_lock
         self._prepare_callback = _callable_or_raise(prepare_callback)
-        self._write_callback = _callable_or_raise(write_callback)
 
         self._level = level
 
@@ -138,9 +136,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                             net_element, sta_elements
                         )
                         await self._response.write(data)
-
-                        if self._write_callback is not None:
-                            self._write_callback(data)
 
             self._queue.task_done()
 
@@ -325,7 +320,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
 BaseAsyncWorker.register(_StationXMLAsyncWorker)
 
 
-class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
+class StationXMLRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
@@ -362,7 +357,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         )
         header = header.encode("utf-8")
         await response.write(header)
-        self.dump_to_cache_buffer(header)
 
     async def _make_response(
         self,
@@ -393,6 +387,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
+        _patch_response_write(response, self.dump_to_cache_buffer)
 
         lock = asyncio.Lock()
 
@@ -419,7 +414,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
                     response,
                     lock,
                     prepare_callback=self._prepare_response,
-                    write_callback=self.dump_to_cache_buffer,
                     level=self._level,
                 )
 
@@ -432,8 +426,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
 
             footer = self.STATIONXML_FOOTER.encode("utf-8")
             await response.write(footer)
-            self.dump_to_cache_buffer(footer)
-
             await response.write_eof()
 
             return response

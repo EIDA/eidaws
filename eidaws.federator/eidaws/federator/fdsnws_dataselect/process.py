@@ -15,8 +15,8 @@ from eidaws.federator.settings import (
     FED_DATASELECT_MINISEED_SERVICE_ID,
 )
 from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
+    _patch_response_write,
     with_exception_handling,
     BaseRequestProcessor,
 )
@@ -154,7 +154,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
         response,
         write_lock,
         prepare_callback=None,
-        write_callback=None,
         **kwargs,
     ):
         super().__init__(request)
@@ -165,7 +164,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
 
         self._lock = write_lock
         self._prepare_callback = _callable_or_raise(prepare_callback)
-        self._write_callback = _callable_or_raise(write_callback)
 
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
@@ -386,14 +384,11 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
 
             await resp.write(chunk)
 
-            if self._write_callback is not None:
-                self._write_callback(chunk)
-
 
 BaseAsyncWorker.register(_DataselectAsyncWorker)
 
 
-class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
+class DataselectRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
 
@@ -446,6 +441,7 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
+        _patch_response_write(response, self.dump_to_cache_buffer)
 
         lock = asyncio.Lock()
 
@@ -469,8 +465,6 @@ class DataselectRequestProcessor(BaseRequestProcessor, CachingMixin):
                     lock,
                     endtime=self._default_endtime,
                     prepare_callback=self._prepare_response,
-                    # avoid gzip encoding when writing data
-                    write_callback=self.dump_to_cache_buffer,
                 )
 
                 task = asyncio.create_task(

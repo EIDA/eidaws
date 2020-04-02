@@ -8,8 +8,8 @@ from aiohttp import web
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
+    _patch_response_write,
     with_exception_handling,
     BaseRequestProcessor,
 )
@@ -36,7 +36,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
         response,
         write_lock,
         prepare_callback=None,
-        write_callback=None,
     ):
         super().__init__(request)
 
@@ -46,7 +45,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
         self._lock = write_lock
         self._prepare_callback = _callable_or_raise(prepare_callback)
-        self._write_callback = _callable_or_raise(write_callback)
 
     @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
@@ -115,9 +113,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
                     await self._response.write(data)
 
-                    if self._write_callback is not None:
-                        self._write_callback(data)
-
             self._queue.task_done()
 
     async def _parse_resp(self, resp):
@@ -135,7 +130,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 BaseAsyncWorker.register(_StationTextAsyncWorker)
 
 
-class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
+class StationTextRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
@@ -177,7 +172,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         header = self._HEADER_MAP[self._level]
         await response.write(header + b"\n")
-        self.dump_to_cache_buffer(header + b"\n")
 
     async def _make_response(
         self,
@@ -206,6 +200,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
+        _patch_response_write(response, self.dump_to_cache_buffer)
 
         lock = asyncio.Lock()
 
@@ -232,7 +227,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
                     response,
                     lock,
                     prepare_callback=self._prepare_response,
-                    write_callback=self.dump_to_cache_buffer,
                 )
 
                 task = asyncio.create_task(
