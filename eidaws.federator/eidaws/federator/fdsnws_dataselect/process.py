@@ -134,14 +134,12 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
     When splitting and aligning (i.e. merging potentially occurring overlaps)
     data is downloaded sequentially. Note, that a worker assumes the MiniSEED
     data to be shipped with a uniform record length (with respect to a stream
-    epoch).
+    epoch initially requested).
     """
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
 
-    LOGGER = ".".join(
-        [FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "worker"]
-    )
+    LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
     # minimum chunk size
     _CHUNK_SIZE = 4096
