@@ -17,11 +17,11 @@ from eidaws.federator.settings import (
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.process import (
     _patch_response_write,
-    with_exception_handling,
     BaseRequestProcessor,
 )
 from eidaws.federator.utils.worker import (
     _split_stream_epoch,
+    with_exception_handling,
     BaseAsyncWorker,
     WorkerError,
 )
@@ -381,9 +381,6 @@ class _DataselectAsyncWorker(BaseAsyncWorker):
                 break
 
             await resp.write(chunk)
-
-
-BaseAsyncWorker.register(_DataselectAsyncWorker)
 
 
 class DataselectRequestProcessor(BaseRequestProcessor):

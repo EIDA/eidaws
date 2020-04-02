@@ -14,10 +14,12 @@ from eidaws.federator.settings import FED_BASE_ID, FED_STATION_XML_SERVICE_ID
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.process import (
     _patch_response_write,
-    with_exception_handling,
     BaseRequestProcessor,
 )
-from eidaws.federator.utils.worker import BaseAsyncWorker
+from eidaws.federator.utils.worker import (
+    with_exception_handling,
+    BaseAsyncWorker,
+)
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.utils.settings import (
     FDSNWS_NO_CONTENT_CODES,
@@ -317,9 +319,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         return hash_method(str(key_args).encode("utf-8")).digest()
 
 
-BaseAsyncWorker.register(_StationXMLAsyncWorker)
-
-
 class StationXMLRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
@@ -370,6 +369,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
         """
         Return a federated response.
         """
+
         async def dispatch(queue, routes, **kwargs):
             """
             Dispatch jobs.

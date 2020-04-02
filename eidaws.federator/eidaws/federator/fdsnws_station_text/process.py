@@ -10,10 +10,12 @@ from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.process import (
     _patch_response_write,
-    with_exception_handling,
     BaseRequestProcessor,
 )
-from eidaws.federator.utils.worker import BaseAsyncWorker
+from eidaws.federator.utils.worker import (
+    with_exception_handling,
+    BaseAsyncWorker,
+)
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
@@ -125,9 +127,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
         else:
             # strip header
             return text[(text.find(b"\n") + 1) :]
-
-
-BaseAsyncWorker.register(_StationTextAsyncWorker)
 
 
 class StationTextRequestProcessor(BaseRequestProcessor):

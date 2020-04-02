@@ -5,8 +5,6 @@ import asyncio
 import datetime
 import functools
 import logging
-import sys
-import traceback
 
 from aiohttp import web
 
@@ -38,6 +36,17 @@ def _duration_to_timedelta(*args, **kwargs):
         return None
 
 
+def _patch_response_write(response, write_callback):
+
+    response_write = response.write
+
+    async def write(*args, **kwargs):
+        await response_write(*args, **kwargs)
+        write_callback(*args, **kwargs)
+
+    response.write = write
+
+
 def cached(func):
     """
     Method decorator providing caching facilities.
@@ -65,46 +74,6 @@ def cached(func):
         return await func(self, *args, **kwargs)
 
     return wrapper
-
-
-def with_exception_handling(coro):
-    """
-    Method decorator providing general purpose exception handling for worker
-    tasks.
-    """
-
-    @functools.wraps(coro)
-    async def wrapper(self, *args, **kwargs):
-
-        try:
-            await coro(self, *args, **kwargs)
-        except asyncio.CancelledError:
-            raise
-        except Exception as err:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.logger.critical(f"Local TaskWorker exception: {type(err)}")
-            self.logger.critical(
-                "Traceback information: "
-                + repr(
-                    traceback.format_exception(
-                        exc_type, exc_value, exc_traceback
-                    )
-                )
-            )
-            self._queue.task_done()
-
-    return wrapper
-
-
-def _patch_response_write(response, write_callback):
-
-    response_write = response.write
-
-    async def write(*args, **kwargs):
-        await response_write(*args, **kwargs)
-        write_callback(*args, **kwargs)
-
-    response.write = write
 
 
 class RequestProcessorError(ErrorWithTraceback):
