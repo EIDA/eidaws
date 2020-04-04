@@ -107,6 +107,8 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     aligning facilities.
     """
 
+    QUERY_FORMAT = None
+
     _CHUNK_SIZE = 4096
 
     def __init__(
@@ -116,7 +118,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         session,
         response,
         write_lock,
-        query_format,
+        query_format=None,
         prepare_callback=None,
         **kwargs,
     ):
@@ -130,11 +132,13 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             **kwargs,
         )
 
-        self._query_format = query_format
+        self._query_format = query_format or self.QUERY_FORMAT
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
         self._chunk_size = self._CHUNK_SIZE
         self._stream_epochs = []
+
+        assert self._query_format is not None, 'Undefined "query_format"'
 
     @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
