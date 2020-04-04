@@ -183,6 +183,10 @@ fdsnws_error_content_type = fdsnws_station_text_content_type
 
 
 @pytest.fixture(scope="session")
+def eidaws_wfcatalog_content_type():
+    return "application/json"
+
+@pytest.fixture(scope="session")
 def eidaws_routing_path_query():
     return "/eidaws/routing/1/query"
 
