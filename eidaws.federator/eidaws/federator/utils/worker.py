@@ -182,6 +182,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                     if await buf.tell():
 
                         async with self._lock:
+                            append = True
                             if not self._response.prepared:
 
                                 if self._prepare_callback is not None:
@@ -191,8 +192,10 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                                 else:
                                     await self._response.prepare(self.request)
 
+                                append = False
+
                             await self._write_buffer_to_response(
-                                buf, self._response, executor=executor
+                                buf, self._response, append=append,
                             )
 
                 await self.finalize()
@@ -205,7 +208,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         req_method,
         buf,
         splitting_factor,
-        executor=None,
         **kwargs,
     ):
         for se in stream_epochs:
@@ -260,9 +262,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                 await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
-            await self._write_response_to_buffer(
-                buf, resp, executor=executor,
-            )
+            await self._write_response_to_buffer(buf, resp)
 
     async def _handle_413(self, url, stream_epoch, **kwargs):
 
@@ -304,13 +304,13 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             splitting_factor=splitting_factor,
         )
 
-    async def _write_response_to_buffer(self, buf, resp, executor):
+    async def _write_response_to_buffer(self, buf, resp):
         """
         Template coro.
         """
         raise NotImplementedError
 
-    async def _write_buffer_to_response(self, buf, resp, executor):
+    async def _write_buffer_to_response(self, buf, resp, append=True):
         await buf.seek(0)
 
         while True:

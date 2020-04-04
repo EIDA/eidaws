@@ -3,6 +3,7 @@
 import aiohttp
 import asyncio
 import datetime
+import errno
 import io
 import struct
 
@@ -160,12 +161,19 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
 
         self._mseed_record_size = None
 
-    async def _write_response_to_buffer(self, buf, resp, executor):
+    async def _write_response_to_buffer(self, buf, resp):
         last_record = None
         await buf.seek(0, 2)
         if await buf.tell():
-            await buf.seek(-self._mseed_record_size, 2)
-            last_record = await buf.read(self._mseed_record_size)
+            try:
+                await buf.seek(-self._mseed_record_size, 2)
+            except OSError as err:
+                if err.errno == errno.EINVAL:
+                    await buf.seek(0)
+                else:
+                    raise
+
+            last_record = await buf.read()
 
         while True:
             try:
