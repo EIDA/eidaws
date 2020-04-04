@@ -383,7 +383,7 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, "GET", web.Response(status=413),),
+                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
@@ -414,7 +414,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -439,6 +439,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_without_overlap(
         self,
+        server_config,
         tester,
         eidaws_routing_path_query,
         fdsnws_dataselect_content_type,
@@ -462,12 +463,16 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, "GET", web.Response(status=413),),
+                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -477,7 +482,7 @@ class TestFDSNDataselectServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -497,7 +502,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
@@ -522,6 +527,7 @@ class TestFDSNDataselectServer(
     )
     async def test_split_with_overlap(
         self,
+        server_config,
         tester,
         fdsnws_dataselect_content_type,
         load_data,
@@ -546,13 +552,17 @@ class TestFDSNDataselectServer(
             ]
         }
 
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, "GET", web.Response(status=413),),
-                (self.PATH_QUERY, "GET", web.Response(status=413),),
+                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
@@ -562,16 +572,16 @@ class TestFDSNDataselectServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
                     ),
                 ),
-                (self.PATH_QUERY, "GET", web.Response(status=413),),
+                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-10.2019-01-15"),
@@ -579,7 +589,7 @@ class TestFDSNDataselectServer(
                 ),
                 (
                     self.PATH_QUERY,
-                    "GET",
+                    endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data("CH.HASLI..LHZ.2019-01-15.2019-01-20"),
@@ -597,7 +607,7 @@ class TestFDSNDataselectServer(
             self.FED_PATH_QUERY,
             method,
             params_or_data,
-            self.create_app(),
+            self.create_app(config_dict=config_dict),
             mocked_routing,
             mocked_endpoints,
             expected,
