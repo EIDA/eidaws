@@ -50,7 +50,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                     f"Error while executing request: error={type(err)}, "
                     f"url={req_handler.url}, method={req_method}"
                 )
-                self._handle_error(msg=msg)
+                await self._handle_error(msg=msg)
 
                 await self.update_cretry_budget(req_handler.url, 503)
                 await self.finalize()
@@ -66,9 +66,9 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                 resp.raise_for_status()
             except aiohttp.ClientResponseError:
                 if resp.status == 413:
-                    self._handle_413()
+                    await self._handle_413()
                 else:
-                    self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg)
 
                 await self.finalize()
                 continue
@@ -77,7 +77,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                     if resp.status in FDSNWS_NO_CONTENT_CODES:
                         self.logger.info(msg)
                     else:
-                        self._handle_error(msg=msg)
+                        await self._handle_error(msg=msg)
 
                     await self.finalize()
                     continue

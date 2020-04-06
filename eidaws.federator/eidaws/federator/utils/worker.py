@@ -249,7 +249,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                     )
                     continue
                 else:
-                    self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg)
                     break
             else:
                 if resp.status != 200:
@@ -257,7 +257,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                         self.logger.info(msg)
                         continue
                     else:
-                        self._handle_error(msg=msg)
+                        await self._handle_error(msg=msg)
                         break
             finally:
                 await self.update_cretry_budget(req_handler.url, resp.status)
