@@ -98,13 +98,13 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
                         obj = None
 
                     if obj is not None and last_obj == obj:
-                        # chop off b'[' + first JSON object + b','
-                        chunk = chunk[1 + last_obj_length + 1 :]
+                        # chop off first JSON object + b','
+                        chunk = chunk[last_obj_length + 1 :]
 
                     last_obj = None
-                else:
-                    # chop off b'['
-                    chunk = chunk[1:]
+
+                # chop off b'['
+                chunk = chunk[1:]
 
                 if await buf.tell():
                     await buf.write(_JSON_SEP)
