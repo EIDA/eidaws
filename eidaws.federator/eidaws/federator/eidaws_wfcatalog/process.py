@@ -94,7 +94,7 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
                     # deserialize the first JSON object from the chunk
                     try:
                         obj = json.loads(chunk[1 : last_obj_length + 1])
-                    except json.JSONDecodeError as err:
+                    except json.JSONDecodeError:
                         obj = None
 
                     if obj is not None and last_obj == obj:
