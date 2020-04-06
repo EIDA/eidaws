@@ -133,6 +133,11 @@ def _WFCatalogSchema():
             _merge_fields(data, _mappings)
             return data
 
+        class Meta:
+            service = "wfcatalog"
+            strict = True
+            ordered = True
+
     for _field, _type in METRIC_FIELDS:
         _make_metric_field(_field, _type)
 
