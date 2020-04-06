@@ -346,6 +346,94 @@ class TestEIDAWFCatalogServer(
             ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
         ],
     )
+    async def test_split_without_overlap(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        eidaws_wfcatalog_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-10T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-05"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-05.2020-01-10"),
+                    ),
+                ),
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-10",
+                },
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
+        ],
+    )
     async def test_split_with_overlap(
         self,
         server_config,
@@ -406,6 +494,120 @@ class TestEIDAWFCatalogServer(
             "status": 200,
             "content_type": eidaws_wfcatalog_content_type,
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-09",
+                },
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-09",),
+        ],
+    )
+    async def test_split_with_overlap(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        eidaws_wfcatalog_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-09T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-03"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-03.2020-01-05"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-05.2020-01-08"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-07.2020-01-09"),
+                    ),
+                ),
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-09",
         }
         await tester(
             self.FED_PATH_QUERY,
