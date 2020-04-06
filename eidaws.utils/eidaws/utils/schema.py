@@ -223,8 +223,8 @@ class StreamEpochSchema(Schema):
                     endtime = now
                 elif endtime > now:
                     endtime = now
-                    if self.context.get("service") != "eidaws-wfcatalog":
-                        data["endtime"] = None
+                    # silently unset endtime
+                    data["endtime"] = None
 
             elif self.context.get("request").method == "POST":
                 if starttime is None or endtime is None:
@@ -243,27 +243,33 @@ class StreamEpochSchema(Schema):
         ordered = True
 
 
-class ManyStreamEpochSchema(Schema):
-    """
-    A schema class intended to provide a :code:`many=True` replacement for
-    :py:mod:`webargs` locations different from *JSON*. This way we are able to
-    treat :py:class:`eidaws.utils.sncl.StreamEpoch` objects like JSON
-    bulk type arguments.
-    """
+def _ManyStreamEpochSchema(stream_epoch_schema=StreamEpochSchema):
+    class ManyStreamEpochSchema(Schema):
+        """
+        A schema class intended to provide a :code:`many=True` replacement for
+        :py:mod:`webargs` locations different from *JSON*. This way we are able to
+        treat :py:class:`eidaws.utils.sncl.StreamEpoch` objects like JSON
+        bulk type arguments.
+        """
 
-    stream_epochs = fields.List(fields.Nested("StreamEpochSchema"))
+        stream_epochs = fields.List(fields.Nested(stream_epoch_schema))
 
-    @validates_schema
-    def validate_schema(self, data, **kwargs):
-        # at least one SNCL must be defined for request.method == 'POST'
-        if (
-            self.context.get("request")
-            and self.context.get("request").method == "POST"
-        ):
-            if "stream_epochs" not in data or not data["stream_epochs"]:
-                raise ValidationError("No StreamEpoch defined.")
-            if not all(data["stream_epochs"]):
-                raise ValidationError("Invalid StreamEpoch defined.")
+        @validates_schema
+        def validate_schema(self, data, **kwargs):
+            # at least one SNCL must be defined for request.method == 'POST'
+            if (
+                self.context.get("request")
+                and self.context.get("request").method == "POST"
+            ):
+                if "stream_epochs" not in data or not data["stream_epochs"]:
+                    raise ValidationError("No StreamEpoch defined.")
+                if not all(data["stream_epochs"]):
+                    raise ValidationError("Invalid StreamEpoch defined.")
 
-    class Meta:
-        strict = True
+        class Meta:
+            strict = True
+
+    return ManyStreamEpochSchema
+
+
+ManyStreamEpochSchema = _ManyStreamEpochSchema()

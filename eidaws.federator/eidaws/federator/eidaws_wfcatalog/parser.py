@@ -4,8 +4,15 @@ Federator API schema definition for ``eidaws-wfcatalog``.
 """
 
 import functools
+import datetime
 
-from marshmallow import validate, fields, pre_load
+from marshmallow import (
+    validate,
+    validates_schema,
+    fields,
+    pre_load,
+    ValidationError,
+)
 
 from eidaws.federator.utils.parser import ServiceSchema
 from eidaws.utils.schema import (
@@ -15,6 +22,8 @@ from eidaws.utils.schema import (
     NotEmptyString,
     NotEmptyInt,
     Percentage,
+    StreamEpochSchema as _StreamEpochSchema,
+    _ManyStreamEpochSchema,
 )
 
 
@@ -144,4 +153,34 @@ def _WFCatalogSchema():
     return API
 
 
+class StreamEpochSchema(_StreamEpochSchema):
+    @validates_schema
+    def validate_temporal_constraints(self, data, **kwargs):
+        """
+        Validation of temporal constraints.
+        """
+        # NOTE(damb): context dependent validation
+        if self.context.get("request"):
+
+            starttime = data.get("starttime")
+            endtime = data.get("endtime")
+
+            if self.context.get("request").method in ("GET", "POST"):
+                if starttime is None or endtime is None:
+                    raise ValidationError("missing temporal constraints")
+
+            now = datetime.datetime.utcnow()
+
+            if self.context.get("request").method == "GET" and endtime > now:
+                endtime = now
+
+            if starttime > now:
+                raise ValidationError("starttime in future")
+            elif starttime >= endtime:
+                raise ValidationError("endtime must be greater than starttime")
+
+
+ManyStreamEpochSchema = _ManyStreamEpochSchema(
+    stream_epoch_schema=StreamEpochSchema
+)
 WFCatalogSchema = _WFCatalogSchema()
