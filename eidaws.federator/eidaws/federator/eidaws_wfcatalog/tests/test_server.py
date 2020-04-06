@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import datetime
 import functools
 import json
 import pytest
@@ -27,6 +28,11 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestRoutingMixin,
 )
 from eidaws.utils.settings import EIDAWS_WFCATALOG_PATH_QUERY
+
+
+_now = datetime.datetime.utcnow()
+_tomorrow = _now + datetime.timedelta(days=1)
+_day_after_tomorrow = _now + datetime.timedelta(days=2)
 
 
 @pytest.fixture
@@ -67,8 +73,6 @@ class TestEIDAWFCatalogServer(
     @staticmethod
     def lookup_config(key, config_dict):
         return config_dict["config"][SERVICE_ID][key]
-
-    # TODO TODO TODO: Test that start, end defined.
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -617,4 +621,81 @@ class TestEIDAWFCatalogServer(
             mocked_routing,
             mocked_endpoints,
             expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "end": "2020-01-09",
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": _tomorrow.isoformat(),
+                    "end": _day_after_tomorrow.isoformat(),
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-02",
+                    "end": "2020-01-01",
+                },
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01",),
+            (
+                "POST",
+                (
+                    f"CH HASLI -- BHZ {_tomorrow.isoformat()} "
+                    f"{_day_after_tomorrow.isoformat()}"
+                ).encode("utf-8"),
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-02 2020-01-01",),
+            ("POST", b"CH HASLI -- BHZ",),
+        ],
+    )
+    async def test_parser_invalid(
+        self,
+        make_federated_eida,
+        fdsnws_error_content_type,
+        method,
+        params_or_data,
+    ):
+
+        client, _, _ = await make_federated_eida(self.create_app(),)
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 400
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
         )
