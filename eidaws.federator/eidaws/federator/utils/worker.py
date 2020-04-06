@@ -255,6 +255,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                 if resp.status != 200:
                     if resp.status in FDSNWS_NO_CONTENT_CODES:
                         self.logger.info(msg)
+                        continue
                     else:
                         self._handle_error(msg=msg)
                         break
