@@ -31,7 +31,6 @@ from eidaws.utils.settings import EIDAWS_WFCATALOG_PATH_QUERY
 
 @pytest.fixture
 def content_tester(load_data):
-    # TODO TODO TODO
     async def _content_tester(resp, expected=None):
         assert expected is not None
         assert await resp.json() == json.loads(load_data(expected))
