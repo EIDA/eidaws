@@ -11,6 +11,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import (
     FED_BASE_ID,
+    FED_DATASELECT_MINISEED_FORMAT,
     FED_DATASELECT_MINISEED_SERVICE_ID,
 )
 from eidaws.federator.utils.process import (
@@ -21,9 +22,6 @@ from eidaws.federator.utils.worker import (
     BaseSplitAlignAsyncWorker,
     WorkerError,
 )
-
-
-_QUERY_FORMAT = "miniseed"
 
 
 class MiniseedParsingError(WorkerError):
@@ -134,6 +132,8 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
+    QUERY_FORMAT = FED_DATASELECT_MINISEED_FORMAT
+
     # minimum chunk size; the chunk size must be aligned with the mseed
     # record_size
     _CHUNK_SIZE = 4096
@@ -154,7 +154,6 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
             session,
             response,
             write_lock,
-            query_format=_QUERY_FORMAT,
             prepare_callback=prepare_callback,
             **kwargs,
         )

@@ -10,7 +10,11 @@ import io
 from aiohttp import web
 from lxml import etree
 
-from eidaws.federator.settings import FED_BASE_ID, FED_STATION_XML_SERVICE_ID
+from eidaws.federator.settings import (
+    FED_BASE_ID,
+    FED_STATION_XML_FORMAT,
+    FED_STATION_XML_SERVICE_ID,
+)
 from eidaws.federator.utils.process import (
     _patch_response_write,
     BaseRequestProcessor,
@@ -26,9 +30,6 @@ from eidaws.utils.settings import (
     STATIONXML_TAGS_STATION,
     STATIONXML_TAGS_CHANNEL,
 )
-
-
-_QUERY_FORMAT = "xml"
 
 
 def group_routes_by(routes, key="network"):
@@ -68,6 +69,8 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
     <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
     element granularity.
     """
+
+    QUERY_FORMAT = FED_STATION_XML_FORMAT
 
     def __init__(
         self,
@@ -267,7 +270,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         req_handler = FdsnRequestHandler(
             **route._asdict(), query_params=query_params
         )
-        req_handler.format = _QUERY_FORMAT
+        req_handler.format = self.QUERY_FORMAT
 
         req = getattr(req_handler, req_method.lower())(self._session)
         try:

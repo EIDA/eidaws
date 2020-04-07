@@ -10,6 +10,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import (
     FED_BASE_ID,
+    FED_WFCATALOG_JSON_FORMAT,
     FED_WFCATALOG_JSON_SERVICE_ID,
 )
 from eidaws.federator.utils.process import (
@@ -18,8 +19,6 @@ from eidaws.federator.utils.process import (
 )
 from eidaws.federator.utils.worker import BaseSplitAlignAsyncWorker
 
-
-_QUERY_FORMAT = "json"
 
 _JSON_ARRAY_START = b"["
 _JSON_ARRAY_END = b"]"
@@ -40,7 +39,7 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    QUERY_FORMAT = _QUERY_FORMAT
+    QUERY_FORMAT = FED_WFCATALOG_JSON_FORMAT
 
     _CHUNK_SIZE = 8192
 

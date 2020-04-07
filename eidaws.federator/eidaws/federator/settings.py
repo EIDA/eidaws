@@ -3,6 +3,10 @@
 import pathlib
 
 # ----------------------------------------------------------------------------
+def _make_fed_path(base_fed_path, query_format, version="1"):
+    return "/".join([base_fed_path, query_format, version])
+
+
 FED_BASE_ID = "eidaws.federator"
 FED_STATION_TEXT_SERVICE_ID = "fdsnws.station.text"
 FED_STATION_XML_SERVICE_ID = "fdsnws.station.xml"
@@ -10,15 +14,26 @@ FED_DATASELECT_MINISEED_SERVICE_ID = "fdsnws.dataselect"
 FED_WFCATALOG_JSON_SERVICE_ID = "eidaws.wfcatalog"
 
 FED_STATION_PATH = "/eidaws/station"
-FED_STATION_PATH_TEXT = FED_STATION_PATH + "/text/1"
+FED_STATION_TEXT_FORMAT = "text"
+FED_STATION_PATH_TEXT = _make_fed_path(
+    FED_STATION_PATH, FED_STATION_TEXT_FORMAT
+)
 
-FED_STATION_PATH_XML = FED_STATION_PATH + "/xml/1"
+FED_STATION_XML_FORMAT = "xml"
+FED_STATION_PATH_XML = _make_fed_path(FED_STATION_PATH, FED_STATION_XML_FORMAT)
 
 FED_DATASELECT_PATH = "/eidaws/dataselect"
-FED_DATASELECT_PATH_MINISEED = FED_DATASELECT_PATH + "/miniseed/1"
+FED_DATASELECT_MINISEED_FORMAT = "miniseed"
+FED_DATASELECT_PATH_MINISEED = _make_fed_path(
+    FED_DATASELECT_PATH, FED_DATASELECT_MINISEED_FORMAT
+)
 
 FED_WFCATALOG_PATH = "/eidaws/wfcatalog"
-FED_WFCATALOG_PATH_JSON = FED_WFCATALOG_PATH + "/json/1"
+FED_WFCATALOG_JSON_FORMAT = "json"
+FED_WFCATALOG_PATH_JSON = _make_fed_path(
+    FED_WFCATALOG_PATH, FED_WFCATALOG_JSON_FORMAT
+)
+
 
 # ----------------------------------------------------------------------------
 FED_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent

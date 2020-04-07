@@ -5,7 +5,11 @@ import aiohttp
 
 from aiohttp import web
 
-from eidaws.federator.settings import FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID
+from eidaws.federator.settings import (
+    FED_BASE_ID,
+    FED_STATION_TEXT_FORMAT,
+    FED_STATION_TEXT_SERVICE_ID,
+)
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.process import (
     _patch_response_write,
@@ -18,9 +22,6 @@ from eidaws.federator.utils.worker import (
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
-_QUERY_FORMAT = "text"
-
-
 class _StationTextAsyncWorker(BaseAsyncWorker):
     """
     A worker task which fetches data and writes the results to the ``response``
@@ -31,6 +32,8 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
+    QUERY_FORMAT = FED_STATION_TEXT_FORMAT
+
     @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
 
@@ -40,7 +43,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
             req_handler = FdsnRequestHandler(
                 **route._asdict(), query_params=query_params
             )
-            req_handler.format = _QUERY_FORMAT
+            req_handler.format = self.QUERY_FORMAT
 
             req = getattr(req_handler, req_method.lower())(self._session)
             try:
