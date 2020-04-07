@@ -28,6 +28,7 @@ Features
 - Optional frontend cache powered by `Redis <https://redis.io/>`_
 - HTTP connection pooling to increase both performance and to limit the number
   of concurrent endpoint requests configurable on federated resource granularity
+- Support for both HTTP **POST** and **GET** endpoint request method
 - ``fdsnws-station`` requests run entirely in-memory
 - ``fdsnws-dataselect`` request are buffered in-memory for small chunks of
   data; larger chunks of data are dynamically moved to disk
