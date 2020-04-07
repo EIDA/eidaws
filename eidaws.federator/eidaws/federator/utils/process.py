@@ -205,12 +205,13 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 try:
                     resp.raise_for_status()
                 except aiohttp.ClientResponseError as err:
-                    self.logger.exception(err)
+                    self.logger.error(err)
                     raise FDSNHTTPError.create(
                         500,
                         self.request,
                         request_submitted=self.request_submitted,
                         service_version=__version__,
+                        error_desc_long=f"Error while routing: {err}",
                     )
 
                 if resp.status != 200:
@@ -232,12 +233,19 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     async def federate(self, timeout=aiohttp.ClientTimeout(total=60)):
         try:
             self._routed_urls, routes = await self._route()
-        except asyncio.TimeoutError as err:
-            self.logger.warning(f"TimeoutError while routing: {type(err)}")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            if isinstance(err, asyncio.TimeoutError):
+                msg = f"TimeoutError: {type(err)}"
+            else:
+                msg = str(err)
+
+            msg = f"Error while routing: {msg}"
+            self.logger.error(msg)
             raise FDSNHTTPError.create(
                 500,
                 self.request,
                 request_submitted=self.request_submitted,
+                error_desc_long=msg,
                 service_version=__version__,
             )
 
