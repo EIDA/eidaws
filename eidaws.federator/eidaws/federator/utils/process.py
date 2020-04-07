@@ -89,10 +89,8 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     ACCESS = "any"
 
-    def __init__(self, request, url_routing, **kwargs):
+    def __init__(self, request, **kwargs):
         self.request = request
-
-        self._url_routing = url_routing
 
         self._proxy_netloc = kwargs.get(
             "proxy_netloc", FED_DEFAULT_NETLOC_PROXY
@@ -169,7 +167,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
         req_handler = RoutingRequestHandler(
-            self._url_routing,
+            self.config['url_routing'],
             self.stream_epochs,
             self.query_params,
             proxy_netloc=self._proxy_netloc,

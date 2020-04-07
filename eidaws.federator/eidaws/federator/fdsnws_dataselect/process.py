@@ -216,11 +216,6 @@ class DataselectRequestProcessor(BaseRequestProcessor):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 
-    def __init__(self, request, url_routing, **kwargs):
-        super().__init__(
-            request, url_routing, **kwargs,
-        )
-
     @property
     def content_type(self):
         return "application/vnd.fdsn.mseed"

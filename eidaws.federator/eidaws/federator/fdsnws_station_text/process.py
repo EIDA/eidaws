@@ -135,9 +135,9 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         ),
     }
 
-    def __init__(self, request, url_routing, **kwargs):
+    def __init__(self, request, **kwargs):
         super().__init__(
-            request, url_routing, **kwargs,
+            request, **kwargs,
         )
 
         self._level = self.query_params.get("level", "station")

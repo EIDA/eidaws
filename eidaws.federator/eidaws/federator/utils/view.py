@@ -43,10 +43,7 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
         self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
 
-        processor = self._processor_cls(
-            self.request, self.config["url_routing"],
-        )
-
+        processor = self._processor_cls(self.request)
         processor.post = False
 
         return await processor.federate(timeout=self.client_timeout)
@@ -57,10 +54,7 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
         self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
 
-        processor = self._processor_cls(
-            self.request, self.config["url_routing"],
-        )
-
+        processor = self._processor_cls(self.request)
         processor.post = True
 
         return await processor.federate(timeout=self.client_timeout)
