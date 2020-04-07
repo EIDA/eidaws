@@ -136,6 +136,22 @@ config_schema = {
         "streaming_timeout": {
             "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]
         },
+        "proxy_netloc": {
+            "oneOf": [
+                {"type": "null"},
+                {
+                    "type": "string",
+                    "format": "uri",
+                    # allow IPv4(:PORT) or HOSTNAME(:PORT)
+                    "pattern": (
+                        r"^(((?:[0-9]{1,3}\.){3}[0-9]{1,3})"
+                        r"|(([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,}))"
+                        r"(?:\:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|"
+                        r"65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$"
+                    ),
+                },
+            ]
+        },
     },
     "additionalProperties": False,
 }
@@ -202,7 +218,7 @@ def default_config():
     default_config.setdefault(
         "streaming_timeout", FED_DEFAULT_STREAMING_TIMEOUT
     )
-    # default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
+    default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
 
     return default_config
 

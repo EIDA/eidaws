@@ -7,8 +7,9 @@ import functools
 import logging
 
 from aiohttp import web
+from urllib.parse import urlsplit, urlunsplit
 
-from eidaws.federator.settings import FED_BASE_ID, FED_DEFAULT_NETLOC_PROXY
+from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import (
     make_context_logger,
@@ -92,10 +93,6 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     def __init__(self, request, **kwargs):
         self.request = request
 
-        self._proxy_netloc = kwargs.get(
-            "proxy_netloc", FED_DEFAULT_NETLOC_PROXY
-        )
-
         self._default_endtime = datetime.datetime.utcnow()
         self._post = False
 
@@ -167,10 +164,9 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
         req_handler = RoutingRequestHandler(
-            self.config['url_routing'],
+            self.config["url_routing"],
             self.stream_epochs,
             self.query_params,
-            proxy_netloc=self._proxy_netloc,
             access=self.ACCESS,
         )
 
@@ -225,6 +221,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                     await resp.text(),
                     post=self._post,
                     default_endtime=self._default_endtime,
+                    proxy_netloc=self.config['proxy_netloc']
                 )
 
     @cached
@@ -333,7 +330,9 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         for url in self._routed_urls:
             await self.gc_cretry_budget(url)
 
-    async def _emerge_routes(self, text, post, default_endtime):
+    async def _emerge_routes(
+        self, text, post, default_endtime, proxy_netloc=None
+    ):
         """
         Default implementation parsing the routing service's output stream and
         create fully demultiplexed routes. Note that routes with an exceeded
@@ -356,6 +355,14 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                     service_version=__version__,
                 )
 
+        def prefix_url(url, proxy_netloc):
+            parsed_url = urlsplit(url)._asdict()
+
+            parsed_url_netloc = parsed_url["netloc"]
+            parsed_url["path"] = "/" + parsed_url_netloc + parsed_url["path"]
+            parsed_url["netloc"] = proxy_netloc
+            return urlunsplit(parsed_url.values())
+
         url = None
         skip_url = False
 
@@ -366,6 +373,9 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         for line in text.split("\n"):
             if not url:
                 url = line.strip()
+
+                if proxy_netloc:
+                    url = prefix_url(url, proxy_netloc)
 
                 try:
                     e_ratio = await self.get_cretry_budget_error_ratio(url)
