@@ -4,8 +4,6 @@ import pytest
 
 from aiohttp import web
 
-# TODO(damb): Test if routing returns 500, ClientError etc
-
 
 class _TestRoutingMixin:
     """
@@ -114,6 +112,73 @@ class _TestRoutingMixin:
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "FOO",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-05",
+                },
+            ),
+            ("POST", b"CH FOO -- LHZ 2019-01-01 2019-01-05",),
+        ],
+    )
+    async def test_routing_unavailable(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        fdsnws_error_content_type,
+        aiohttp_unused_port,
+        method,
+        params_or_data,
+    ):
+        async def tester(resp):
+            assert resp.status == 500
+            assert (
+                "Content-Type" in resp.headers
+                and resp.headers["Content-Type"] == fdsnws_error_content_type
+            )
+            assert "Error while routing" in await resp.text()
+
+        _method = method.lower()
+        kwargs = {"params" if _method == "get" else "data": params_or_data}
+
+        config_dict = self.get_config(
+            **{
+                "url_routing": (
+                    f"http://localhost:{aiohttp_unused_port()}"
+                    f"{eidaws_routing_path_query}"
+                )
+            }
+        )
+
+        client, _, _ = await make_federated_eida(
+            self.create_app(config_dict=config_dict)
+        )
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+
+        await tester(resp)
+
+        mocked_routing = {
+            "localhost": [
+                (eidaws_routing_path_query, method, web.Response(status=500,),)
+            ]
+        }
+        client, faked_routing, faked_endpoints = await make_federated_eida(
+            self.create_app(), mocked_routing_config=mocked_routing,
+        )
+        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+
+        await tester(resp)
+
+        faked_routing.assert_no_unused_routes()
 
 
 class _TestKeywordParserMixin:
