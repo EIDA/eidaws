@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import abc
 import aiohttp
 import asyncio
 import datetime
 import functools
 import logging
-import sys
-import traceback
 
 from aiohttp import web
 
@@ -17,7 +14,11 @@ from eidaws.federator.utils.misc import (
     make_context_logger,
     Route,
 )
-from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
+from eidaws.federator.utils.mixin import (
+    CachingMixin,
+    ClientRetryBudgetMixin,
+    ConfigMixin,
+)
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
@@ -33,6 +34,17 @@ def _duration_to_timedelta(*args, **kwargs):
         return datetime.timedelta(*args, **kwargs)
     except TypeError:
         return None
+
+
+def _patch_response_write(response, write_callback):
+
+    response_write = response.write
+
+    async def write(*args, **kwargs):
+        await response_write(*args, **kwargs)
+        write_callback(*args, **kwargs)
+
+    response.write = write
 
 
 def cached(func):
@@ -64,67 +76,11 @@ def cached(func):
     return wrapper
 
 
-def with_exception_handling(coro):
-    """
-    Method decorator providing general purpose exception handling for worker
-    tasks.
-    """
-
-    @functools.wraps(coro)
-    async def wrapper(self, *args, **kwargs):
-
-        try:
-            await coro(self, *args, **kwargs)
-        except asyncio.CancelledError:
-            raise
-        except Exception as err:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.logger.critical(f"Local TaskWorker exception: {type(err)}")
-            self.logger.critical(
-                "Traceback information: "
-                + repr(
-                    traceback.format_exception(
-                        exc_type, exc_value, exc_traceback
-                    )
-                )
-            )
-            self._queue.task_done()
-
-    return wrapper
-
-
-class BaseAsyncWorker(abc.ABC, ClientRetryBudgetMixin, ConfigMixin):
-    """
-    Abstract base class for worker implementations.
-    """
-
-    LOGGER = FED_BASE_ID + ".worker"
-
-    def __init__(self, request):
-
-        self.request = request
-
-        self._logger = logging.getLogger(self.LOGGER)
-        self.logger = make_context_logger(self._logger, self.request)
-
-    @abc.abstractmethod
-    async def run(self, req_method="GET", **kwargs):
-        pass
-
-    async def _handle_error(self, error=None, **kwargs):
-        msg = kwargs.get("msg", error)
-        if msg is not None:
-            self.logger.warning(str(msg))
-
-    async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
-        raise RequestProcessorError("HTTP code 413 handling not implemented.")
-
-
 class RequestProcessorError(ErrorWithTraceback):
     """Base RequestProcessor error ({})."""
 
 
-class BaseRequestProcessor(ClientRetryBudgetMixin, ConfigMixin):
+class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for request processors.
     """

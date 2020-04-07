@@ -20,6 +20,7 @@ from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.utils.parser import FDSNWSParserMixin
 from eidaws.utils.schema import (
+    _merge_fields,
     FDSNWSDateTime,
     Latitude,
     Longitude,
@@ -119,11 +120,7 @@ class StationSchema(ServiceSchema):
             ("lon", "longitude"),
         ]
 
-        for alt_key, key in _mappings:
-            if alt_key in data and key not in data:
-                data[key] = data[alt_key]
-                data.pop(alt_key)
-
+        _merge_fields(data, _mappings)
         return data
 
     @validates_schema

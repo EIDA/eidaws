@@ -11,11 +11,12 @@ from aiohttp import web
 from lxml import etree
 
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_XML_SERVICE_ID
-from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
-    with_exception_handling,
+    _patch_response_write,
     BaseRequestProcessor,
+)
+from eidaws.federator.utils.worker import (
+    with_exception_handling,
     BaseAsyncWorker,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -76,18 +77,18 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         response,
         write_lock,
         prepare_callback=None,
-        write_callback=None,
         level="station",
+        **kwargs,
     ):
-        super().__init__(request)
-
-        self._queue = queue
-        self._session = session
-        self._response = response
-
-        self._lock = write_lock
-        self._prepare_callback = _callable_or_raise(prepare_callback)
-        self._write_callback = _callable_or_raise(write_callback)
+        super().__init__(
+            request,
+            queue,
+            session,
+            response,
+            write_lock,
+            prepare_callback=prepare_callback,
+            **kwargs,
+        )
 
         self._level = level
 
@@ -139,10 +140,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                         )
                         await self._response.write(data)
 
-                        if self._write_callback is not None:
-                            self._write_callback(data)
-
-            self._queue.task_done()
+            await self.finalize()
 
     async def _parse_response(self, resp):
         if resp is None:
@@ -279,7 +277,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                 f"Error while executing request: error={type(err)}, "
                 f"url={req_handler.url}, method={req_method}"
             )
-            self._handle_error(msg=msg)
+            await self._handle_error(msg=msg)
             await self.update_cretry_budget(req_handler.url, 503)
 
             return None
@@ -294,9 +292,9 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
             resp.raise_for_status()
         except aiohttp.ClientResponseError:
             if resp.status == 413:
-                self._handle_413()
+                await self._handle_413()
             else:
-                self._handle_error(msg=msg)
+                await self._handle_error(msg=msg)
 
             return None
         else:
@@ -304,7 +302,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                 if resp.status in FDSNWS_NO_CONTENT_CODES:
                     self.logger.info(msg)
                 else:
-                    self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg)
 
                 return None
 
@@ -322,10 +320,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         return hash_method(str(key_args).encode("utf-8")).digest()
 
 
-BaseAsyncWorker.register(_StationXMLAsyncWorker)
-
-
-class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
+class StationXMLRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
@@ -362,7 +357,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         )
         header = header.encode("utf-8")
         await response.write(header)
-        self.dump_to_cache_buffer(header)
 
     async def _make_response(
         self,
@@ -376,6 +370,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
         """
         Return a federated response.
         """
+
         async def dispatch(queue, routes, **kwargs):
             """
             Dispatch jobs.
@@ -393,6 +388,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
+        _patch_response_write(response, self.dump_to_cache_buffer)
 
         lock = asyncio.Lock()
 
@@ -419,7 +415,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
                     response,
                     lock,
                     prepare_callback=self._prepare_response,
-                    write_callback=self.dump_to_cache_buffer,
                     level=self._level,
                 )
 
@@ -432,8 +427,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor, CachingMixin):
 
             footer = self.STATIONXML_FOOTER.encode("utf-8")
             await response.write(footer)
-            self.dump_to_cache_buffer(footer)
-
             await response.write_eof()
 
             return response

@@ -139,6 +139,7 @@ class RedisCache(CachingBackend):
     async def exists(self, key):
         return await self.redis.exists(self._create_key_prefix() + key)
 
+    # TODO(damb): Allow gzip compression to be optional.
     def _serialize(self, value):
         return gzip.compress(value)
 

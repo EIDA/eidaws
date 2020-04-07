@@ -6,22 +6,38 @@ General marshmallow schema definitions for EIDA NG webservices.
 import datetime
 import functools
 
-from marshmallow import (Schema, fields, validate, ValidationError,
-                         pre_load, post_load, post_dump,
-                         validates_schema)
+from marshmallow import (
+    Schema,
+    fields,
+    validate,
+    ValidationError,
+    pre_load,
+    post_load,
+    post_dump,
+    validates_schema,
+)
 
 from eidaws.utils.settings import (
-    FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE, FDSNWS_NO_CONTENT_CODES)
+    FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
+    FDSNWS_NO_CONTENT_CODES,
+)
 from eidaws.utils.misc import from_fdsnws_datetime, fdsnws_isoformat
 from eidaws.utils.sncl import StreamEpoch
 
 
+def _merge_fields(data, map_iterable):
+    for alt_key, key in map_iterable:
+        if alt_key in data and key not in data:
+            data[key] = data[alt_key]
+            data.pop(alt_key)
+
+
 validate_percentage = validate.Range(min=0, max=100)
-validate_latitude = validate.Range(min=-90., max=90)
-validate_longitude = validate.Range(min=-180., max=180.)
-validate_radius = validate.Range(min=0., max=180.)
-validate_net_sta_cha = validate.Regexp(r'[A-Za-z0-9_*?]*$')
-not_empty = validate.NoneOf([None, ''])
+validate_latitude = validate.Range(min=-90.0, max=90)
+validate_longitude = validate.Range(min=-180.0, max=180.0)
+validate_radius = validate.Range(min=0.0, max=180.0)
+validate_net_sta_cha = validate.Regexp(r"[A-Za-z0-9_*?]*$")
+not_empty = validate.NoneOf([None, ""])
 
 
 def NotEmptyField(field_type, **kwargs):
@@ -42,7 +58,8 @@ NoData = functools.partial(
     fields.Int,
     as_string=True,
     missing=FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
-    validate=validate.OneOf(FDSNWS_NO_CONTENT_CODES))
+    validate=validate.OneOf(FDSNWS_NO_CONTENT_CODES),
+)
 
 
 # -----------------------------------------------------------------------------
@@ -50,20 +67,21 @@ class JSONBool(fields.Bool):
     """
     Custom field serialializing to a JSON boolean.
     """
+
     #: Values that will (de)serialize to `True`. If an empty set, any non-falsy
     #  value will deserialize to `true`.
-    truthy = set(('true', True))
+    truthy = set(("true", True))
     #: Values that will (de)serialize to `False`.
-    falsy = set(('false', False))
+    falsy = set(("false", False))
 
     def _serialize(self, value, attr, obj):
 
         if value is None:
             return None
         elif value in self.truthy:
-            return 'true'
+            return "true"
         elif value in self.falsy:
-            return 'false'
+            return "false"
 
         return bool(value)
 
@@ -85,8 +103,8 @@ class FDSNWSDateTime(fields.DateTime):
 
     DESERIALIZATION_FUNCS = fields.DateTime.DESERIALIZATION_FUNCS.copy()
 
-    SERIALIZATION_FUNCS['fdsnws'] = fdsnws_isoformat
-    DESERIALIZATION_FUNCS['fdsnws'] = from_fdsnws_datetime
+    SERIALIZATION_FUNCS["fdsnws"] = fdsnws_isoformat
+    DESERIALIZATION_FUNCS["fdsnws"] = from_fdsnws_datetime
 
 
 # -----------------------------------------------------------------------------
@@ -100,23 +118,25 @@ class StreamEpochSchema(Schema):
         network station location channel starttime endtime
 
     """
-    network = fields.Str(missing='*', validate=validate_net_sta_cha)
+
+    network = fields.Str(missing="*", validate=validate_net_sta_cha)
     net = fields.Str(load_only=True)
 
-    station = fields.Str(missing='*', validate=validate_net_sta_cha)
+    station = fields.Str(missing="*", validate=validate_net_sta_cha)
     sta = fields.Str(load_only=True)
 
-    location = fields.Str(missing='*',
-                          validate=validate.Regexp(r'[A-Z0-9_*?]*$|--|\s\s'))
+    location = fields.Str(
+        missing="*", validate=validate.Regexp(r"[A-Z0-9_*?]*$|--|\s\s")
+    )
     loc = fields.Str(load_only=True)
 
-    channel = fields.Str(missing='*', validate=validate_net_sta_cha)
+    channel = fields.Str(missing="*", validate=validate_net_sta_cha)
     cha = fields.Str(load_only=True)
 
-    starttime = FDSNWSDateTime(format='fdsnws')
+    starttime = FDSNWSDateTime(format="fdsnws")
     start = fields.Str(load_only=True)
 
-    endtime = FDSNWSDateTime(format='fdsnws', allow_none=True)
+    endtime = FDSNWSDateTime(format="fdsnws", allow_none=True)
     end = fields.Str(load_only=True)
 
     @pre_load
@@ -131,18 +151,15 @@ class StreamEpochSchema(Schema):
             exclusively parsed.
         """
         _mappings = [
-            ('net', 'network'),
-            ('sta', 'station'),
-            ('loc', 'location'),
-            ('cha', 'channel'),
-            ('start', 'starttime'),
-            ('end', 'endtime')]
+            ("net", "network"),
+            ("sta", "station"),
+            ("loc", "location"),
+            ("cha", "channel"),
+            ("start", "starttime"),
+            ("end", "endtime"),
+        ]
 
-        for alt_key, key in _mappings:
-            if alt_key in data and key not in data:
-                data[key] = data[alt_key]
-                data.pop(alt_key)
-
+        _merge_fields(data, _mappings)
         return data
 
     @post_load
@@ -151,8 +168,8 @@ class StreamEpochSchema(Schema):
         Factory method generating
         :py:class:`eidaws.utils.sncl.StreamEpoch` objects.
         """
-        if data['location'] == '--':
-            data['location'] = ''
+        if data["location"] == "--":
+            data["location"] = ""
         return StreamEpoch.from_sncl(**data)
 
     @post_dump
@@ -161,16 +178,21 @@ class StreamEpochSchema(Schema):
         Provides context dependend skipping of *empty* datetimes when
         serializing.
         """
-        if (self.context.get('request') and
-                self.context.get('request').method == 'GET'):
-            if data.get('starttime') is None:
-                del data['starttime']
-            if data.get('endtime') is None:
-                del data['endtime']
-        elif self.context.get('routing'):
-            if (data.get('endtime') is None or from_fdsnws_datetime(
-                    data.get('endtime')) == datetime.datetime.max):
-                del data['endtime']
+        if (
+            self.context.get("request")
+            and self.context.get("request").method == "GET"
+        ):
+            if data.get("starttime") is None:
+                del data["starttime"]
+            if data.get("endtime") is None:
+                del data["endtime"]
+        elif self.context.get("routing"):
+            if (
+                data.get("endtime") is None
+                or from_fdsnws_datetime(data.get("endtime"))
+                == datetime.datetime.max
+            ):
+                del data["endtime"]
 
         return data
 
@@ -179,8 +201,8 @@ class StreamEpochSchema(Schema):
         """
         Replaces empty location identifiers when serializing.
         """
-        if data['location'] == '':
-            data['location'] = '--'
+        if data["location"] == "":
+            data["location"] = "--"
         return data
 
     @validates_schema
@@ -189,55 +211,65 @@ class StreamEpochSchema(Schema):
         Validation of temporal constraints.
         """
         # NOTE(damb): context dependent validation
-        if self.context.get('request'):
+        if self.context.get("request"):
 
-            starttime = data.get('starttime')
-            endtime = data.get('endtime')
+            starttime = data.get("starttime")
+            endtime = data.get("endtime")
             now = datetime.datetime.utcnow()
 
-            if self.context.get('request').method == 'GET':
+            if self.context.get("request").method == "GET":
 
                 if not endtime:
                     endtime = now
                 elif endtime > now:
                     endtime = now
-                    if self.context.get('service') != 'eidaws-wfcatalog':
-                        data['endtime'] = None
+                    # silently unset endtime
+                    data["endtime"] = None
 
-            elif self.context.get('request').method == 'POST':
+            elif self.context.get("request").method == "POST":
                 if starttime is None or endtime is None:
-                    raise ValidationError('missing temporal constraints')
+                    raise ValidationError("missing temporal constraints")
 
             if starttime:
                 if starttime > now:
-                    raise ValidationError('starttime in future')
+                    raise ValidationError("starttime in future")
                 elif starttime >= endtime:
                     raise ValidationError(
-                        'endtime must be greater than starttime')
+                        "endtime must be greater than starttime"
+                    )
 
     class Meta:
         strict = True
         ordered = True
 
 
-class ManyStreamEpochSchema(Schema):
-    """
-    A schema class intended to provide a :code:`many=True` replacement for
-    :py:mod:`webargs` locations different from *JSON*. This way we are able to
-    treat :py:class:`eidaws.utils.sncl.StreamEpoch` objects like JSON
-    bulk type arguments.
-    """
-    stream_epochs = fields.List(fields.Nested('StreamEpochSchema'))
+def _ManyStreamEpochSchema(stream_epoch_schema=StreamEpochSchema):
+    class ManyStreamEpochSchema(Schema):
+        """
+        A schema class intended to provide a :code:`many=True` replacement for
+        :py:mod:`webargs` locations different from *JSON*. This way we are able to
+        treat :py:class:`eidaws.utils.sncl.StreamEpoch` objects like JSON
+        bulk type arguments.
+        """
 
-    @validates_schema
-    def validate_schema(self, data, **kwargs):
-        # at least one SNCL must be defined for request.method == 'POST'
-        if (self.context.get('request') and
-                self.context.get('request').method == 'POST'):
-            if 'stream_epochs' not in data or not data['stream_epochs']:
-                raise ValidationError('No StreamEpoch defined.')
-            if not all(data['stream_epochs']):
-                raise ValidationError('Invalid StreamEpoch defined.')
+        stream_epochs = fields.List(fields.Nested(stream_epoch_schema))
 
-    class Meta:
-        strict = True
+        @validates_schema
+        def validate_schema(self, data, **kwargs):
+            # at least one SNCL must be defined for request.method == 'POST'
+            if (
+                self.context.get("request")
+                and self.context.get("request").method == "POST"
+            ):
+                if "stream_epochs" not in data or not data["stream_epochs"]:
+                    raise ValidationError("No StreamEpoch defined.")
+                if not all(data["stream_epochs"]):
+                    raise ValidationError("Invalid StreamEpoch defined.")
+
+        class Meta:
+            strict = True
+
+    return ManyStreamEpochSchema
+
+
+ManyStreamEpochSchema = _ManyStreamEpochSchema()

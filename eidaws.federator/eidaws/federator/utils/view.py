@@ -38,6 +38,34 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         )
 
     async def get(self):
+        await self._parse_get()
+
+        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
+        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
+
+        processor = self._processor_cls(
+            self.request, self.config["url_routing"],
+        )
+
+        processor.post = False
+
+        return await processor.federate(timeout=self.client_timeout)
+
+    async def post(self):
+        await self._parse_post()
+
+        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
+        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
+
+        processor = self._processor_cls(
+            self.request, self.config["url_routing"],
+        )
+
+        processor.post = True
+
+        return await processor.federate(timeout=self.client_timeout)
+
+    async def _parse_get(self):
         # strict parameter validation
         await keyword_parser.parse(
             (self._schema, StreamEpochSchema),
@@ -59,18 +87,7 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
             "stream_epochs"
         ]
 
-        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
-        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
-
-        processor = self._processor_cls(
-            self.request, self.config["url_routing"],
-        )
-
-        processor.post = False
-
-        return await processor.federate(timeout=self.client_timeout)
-
-    async def post(self):
+    async def _parse_post(self):
         # strict parameter validation
         await keyword_parser.parse(
             self._schema, self.request, locations=("form",),
@@ -91,14 +108,3 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         self.request[FED_BASE_ID + ".stream_epochs"] = stream_epochs_dict[
             "stream_epochs"
         ]
-
-        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
-        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
-
-        processor = self._processor_cls(
-            self.request, self.config["url_routing"],
-        )
-
-        processor.post = True
-
-        return await processor.federate(timeout=self.client_timeout)

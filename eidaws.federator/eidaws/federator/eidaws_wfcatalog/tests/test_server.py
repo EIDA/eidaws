@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import datetime
 import functools
+import json
 import pytest
 
 from aiohttp import web
 
-from eidaws.federator.fdsnws_dataselect import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_dataselect.app import DEFAULT_CONFIG
-from eidaws.federator.fdsnws_dataselect.route import FED_DATASELECT_PATH_QUERY
+from eidaws.federator.eidaws_wfcatalog import create_app, SERVICE_ID
+from eidaws.federator.eidaws_wfcatalog.app import DEFAULT_CONFIG
+from eidaws.federator.eidaws_wfcatalog.route import FED_WFCATALOG_PATH_QUERY
 from eidaws.federator.utils.misc import get_config
 from eidaws.federator.utils.pytest_plugin import (
-    fdsnws_dataselect_content_type,
+    eidaws_wfcatalog_content_type,
     fdsnws_error_content_type,
     eidaws_routing_path_query,
     load_data,
@@ -25,26 +27,31 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestKeywordParserMixin,
     _TestRoutingMixin,
 )
-from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
+from eidaws.utils.settings import EIDAWS_WFCATALOG_PATH_QUERY
+
+
+_now = datetime.datetime.utcnow()
+_tomorrow = _now + datetime.timedelta(days=1)
+_day_after_tomorrow = _now + datetime.timedelta(days=2)
 
 
 @pytest.fixture
 def content_tester(load_data):
     async def _content_tester(resp, expected=None):
         assert expected is not None
-        assert await resp.read() == load_data(expected)
+        assert await resp.json() == json.loads(load_data(expected))
 
     return _content_tester
 
 
-class TestFDSNDataselectServer(
+class TestEIDAWFCatalogServer(
     _TestCommonServerConfig,
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
 ):
-    FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
-    PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
+    FED_PATH_QUERY = FED_WFCATALOG_PATH_QUERY
+    PATH_QUERY = EIDAWS_WFCATALOG_PATH_QUERY
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
@@ -76,12 +83,12 @@ class TestFDSNDataselectServer(
                     "net": "CH",
                     "sta": "HASLI",
                     "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-05",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-03",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-03",),
         ],
     )
     async def test_single_stream_epoch(
@@ -89,7 +96,7 @@ class TestFDSNDataselectServer(
         server_config,
         tester,
         eidaws_routing_path_query,
-        fdsnws_dataselect_content_type,
+        eidaws_wfcatalog_content_type,
         load_data,
         method,
         params_or_data,
@@ -103,8 +110,8 @@ class TestFDSNDataselectServer(
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                         ),
                     ),
                 )
@@ -119,9 +126,7 @@ class TestFDSNDataselectServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-03"),
                     ),
                 ),
             ]
@@ -129,8 +134,8 @@ class TestFDSNDataselectServer(
 
         expected = {
             "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45",
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-03",
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -149,18 +154,18 @@ class TestFDSNDataselectServer(
                 "GET",
                 {
                     "net": "CH",
-                    "sta": "DAVOX,HASLI",
+                    "sta": "HASLI",
                     "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-05",
+                    "cha": "BHN,BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-03",
                 },
             ),
             (
                 "POST",
                 (
-                    b"CH HASLI -- LHZ 2019-01-01 2019-01-05\n"
-                    b"CH DAVOX -- LHZ 2019-01-01 2019-01-05"
+                    b"CH HASLI -- BHN 2020-01-01 2020-01-03\n"
+                    b"CH HASLI -- BHZ 2019-01-01 2020-01-03"
                 ),
             ),
         ],
@@ -170,7 +175,7 @@ class TestFDSNDataselectServer(
         server_config,
         tester,
         eidaws_routing_path_query,
-        fdsnws_dataselect_content_type,
+        eidaws_wfcatalog_content_type,
         load_data,
         method,
         params_or_data,
@@ -184,9 +189,9 @@ class TestFDSNDataselectServer(
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH DAVOX -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHN 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                         ),
                     ),
                 )
@@ -204,9 +209,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.DAVOX..LHZ.2019-01-01.2019-01-05T00:06:09"
-                        ),
+                        body=load_data("CH.HASLI..BHN.2020-01-01.2020-01-03"),
                     ),
                 ),
                 (
@@ -214,9 +217,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-03"),
                     ),
                 ),
             ]
@@ -224,8 +225,8 @@ class TestFDSNDataselectServer(
 
         expected = {
             "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05",
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHN,BHZ.2020-01-01.2020-01-03",
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -246,16 +247,16 @@ class TestFDSNDataselectServer(
                     "net": "CH,GR",
                     "sta": "BFO,HASLI",
                     "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-05",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-03",
                 },
             ),
             (
                 "POST",
                 (
-                    b"GR BFO -- LHZ 2019-01-01 2019-01-05\n"
-                    b"CH HASLI -- LHZ 2019-01-01 2019-01-05"
+                    b"GR BFO -- BHZ 2020-01-01 2020-01-03\n"
+                    b"CH HASLI -- BHZ 2020-01-01 2020-01-03"
                 ),
             ),
         ],
@@ -265,7 +266,7 @@ class TestFDSNDataselectServer(
         server_config,
         tester,
         eidaws_routing_path_query,
-        fdsnws_dataselect_content_type,
+        eidaws_wfcatalog_content_type,
         load_data,
         method,
         params_or_data,
@@ -279,11 +280,11 @@ class TestFDSNDataselectServer(
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.bgr.de/fdsnws/dataselect/1/query\n"
-                            "GR BFO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "http://eida.bgr.de/eidaws/wfcatalog/1/query\n"
+                            "GR BFO -- BHZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                             "\n"
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                         ),
                     ),
                 )
@@ -301,7 +302,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data("GR.BFO..LHZ.2019-01-01.2019-01-05"),
+                        body=load_data("GR.BFO..BHZ.2020-01-01.2020-01-03"),
                     ),
                 ),
             ],
@@ -311,9 +312,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-03"),
                     ),
                 ),
             ],
@@ -321,8 +320,8 @@ class TestFDSNDataselectServer(
 
         expected = {
             "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH,GR.BFO,HASLI..LHZ.2019-01-01.2019-01-05",
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH,GR.BFO,HASLI..BHZ.2020-01-01.2020-01-03",
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -343,98 +342,12 @@ class TestFDSNDataselectServer(
                     "net": "CH",
                     "sta": "HASLI",
                     "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-10",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-10",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-10",),
-        ],
-    )
-    async def test_split_with_overlap(
-        self,
-        server_config,
-        tester,
-        eidaws_routing_path_query,
-        fdsnws_dataselect_content_type,
-        load_data,
-        method,
-        params_or_data,
-    ):
-        mocked_routing = {
-            "localhost": [
-                (
-                    eidaws_routing_path_query,
-                    method,
-                    web.Response(
-                        status=200,
-                        text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-10T00:00:00\n"
-                        ),
-                    ),
-                )
-            ]
-        }
-
-        config_dict = server_config(self.get_config)
-        endpoint_request_method = self.lookup_config(
-            "endpoint_request_method", config_dict
-        )
-        mocked_endpoints = {
-            "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
-                (
-                    self.PATH_QUERY,
-                    endpoint_request_method,
-                    web.Response(
-                        status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-                        ),
-                    ),
-                ),
-                (
-                    self.PATH_QUERY,
-                    endpoint_request_method,
-                    web.Response(
-                        status=200,
-                        body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
-                    ),
-                ),
-            ]
-        }
-
-        expected = {
-            "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-10",
-        }
-        await tester(
-            self.FED_PATH_QUERY,
-            method,
-            params_or_data,
-            self.create_app(config_dict=config_dict),
-            mocked_routing,
-            mocked_endpoints,
-            expected,
-        )
-
-    @pytest.mark.parametrize(
-        "method,params_or_data",
-        [
-            (
-                "GET",
-                {
-                    "net": "CH",
-                    "sta": "HASLI",
-                    "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-01T00:10:00",
-                },
-            ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-01T00:10:00",),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
         ],
     )
     async def test_split_without_overlap(
@@ -442,7 +355,7 @@ class TestFDSNDataselectServer(
         server_config,
         tester,
         eidaws_routing_path_query,
-        fdsnws_dataselect_content_type,
+        eidaws_wfcatalog_content_type,
         load_data,
         method,
         params_or_data,
@@ -455,8 +368,8 @@ class TestFDSNDataselectServer(
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-01T00:10:00\n"
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-10T00:00:00\n"
                         ),
                     ),
                 )
@@ -469,15 +382,17 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-00T00:05:04"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-05"),
                     ),
                 ),
                 (
@@ -485,9 +400,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01T05:05:00.2019-01-00T00:10:00"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-05.2020-01-10"),
                     ),
                 ),
             ]
@@ -495,8 +408,8 @@ class TestFDSNDataselectServer(
 
         expected = {
             "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-01T00:10:00",
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -517,25 +430,24 @@ class TestFDSNDataselectServer(
                     "net": "CH",
                     "sta": "HASLI",
                     "loc": "--",
-                    "cha": "LHZ",
-                    "start": "2019-01-01",
-                    "end": "2019-01-20",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-10",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-20",),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
         ],
     )
     async def test_split_with_overlap(
         self,
         server_config,
         tester,
-        fdsnws_dataselect_content_type,
-        load_data,
         eidaws_routing_path_query,
+        eidaws_wfcatalog_content_type,
+        load_data,
         method,
         params_or_data,
     ):
-
         mocked_routing = {
             "localhost": [
                 (
@@ -544,8 +456,8 @@ class TestFDSNDataselectServer(
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-20T00:00:00\n"
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-10T00:00:00\n"
                         ),
                     ),
                 )
@@ -558,16 +470,17 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
-                        ),
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-06"),
                     ),
                 ),
                 (
@@ -575,24 +488,7 @@ class TestFDSNDataselectServer(
                     endpoint_request_method,
                     web.Response(
                         status=200,
-                        body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
-                    ),
-                ),
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
-                (
-                    self.PATH_QUERY,
-                    endpoint_request_method,
-                    web.Response(
-                        status=200,
-                        body=load_data("CH.HASLI..LHZ.2019-01-10.2019-01-15"),
-                    ),
-                ),
-                (
-                    self.PATH_QUERY,
-                    endpoint_request_method,
-                    web.Response(
-                        status=200,
-                        body=load_data("CH.HASLI..LHZ.2019-01-15.2019-01-20"),
+                        body=load_data("CH.HASLI..BHZ.2020-01-05.2020-01-10"),
                     ),
                 ),
             ]
@@ -600,8 +496,8 @@ class TestFDSNDataselectServer(
 
         expected = {
             "status": 200,
-            "content_type": fdsnws_dataselect_content_type,
-            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-20",
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -611,4 +507,195 @@ class TestFDSNDataselectServer(
             mocked_routing,
             mocked_endpoints,
             expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-09",
+                },
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-09",),
+        ],
+    )
+    async def test_split_with_overlap(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        eidaws_wfcatalog_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/eidaws/wfcatalog/1/query\n"
+                            "CH HASLI -- BHZ 2020-01-01T00:00:00 2020-01-09T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-01.2020-01-03"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-03.2020-01-05"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-05.2020-01-08"),
+                    ),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        body=load_data("CH.HASLI..BHZ.2020-01-07.2020-01-09"),
+                    ),
+                ),
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": eidaws_wfcatalog_content_type,
+            "result": "CH.HASLI..BHZ.2020-01-01.2020-01-09",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-01",
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "end": "2020-01-09",
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": _tomorrow.isoformat(),
+                    "end": _day_after_tomorrow.isoformat(),
+                },
+            ),
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "BHZ",
+                    "start": "2020-01-02",
+                    "end": "2020-01-01",
+                },
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-01",),
+            (
+                "POST",
+                (
+                    f"CH HASLI -- BHZ {_tomorrow.isoformat()} "
+                    f"{_day_after_tomorrow.isoformat()}"
+                ).encode("utf-8"),
+            ),
+            ("POST", b"CH HASLI -- BHZ 2020-01-02 2020-01-01",),
+            ("POST", b"CH HASLI -- BHZ",),
+        ],
+    )
+    async def test_parser_invalid(
+        self,
+        make_federated_eida,
+        fdsnws_error_content_type,
+        method,
+        params_or_data,
+    ):
+
+        client, _, _ = await make_federated_eida(self.create_app(),)
+
+        method = method.lower()
+        kwargs = {"params" if method == "get" else "data": params_or_data}
+        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+
+        assert resp.status == 400
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
         )

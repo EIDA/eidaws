@@ -7,11 +7,12 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID
 from eidaws.federator.utils.request import FdsnRequestHandler
-from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.federator.utils.mixin import CachingMixin
 from eidaws.federator.utils.process import (
-    with_exception_handling,
+    _patch_response_write,
     BaseRequestProcessor,
+)
+from eidaws.federator.utils.worker import (
+    with_exception_handling,
     BaseAsyncWorker,
 )
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
@@ -26,27 +27,9 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
     object.
     """
 
-    LOGGER = ".".join([FED_BASE_ID, FED_STATION_TEXT_SERVICE_ID, "worker"])
+    SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
-    def __init__(
-        self,
-        request,
-        queue,
-        session,
-        response,
-        write_lock,
-        prepare_callback=None,
-        write_callback=None,
-    ):
-        super().__init__(request)
-
-        self._queue = queue
-        self._session = session
-        self._response = response
-
-        self._lock = write_lock
-        self._prepare_callback = _callable_or_raise(prepare_callback)
-        self._write_callback = _callable_or_raise(write_callback)
+    LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
     @with_exception_handling
     async def run(self, req_method="GET", **kwargs):
@@ -67,10 +50,10 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                     f"Error while executing request: error={type(err)}, "
                     f"url={req_handler.url}, method={req_method}"
                 )
-                self._handle_error(msg=msg)
+                await self._handle_error(msg=msg)
 
                 await self.update_cretry_budget(req_handler.url, 503)
-                self._queue.task_done()
+                await self.finalize()
                 continue
 
             msg = (
@@ -83,20 +66,20 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                 resp.raise_for_status()
             except aiohttp.ClientResponseError:
                 if resp.status == 413:
-                    self._handle_413()
+                    await self._handle_413()
                 else:
-                    self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg)
 
-                self._queue.task_done()
+                await self.finalize()
                 continue
             else:
                 if resp.status != 200:
                     if resp.status in FDSNWS_NO_CONTENT_CODES:
                         self.logger.info(msg)
                     else:
-                        self._handle_error(msg=msg)
+                        await self._handle_error(msg=msg)
 
-                    self._queue.task_done()
+                    await self.finalize()
                     continue
             finally:
                 await self.update_cretry_budget(req_handler.url, resp.status)
@@ -115,10 +98,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
                     await self._response.write(data)
 
-                    if self._write_callback is not None:
-                        self._write_callback(data)
-
-            self._queue.task_done()
+            await self.finalize()
 
     async def _parse_resp(self, resp):
         # XXX(damb): Read the entire response into memory
@@ -132,10 +112,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
             return text[(text.find(b"\n") + 1) :]
 
 
-BaseAsyncWorker.register(_StationTextAsyncWorker)
-
-
-class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
+class StationTextRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
@@ -177,7 +154,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         header = self._HEADER_MAP[self._level]
         await response.write(header + b"\n")
-        self.dump_to_cache_buffer(header + b"\n")
 
     async def _make_response(
         self,
@@ -206,6 +182,7 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
 
         queue = asyncio.Queue()
         response = web.StreamResponse()
+        _patch_response_write(response, self.dump_to_cache_buffer)
 
         lock = asyncio.Lock()
 
@@ -232,7 +209,6 @@ class StationTextRequestProcessor(BaseRequestProcessor, CachingMixin):
                     response,
                     lock,
                     prepare_callback=self._prepare_response,
-                    write_callback=self.dump_to_cache_buffer,
                 )
 
                 task = asyncio.create_task(

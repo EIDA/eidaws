@@ -10,3 +10,4 @@ cscope.*
 *.egg-info
 __pycache__
 venv
+pytest.log
