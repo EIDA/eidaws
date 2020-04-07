@@ -103,11 +103,10 @@ class FakeServer:
                     del self._responses[route]
             except IndexError:
                 response = None
-            else:
+            finally:
                 return route, response
 
-            return route, None
-
+        return route, None
 
 @pytest.fixture
 def make_federated_eida(aiohttp_client):
