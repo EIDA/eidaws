@@ -49,6 +49,7 @@ from eidaws.utils.error import Error
 config_schema = {
     "type": "object",
     "properties": {
+        "logging_conf": {"type": "string", "pattern": "^(\/|~)"},
         "url_routing": {
             "type": "string",
             "format": "uri",
