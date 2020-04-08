@@ -222,7 +222,7 @@ eidaws.federator:
     # --
     #     Maximum size of the Redis connection pool.
     #
-    #     maxsize: 1
+    #     maxsize: 10
 
   # fdsnws-station-text (i.e. format=text) resource specific configuration
   # options. Parameters defined within configuration section override
