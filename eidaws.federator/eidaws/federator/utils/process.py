@@ -224,7 +224,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                     await resp.text(),
                     post=self._post,
                     default_endtime=self._default_endtime,
-                    proxy_netloc=self.config['proxy_netloc']
+                    proxy_netloc=self.config["proxy_netloc"],
                 )
 
     @cached
