@@ -65,13 +65,13 @@ config_schema = {
             "minimum": 1,
         },
         "endpoint_timeout_connect": {
-            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
+            "oneOf": [{"type": "null"}, {"type": "number", "minimum": 0}]
         },
         "endpoint_timeout_sock_connect": {
-            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
+            "oneOf": [{"type": "null"}, {"type": "number", "minimum": 0}]
         },
         "endpoint_timeout_sock_read": {
-            "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]
+            "oneOf": [{"type": "null"}, {"type": "number", "minimum": 0}]
         },
         "redis_url": {
             "type": "string",
