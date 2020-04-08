@@ -22,7 +22,7 @@ class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
 
 
-Route = collections.namedtuple('Route', ['url', 'stream_epochs'])
+Route = collections.namedtuple("Route", ["url", "stream_epochs"])
 
 
 def _callable_or_raise(obj):
@@ -38,7 +38,7 @@ def _callable_or_raise(obj):
 
 def get_config(service_id, path_config=None, defaults={}, json_schema=None):
 
-    user_config = {FED_BASE_ID: {service_id: {}, "common": {}}}
+    user_config = {FED_BASE_ID: {}}
 
     if path_config is None:
         assert defaults, "Using empty default configuration not supported."
@@ -47,11 +47,21 @@ def get_config(service_id, path_config=None, defaults={}, json_schema=None):
 
     try:
         with open(path_config) as ifd:
-            user_config = yaml.safe_load(ifd)
+            _user_config = yaml.safe_load(ifd)
+
+        if isinstance(
+            _user_config.get(FED_BASE_ID),
+            (collections.abc.Mapping, collections.abc.MutableMapping),
+        ):
+            user_config = _user_config
+
     except yaml.parser.ParserError as err:
         warnings.warn(f"Exception while parsing configuration file: {err}")
     except FileNotFoundError as err:
         warnings.warn(f"Configuration file not found ({err}). Using defaults.")
+
+    user_config[FED_BASE_ID].setdefault(service_id, {})
+    user_config[FED_BASE_ID].setdefault("common", {})
 
     config_dict = {
         "config": {
@@ -65,10 +75,14 @@ def get_config(service_id, path_config=None, defaults={}, json_schema=None):
 
     if json_schema is not None:
         try:
-            validate(instance=dict(config_dict["config"][service_id]), schema=json_schema)
+            validate(
+                instance=dict(config_dict["config"][service_id]),
+                schema=json_schema,
+            )
         except ValidationError as err:
             # avoid circular imports
             from eidaws.federator.utils.app import ConfigurationError
+
             raise ConfigurationError(str(err))
 
     return config_dict
