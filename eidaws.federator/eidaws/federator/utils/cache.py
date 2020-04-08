@@ -108,11 +108,15 @@ class RedisCache(CachingBackend):
     """
 
     @classmethod
-    async def create(cls, url, default_timeout=300, key_prefix=None, **kwargs):
+    async def create(
+        cls, url, default_timeout=300, compress=True, key_prefix=None, **kwargs
+    ):
         self = cls()
         super(cls, self)._init(default_timeout)
         self.key_prefix = key_prefix or ""
         self.redis = await aioredis.create_redis_pool(url, **kwargs)
+
+        self._compress = compress
 
         return self
 
@@ -139,9 +143,11 @@ class RedisCache(CachingBackend):
     async def exists(self, key):
         return await self.redis.exists(self._create_key_prefix() + key)
 
-    # TODO(damb): Allow gzip compression to be optional.
     def _serialize(self, value):
-        return gzip.compress(value)
+        if self._compress:
+            return gzip.compress(value)
+
+        return value
 
     def _deserialize(self, value):
         """
@@ -152,7 +158,10 @@ class RedisCache(CachingBackend):
         if value is None:
             return None
 
-        return gzip.decompress(value)
+        if self._compress:
+            return gzip.decompress(value)
+
+        return value
 
 
 CachingBackend.register(NullCache)

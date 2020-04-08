@@ -209,6 +209,12 @@ eidaws.federator:
     #     default_timeout: 300
     #
     # --
+    #     Compress cached data.
+    #     Allowed values: boolean
+    #     Default: True
+    #
+    #     compress:
+    # --
     #     Minimum size of the Redis connection pool.
     #
     #     minsize: 1
