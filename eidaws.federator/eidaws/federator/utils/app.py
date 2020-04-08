@@ -118,7 +118,7 @@ config_schema = {
                                     "type": "integer",
                                     "minimum": 0,
                                 },
-                                "compress": { "type": "boolean" },
+                                "compress": {"type": "boolean"},
                                 "minsize": {"type": "integer", "minimum": 1},
                                 "maxsize": {"type": "integer", "maximum": 1},
                             },
