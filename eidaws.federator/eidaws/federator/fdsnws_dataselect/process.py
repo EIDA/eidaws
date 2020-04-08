@@ -270,10 +270,7 @@ class DataselectRequestProcessor(BaseRequestProcessor):
             connector_owner=False,
         ) as session:
 
-            pool_size = (
-                self.pool_size or self.config["endpoint_connection_limit"]
-            )
-            for _ in range(pool_size):
+            for _ in range(self.pool_size):
                 worker = _DataselectAsyncWorker(
                     self.request,
                     queue,

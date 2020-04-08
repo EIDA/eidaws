@@ -198,13 +198,7 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         ) as session:
 
             # create worker tasks
-            pool_size = (
-                self.pool_size
-                or self.config["endpoint_connection_limit"]
-                or queue.qsize()
-            )
-
-            for _ in range(pool_size):
+            for _ in range(self.pool_size):
                 worker = _StationTextAsyncWorker(
                     self.request,
                     queue,

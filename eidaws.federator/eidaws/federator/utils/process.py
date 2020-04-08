@@ -144,7 +144,10 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     @property
     def pool_size(self):
-        return self.config["pool_size"]
+        return (
+            self.config["pool_size"]
+            or self.config["endpoint_connection_limit"]
+        )
 
     @property
     def max_stream_epoch_duration(self):
