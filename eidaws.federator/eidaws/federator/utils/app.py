@@ -142,7 +142,7 @@ config_schema = {
                 {
                     "type": "string",
                     "format": "uri",
-                    # allow IPv4(:PORT) or HOSTNAME(:PORT)
+                    # allow IPv4(:PORT) or FQDN(:PORT)
                     "pattern": (
                         r"^(((?:[0-9]{1,3}\.){3}[0-9]{1,3})"
                         r"|(([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,}))"
