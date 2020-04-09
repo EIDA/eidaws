@@ -18,8 +18,8 @@ eidaws.federator:
     # port: 8080
     #
     # ----
-    # Unix file system path to serve on. Specifying a path will cause hostname
-    # and port arguments to be ignored.
+    # Unix file system path to serve on. Specifying "unix_path" will cause
+    # hostname and port arguments to be ignored.
     # Default: None
     #
     # unix_path:
