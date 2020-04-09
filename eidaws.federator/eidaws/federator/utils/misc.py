@@ -59,7 +59,7 @@ def get_config(service_id, path_config=None, defaults={}, json_schema=None):
         ):
             user_config = _user_config
 
-    except yaml.parser.ParserError as err:
+    except yaml.YAMLError as err:
         warnings.warn(f"Exception while parsing configuration file: {err}")
     except FileNotFoundError as err:
         warnings.warn(f"Configuration file not found ({err}). Using defaults.")
