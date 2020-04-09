@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import aiohttp_cors
+import argparse
 import functools
+import sys
 
 from aiohttp import web
 
@@ -10,14 +12,18 @@ from eidaws.federator.utils.middleware import (
     exception_handling_middleware,
 )
 from eidaws.federator.utils.misc import (
+    get_config,
     setup_endpoint_http_conn_pool,
     setup_routing_http_conn_pool,
     setup_redis,
     setup_response_code_stats,
     setup_cache,
+    setup_logger,
 )
 from eidaws.federator.utils.parser import setup_parser_error_handler
 from eidaws.federator.settings import (
+    FED_DEFAULT_CONFIG_BASEDIR,
+    FED_DEFAULT_CONFIG_FILE,
     FED_DEFAULT_HOSTNAME,
     FED_DEFAULT_PORT,
     FED_DEFAULT_UNIX_PATH,
@@ -47,6 +53,7 @@ from eidaws.federator.settings import (
 from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import Error
+from eidaws.utils.misc import realpath, real_file_path
 
 
 config_schema = {
@@ -170,73 +177,61 @@ config_schema = {
 }
 
 
-def default_config():
+def config():
     """
     Return a default application configuration.
     """
 
-    default_config = {}
-    default_config.setdefault("hostname", FED_DEFAULT_HOSTNAME)
-    default_config.setdefault("port", FED_DEFAULT_PORT)
-    default_config.setdefault("unix_path", FED_DEFAULT_UNIX_PATH)
-    default_config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
-    default_config.setdefault(
+    config = {}
+    config.setdefault("hostname", FED_DEFAULT_HOSTNAME)
+    config.setdefault("port", FED_DEFAULT_PORT)
+    config.setdefault("unix_path", FED_DEFAULT_UNIX_PATH)
+    config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
+    config.setdefault(
         "routing_connection_limit", FED_DEFAULT_ROUTING_CONN_LIMIT
     )
-    default_config.setdefault(
-        "endpoint_request_method", FED_DEFAULT_REQUEST_METHOD
-    )
-    default_config.setdefault(
+    config.setdefault("endpoint_request_method", FED_DEFAULT_REQUEST_METHOD)
+    config.setdefault(
         "endpoint_connection_limit", FED_DEFAULT_ENDPOINT_CONN_LIMIT
     )
-    default_config.setdefault(
+    config.setdefault(
         "endpoint_connection_limit_per_host",
         FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST,
     )
-    default_config.setdefault(
-        "endpoint_timeout_connect", FED_DEFAULT_TIMEOUT_CONNECT
-    )
-    default_config.setdefault(
+    config.setdefault("endpoint_timeout_connect", FED_DEFAULT_TIMEOUT_CONNECT)
+    config.setdefault(
         "endpoint_timeout_sock_connect", FED_DEFAULT_TIMEOUT_SOCK_CONNECT
     )
-    default_config.setdefault(
+    config.setdefault(
         "endpoint_timeout_sock_read", FED_DEFAULT_TIMEOUT_SOCK_READ
     )
-    default_config.setdefault("redis_url", FED_DEFAULT_URL_REDIS)
-    default_config.setdefault(
-        "redis_pool_minsize", FED_DEFAULT_REDIS_POOL_MINSIZE
-    )
-    default_config.setdefault(
-        "redis_pool_maxsize", FED_DEFAULT_REDIS_POOL_MAXSIZE
-    )
-    default_config.setdefault(
-        "redis_pool_timeout", FED_DEFAULT_REDIS_POOL_TIMEOUT
-    )
-    default_config.setdefault(
+    config.setdefault("redis_url", FED_DEFAULT_URL_REDIS)
+    config.setdefault("redis_pool_minsize", FED_DEFAULT_REDIS_POOL_MINSIZE)
+    config.setdefault("redis_pool_maxsize", FED_DEFAULT_REDIS_POOL_MAXSIZE)
+    config.setdefault("redis_pool_timeout", FED_DEFAULT_REDIS_POOL_TIMEOUT)
+    config.setdefault(
         "client_retry_budget_threshold", FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES
     )
-    default_config.setdefault(
+    config.setdefault(
         "client_retry_budget_ttl", FED_DEFAULT_RETRY_BUDGET_CLIENT_TTL
     )
-    default_config.setdefault(
+    config.setdefault(
         "client_retry_budget_window_size", FED_DEFAULT_RETRY_BUDGET_WINDOW_SIZE
     )
-    default_config.setdefault("pool_size", FED_DEFAULT_POOL_SIZE)
-    default_config.setdefault("cache_config", FED_DEFAULT_CACHE_CONFIG)
-    default_config.setdefault("client_max_size", FED_DEFAULT_CLIENT_MAX_SIZE)
-    default_config.setdefault(
+    config.setdefault("pool_size", FED_DEFAULT_POOL_SIZE)
+    config.setdefault("cache_config", FED_DEFAULT_CACHE_CONFIG)
+    config.setdefault("client_max_size", FED_DEFAULT_CLIENT_MAX_SIZE)
+    config.setdefault(
         "max_stream_epoch_duration", FED_DEFAULT_MAX_STREAM_EPOCH_DURATION
     )
-    default_config.setdefault(
+    config.setdefault(
         "max_total_stream_epoch_duration",
         FED_DEFAULT_MAX_STREAM_EPOCH_DURATION_TOTAL,
     )
-    default_config.setdefault(
-        "streaming_timeout", FED_DEFAULT_STREAMING_TIMEOUT
-    )
-    default_config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
+    config.setdefault("streaming_timeout", FED_DEFAULT_STREAMING_TIMEOUT)
+    config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
 
-    return default_config
+    return config
 
 
 def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
@@ -287,6 +282,69 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     setup_routing_http_conn_pool(service_id, app)
 
     return app
+
+
+def _main(
+    service_id,
+    app_factory,
+    prog=None,
+    argv=sys.argv[1:],
+    default_config=config(),
+    config_schema=config_schema,
+):
+    # does all the dirty work
+
+    DEFAULT_PATH_CONFIG = (
+        FED_DEFAULT_CONFIG_BASEDIR / "config" / FED_DEFAULT_CONFIG_FILE
+    )
+    prog = prog or service_id
+
+    parser = argparse.ArgumentParser(
+        prog=prog, description=f"Launch federating {prog} web service.",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=real_file_path,
+        metavar="PATH",
+        default=DEFAULT_PATH_CONFIG,
+    )
+
+    args = parser.parse_args(args=argv)
+
+    # load config
+    config_dict = get_config(
+        service_id,
+        path_config=args.config,
+        defaults=default_config,
+        json_schema=config_schema,
+    )
+
+    config = config_dict["config"][service_id]
+
+    # configure logging
+    try:
+        path_logging_conf = realpath(
+            config_dict["config"][service_id]["logging_conf"]
+        )
+    except (KeyError, TypeError):
+        path_logging_conf = None
+
+    logger = setup_logger(service_id, path_logging_conf, capture_warnings=True)
+
+    logger.info(f"{prog}: Version v{__version__}")
+    logger.debug(f"Service configuration: {dict(config)}")
+
+    app = app_factory(config_dict=config_dict)
+    # run standalone app
+    web.run_app(
+        app,
+        host=config["hostname"],
+        port=config["port"],
+        path=config["unix_path"],
+    )
+    parser.exit(message="Stopped\n")
 
 
 class AppError(Error):
