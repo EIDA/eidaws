@@ -25,6 +25,12 @@ eidaws.federator:
     # unix_path:
     #
     # ----
+    # Serve static files (i.e. version and application.wadl).
+    # Default: False
+    #
+    # serve_static: False
+    #
+    # ----
     # Absolute path to a logging configuration file. The file must follow the format
     # defined in
     # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.

@@ -27,6 +27,7 @@ from eidaws.federator.settings import (
     FED_DEFAULT_HOSTNAME,
     FED_DEFAULT_PORT,
     FED_DEFAULT_UNIX_PATH,
+    FED_DEFAULT_SERVE_STATIC,
     FED_DEFAULT_URL_ROUTING,
     FED_DEFAULT_NETLOC_PROXY,
     FED_DEFAULT_REQUEST_METHOD,
@@ -67,6 +68,7 @@ config_schema = {
                 {"type": "string", "format": "uri", "pattern": r"^unix:/"},
             ]
         },
+        "serve_static": {"type": "boolean"},
         "logging_conf": {"type": "string", "pattern": r"^(\/|~)"},
         "url_routing": {
             "type": "string",
@@ -186,6 +188,7 @@ def config():
     config.setdefault("hostname", FED_DEFAULT_HOSTNAME)
     config.setdefault("port", FED_DEFAULT_PORT)
     config.setdefault("unix_path", FED_DEFAULT_UNIX_PATH)
+    config.setdefault("serve_static", FED_DEFAULT_SERVE_STATIC)
     config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
     config.setdefault(
         "routing_connection_limit", FED_DEFAULT_ROUTING_CONN_LIMIT
@@ -239,14 +242,16 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     Factory for application creation.
     """
 
+    config = config_dict["config"][service_id]
+
     app = web.Application(
         # XXX(damb): The ordering of middlewares matters
         middlewares=[before_request, exception_handling_middleware],
-        client_max_size=config_dict["config"][service_id]["client_max_size"],
+        client_max_size=config["client_max_size"],
     )
 
     if setup_routes_callback is not None:
-        setup_routes_callback(app)
+        setup_routes_callback(app, static=config["serve_static"])
 
     on_startup = [
         functools.partial(setup_redis, service_id),

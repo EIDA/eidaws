@@ -35,6 +35,11 @@ FED_WFCATALOG_PATH_JSON = _make_fed_path(
 )
 
 
+FED_STATIC = 'static'
+FED_CONTENT_TYPE_VERSION = 'plain/text; charset=utf-8'
+FED_CONTENT_TYPE_WADL = 'application/xml'
+
+
 # ----------------------------------------------------------------------------
 FED_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
 FED_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
@@ -42,6 +47,8 @@ FED_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
 FED_DEFAULT_HOSTNAME = 'localhost'
 FED_DEFAULT_PORT = 8080
 FED_DEFAULT_UNIX_PATH = None
+
+FED_DEFAULT_SERVE_STATIC = False
 
 FED_DEFAULT_URL_ROUTING = "http://localhost/eidaws/routing/1/query"
 FED_DEFAULT_ROUTING_CONN_LIMIT = 100

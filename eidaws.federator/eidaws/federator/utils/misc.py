@@ -8,11 +8,15 @@ import logging.handlers  # needed for handlers defined in logging.conf
 import warnings
 import yaml
 
-from aiohttp import TCPConnector
+from aiohttp import web, TCPConnector
 from collections import ChainMap
 from jsonschema import validate, ValidationError
 
-from eidaws.federator.settings import FED_BASE_ID
+from eidaws.federator.settings import (
+    FED_BASE_ID,
+    FED_CONTENT_TYPE_VERSION,
+    FED_CONTENT_TYPE_WADL,
+)
 from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
 from eidaws.utils.error import ErrorWithTraceback
@@ -196,6 +200,18 @@ async def setup_cache(service_id, app):
     cache = await Cache.create(cache_config)
     app["cache"] = cache
     return cache
+
+
+async def _on_prepare_static(request, response):
+    if request.path.endswith("version"):
+        response.headers["Content-Type"] = FED_CONTENT_TYPE_VERSION
+    elif request.path.endswith("application.wadl"):
+        response.headers["Content-Type"] = FED_CONTENT_TYPE_WADL
+
+
+def append_static_routes(app, routes, path, path_static):
+    app.on_response_prepare.append(_on_prepare_static)
+    routes.append(web.static(path, path_static))
 
 
 # ----------------------------------------------------------------------------
