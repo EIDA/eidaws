@@ -91,31 +91,10 @@ def get_config(service_id, path_config=None, defaults={}, json_schema=None):
 def setup_logger(service_id, path_logging_conf=None, capture_warnings=False):
     """
     Initialize the logger of the application.
-
-    In case the initialization was not successful a fallback logger (using
-    :py:class:`logging.handlers.SyslogHandler`) is set up.
     """
+    logging.basicConfig(level=logging.WARNING)
 
     LOGGER = FED_BASE_ID + "." + service_id
-
-    def setup_fallback_logger():
-        """
-        Setup a fallback syslog logger.
-        """
-        logger = logging.getLogger(LOGGER)
-        fallback_handler = logging.handlers.SysLogHandler("/dev/log", "local0")
-        fallback_handler.setLevel(logging.WARN)
-        fallback_formatter = logging.Formatter(
-            fmt=(
-                "<" + service_id + "> %(asctime)s %(levelname)s %(name)s "
-                "%(process)d %(filename)s:%(lineno)d - %(message)s"
-            ),
-            datefmt="%Y-%m-%dT%H:%M:%S%z",
-        )
-        fallback_handler.setFormatter(fallback_formatter)
-        logger.addHandler(fallback_handler)
-
-        return logger
 
     if path_logging_conf is not None:
         try:
@@ -128,13 +107,7 @@ def setup_logger(service_id, path_logging_conf=None, capture_warnings=False):
         except Exception as err:
             print(
                 f"WARNING: Setup logging failed for {path_logging_conf!r} "
-                f"with error: {err!r}. Using fallback logging "
-                "configuration."
-            )
-            logger = setup_fallback_logger()
-            logger.warning(
-                f"Setup logging failed for {path_logging_conf!r} with "
-                f"error {err!r}. Using fallback logging configuration."
+                f"with error: {err!r}."
             )
     else:
         logger = logging.getLogger(LOGGER)
