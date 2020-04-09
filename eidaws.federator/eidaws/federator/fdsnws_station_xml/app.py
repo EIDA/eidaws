@@ -14,7 +14,7 @@ PROG = "eida-federator-station-xml"
 DEFAULT_CONFIG = default_config()
 
 
-def main(argv):
+def main(argv=sys.argv[1:]):
     _main(
         SERVICE_ID,
         create_app,
@@ -26,4 +26,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

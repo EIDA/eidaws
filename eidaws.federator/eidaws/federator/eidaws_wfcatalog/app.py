@@ -19,7 +19,9 @@ PROG = "eida-federator-wfcatalog-json"
 
 DEFAULT_CONFIG = default_config()
 DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
-DEFAULT_CONFIG.setdefault("buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE)
+DEFAULT_CONFIG.setdefault(
+    "buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE
+)
 DEFAULT_CONFIG.setdefault("splitting_factor", FED_DEFAULT_SPLITTING_FACTOR)
 
 config_schema = default_config_schema
@@ -36,7 +38,7 @@ config_schema["properties"]["splitting_factor"] = {
 }
 
 
-def main(argv):
+def main(argv=sys.argv[1:]):
     _main(
         SERVICE_ID,
         create_app,
@@ -48,4 +50,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
