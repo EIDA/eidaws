@@ -18,6 +18,9 @@ from eidaws.federator.utils.misc import (
 )
 from eidaws.federator.utils.parser import setup_parser_error_handler
 from eidaws.federator.settings import (
+    FED_DEFAULT_HOSTNAME,
+    FED_DEFAULT_PORT,
+    FED_DEFAULT_UNIX_PATH,
     FED_DEFAULT_URL_ROUTING,
     FED_DEFAULT_NETLOC_PROXY,
     FED_DEFAULT_REQUEST_METHOD,
@@ -49,7 +52,15 @@ from eidaws.utils.error import Error
 config_schema = {
     "type": "object",
     "properties": {
-        "logging_conf": {"type": "string", "pattern": "^(\/|~)"},
+        "hostname": {"type": "string", "format": "ipv4"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "unix_path": {
+            "oneOf": [
+                {"type": "null"},
+                {"type": "string", "format": "uri", "pattern": r"^unix:/"},
+            ]
+        },
+        "logging_conf": {"type": "string", "pattern": r"^(\/|~)"},
         "url_routing": {
             "type": "string",
             "format": "uri",
@@ -165,6 +176,9 @@ def default_config():
     """
 
     default_config = {}
+    default_config.setdefault("hostname", FED_DEFAULT_HOSTNAME)
+    default_config.setdefault("port", FED_DEFAULT_PORT)
+    default_config.setdefault("unix_path", FED_DEFAULT_UNIX_PATH)
     default_config.setdefault("url_routing", FED_DEFAULT_URL_ROUTING)
     default_config.setdefault(
         "routing_connection_limit", FED_DEFAULT_ROUTING_CONN_LIMIT

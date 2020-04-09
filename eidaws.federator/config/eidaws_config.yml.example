@@ -6,6 +6,25 @@ eidaws.federator:
   # within the resource specific configuration section.
   common:
     # ----
+    # TCP/IP hostname to serve on.
+    # Default: localhost
+    #
+    # hostname: 'localhost'
+    #
+    # ----
+    # TCP/IP port to serve on.
+    # Default: 8080
+    #
+    # port: 8080
+    #
+    # ----
+    # Unix file system path to serve on. Specifying a path will cause hostname
+    # and port arguments to be ignored.
+    # Default: None
+    #
+    # unix_path:
+    #
+    # ----
     # Absolute path to a logging configuration file. The file must follow the format
     # defined in
     # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
