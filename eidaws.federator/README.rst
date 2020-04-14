@@ -122,6 +122,11 @@ Running one of those application is as simple as e.g.
   $ eida-federator-wfcatalog-json
 
 
+Now the service should be up and running at ``localhost:8080``. Check out the
+`Configuration`_ section if you'd like to run the service on a different
+``hostname:port`` destination.
+
+
 Additional information and help is provided when invoking the application with
 the ``-h|--help`` flag. E.g.
 
