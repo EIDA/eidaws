@@ -130,6 +130,10 @@ the ``-h|--help`` flag. E.g.
   $ eida-federator-wfcatalog-json -h
 
 
+Note, that for production it has several advantages running the services behind
+a *reverse proxy server* such as e.g. `nginx <https://nginx.org/en/>`_.
+
+
 Configuration
 =============
 
