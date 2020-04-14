@@ -155,7 +155,22 @@ service application with the ``-c|--config`` flag e.g.
 Testing
 =======
 
-TODO
+Make sure that an `Redis <https://redis.io/>`_ server instance is up and
+running at ``redis://localhost:6379``.
+
+Required test dependencies can be installed with
+
+.. code::
+
+  $ pip install eidaws.utils eidaws.federator
+  $ pip install -r eidaws.federator/requirements/test.txt
+
+
+In order to run the tests, invoke
+
+.. code::
+
+  $ pytest eidaws.federator
 
 
 Limitations
