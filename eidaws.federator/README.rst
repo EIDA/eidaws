@@ -102,6 +102,15 @@ provided:
   - ``fdsnws-station-xml`` (``/eidaws/station/xml/1``)
   - ``fdsnws-station-text``  (``/eidaws/station/text/1``)
 
+.. note::
+
+  In favor of a simplified versioning scheme, both resource pathes and allowed
+  values for the ``format`` query filter parameter are application specific
+  and **not** compliant with `FDSN webservice <https://www.fdsn.org/webservices/>`_
+  standards. In order to provide a fully `FDSN webservice
+  <https://www.fdsn.org/webservices/>`_ conform API consider the deployment
+  behind a *reverse proxy*.
+
 After installing the ``eidaws.federator`` distribution with
 
 .. code::
@@ -136,7 +145,9 @@ the ``-h|--help`` flag. E.g.
 
 
 Note, that for production it has several advantages running the services behind
-a *reverse proxy server* such as e.g. `nginx <https://nginx.org/en/>`_.
+a *reverse proxy server* such as e.g. `nginx <https://nginx.org/en/>`_. In
+particular, if providing a fully compliant `FDSNWS
+<https://www.fdsn.org/webservices/>`_ API is desired.
 
 
 Configuration
@@ -158,7 +169,27 @@ service application with the ``-c|--config`` flag e.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json -c config/eidaws_config.yml
+  $ eida-federator-wfcatalog-json -c eidaws.federator/config/eidaws_config.yml
+
+
+Logging
+=======
+
+The *eidaws.federator* distribution uses standard `logging
+<https://docs.python.org/3/library/logging.html#module-logging>`_ for tracking
+the application activity.
+
+Depending on the federated resource service the following loggers enumerated by
+name are provided:
+
+  - ``eidaws.federator.eidaws.wfcatalog.json``
+  - ``eidaws.federator.fdsnws.dataselect.miniseed``
+  - ``eidaws.federator.fdsnws.station.text``
+  - ``eidaws.federator.fdsnws.station.xml``
+
+When configuring logging by means of a logging configuration file (see also the
+`Configuration`_ section), you may subscribe to one of these loggers for
+getting log messages.
 
 
 Testing
