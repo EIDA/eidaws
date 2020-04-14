@@ -20,6 +20,7 @@ _DEPS = [
     "aiohttp>=3.6.2",
     "aiohttp_cors>=0.7.0",
     "aiodns>=2.0.0",
+    "aiofiles>=0.5.0",
     "aioredis>=1.3.1",
     "brotlipy>=0.7.0",
     "cchardet>=2.1.5",
