@@ -97,10 +97,10 @@ Federated resources are implemented as standalone applications with respect to
 the resources' pathes. Thus, implementations of the following services are
 provided:
 
-  - ``eidaws-wfcatalog-json`` (``/eidaws/wfcatalog/json/1``)
-  - ``fdsnws-dataselect-miniseed`` (``/eidaws/dataselect/miniseed/1``)
-  - ``fdsnws-station-xml`` (``/eidaws/station/xml/1``)
-  - ``fdsnws-station-text``  (``/eidaws/station/text/1``)
+- ``eidaws-wfcatalog-json`` (``/eidaws/wfcatalog/json/1``)
+- ``fdsnws-dataselect-miniseed`` (``/eidaws/dataselect/miniseed/1``)
+- ``fdsnws-station-xml`` (``/eidaws/station/xml/1``)
+- ``fdsnws-station-text``  (``/eidaws/station/text/1``)
 
 .. note::
 
@@ -119,10 +119,10 @@ After installing the ``eidaws.federator`` distribution with
 
 the corresponding standalone applications are available:
 
-  - ``eida-federator-wfcatalog-json``
-  - ``eida-federator-dataselect-miniseed``
-  - ``eida-federator-station-xml``
-  - ``eida-federator-station-text``
+- ``eida-federator-wfcatalog-json``
+- ``eida-federator-dataselect-miniseed``
+- ``eida-federator-station-xml``
+- ``eida-federator-station-text``
 
 Running one of those application is as simple as e.g.
 
@@ -182,10 +182,10 @@ the application activity.
 Depending on the federated resource service the following loggers enumerated by
 name are provided:
 
-  - ``eidaws.federator.eidaws.wfcatalog.json``
-  - ``eidaws.federator.fdsnws.dataselect.miniseed``
-  - ``eidaws.federator.fdsnws.station.text``
-  - ``eidaws.federator.fdsnws.station.xml``
+- ``eidaws.federator.eidaws.wfcatalog.json``
+- ``eidaws.federator.fdsnws.dataselect.miniseed``
+- ``eidaws.federator.fdsnws.station.text``
+- ``eidaws.federator.fdsnws.station.xml``
 
 When configuring logging by means of a logging configuration file (see also the
 `Configuration`_ section), you may subscribe to one of these loggers for
@@ -198,7 +198,7 @@ Testing
 Make sure that an `Redis <https://redis.io/>`_ server instance is up and
 running at ``redis://localhost:6379``.
 
-After installing the `eidaws.utils` and `eidaws.federator` distributions,
+After installing the ``eidaws.utils`` and ``eidaws.federator`` distributions,
 required test dependencies can be installed with  
 
 .. code::
