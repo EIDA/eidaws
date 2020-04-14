@@ -10,10 +10,9 @@ This repository hosts implementations of:
 Installation
 ============
 
-TODO
-
 Packages are deployed as `Python namespace distributions
-<https://packaging.python.org/guides/packaging-namespace-packages/>`_.
+<https://packaging.python.org/guides/packaging-namespace-packages/>`_. Detailed
+installation instructions come along with the corresponding distributions.
 
 
 License
