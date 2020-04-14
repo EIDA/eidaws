@@ -10,8 +10,8 @@ def _make_fed_path(base_fed_path, query_format, version="1"):
 FED_BASE_ID = "eidaws.federator"
 FED_STATION_TEXT_SERVICE_ID = "fdsnws.station.text"
 FED_STATION_XML_SERVICE_ID = "fdsnws.station.xml"
-FED_DATASELECT_MINISEED_SERVICE_ID = "fdsnws.dataselect"
-FED_WFCATALOG_JSON_SERVICE_ID = "eidaws.wfcatalog"
+FED_DATASELECT_MINISEED_SERVICE_ID = "fdsnws.dataselect.miniseed"
+FED_WFCATALOG_JSON_SERVICE_ID = "eidaws.wfcatalog.json"
 
 FED_STATION_PATH = "/eidaws/station"
 FED_STATION_TEXT_FORMAT = "text"

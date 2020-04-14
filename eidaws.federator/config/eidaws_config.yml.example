@@ -264,7 +264,7 @@ eidaws.federator:
   # fdsnws-dataselect (i.e. format=miniseed) resource specific configuration
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
-  fdsnws.dataselect:
+  fdsnws.dataselect.miniseed:
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
     #
@@ -294,7 +294,7 @@ eidaws.federator:
   # eidaws-wfcatalog (i.e. format=json) resource specific configuration
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
-  eidaws.wfcatalog:
+  eidaws.wfcatalog.json:
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
     #
