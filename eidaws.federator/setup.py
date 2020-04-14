@@ -41,7 +41,7 @@ _ENTRY_POINTS = {
         ),
         (
             "eida-federator-dataselect-miniseed= "
-            "eidaws.federator.fdsnws_dataselect.app:main"
+            "eidaws.federator.fdsnws_dataselect_miniseed.app:main"
         ),
         (
             "eida-federator-wfcatalog-json= "

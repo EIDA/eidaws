@@ -16,12 +16,13 @@ class DataselectSchema(ServiceSchema):
     The parameters defined correspond to the definition
     `<https://www.fdsn.org/webservices/fdsnws-dataselect-1.1.pdf>`_.
     """
+
     format = fields.Str(
-        missing='miniseed',
-        validate=validate.OneOf(['miniseed']))
+        missing="miniseed", validate=validate.OneOf(["miniseed"])
+    )
     nodata = NoData()
 
     class Meta:
-        service = 'dataselect'
+        service = "dataselect"
         strict = True
         ordered = True

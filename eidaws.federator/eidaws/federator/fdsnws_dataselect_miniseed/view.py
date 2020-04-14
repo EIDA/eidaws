@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from eidaws.federator.settings import FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID
-from eidaws.federator.fdsnws_dataselect.parser import DataselectSchema
-from eidaws.federator.fdsnws_dataselect.process import (
+from eidaws.federator.settings import (
+    FED_BASE_ID,
+    FED_DATASELECT_MINISEED_SERVICE_ID,
+)
+from eidaws.federator.fdsnws_dataselect_miniseed.parser import DataselectSchema
+from eidaws.federator.fdsnws_dataselect_miniseed.process import (
     DataselectRequestProcessor,
 )
 from eidaws.federator.utils.view import BaseView
@@ -10,7 +13,9 @@ from eidaws.federator.utils.view import BaseView
 
 class DataselectView(BaseView):
 
-    LOGGER = ".".join((FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "view"))
+    LOGGER = ".".join(
+        (FED_BASE_ID, FED_DATASELECT_MINISEED_SERVICE_ID, "view")
+    )
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
 

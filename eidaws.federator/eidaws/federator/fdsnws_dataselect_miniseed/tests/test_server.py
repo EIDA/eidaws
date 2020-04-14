@@ -6,9 +6,11 @@ import pytest
 
 from aiohttp import web
 
-from eidaws.federator.fdsnws_dataselect import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_dataselect.app import DEFAULT_CONFIG
-from eidaws.federator.fdsnws_dataselect.route import FED_DATASELECT_PATH_QUERY
+from eidaws.federator.fdsnws_dataselect_miniseed import create_app, SERVICE_ID
+from eidaws.federator.fdsnws_dataselect_miniseed.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_dataselect_miniseed.route import (
+    FED_DATASELECT_PATH_QUERY,
+)
 from eidaws.federator.utils.misc import get_config
 from eidaws.federator.utils.pytest_plugin import (
     fdsnws_dataselect_content_type,
@@ -383,7 +385,11 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
@@ -469,7 +475,11 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
@@ -558,8 +568,16 @@ class TestFDSNDataselectServer(
         )
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
@@ -578,7 +596,11 @@ class TestFDSNDataselectServer(
                         body=load_data("CH.HASLI..LHZ.2019-01-05.2019-01-10"),
                     ),
                 ),
-                (self.PATH_QUERY, endpoint_request_method, web.Response(status=413),),
+                (
+                    self.PATH_QUERY,
+                    endpoint_request_method,
+                    web.Response(status=413),
+                ),
                 (
                     self.PATH_QUERY,
                     endpoint_request_method,
