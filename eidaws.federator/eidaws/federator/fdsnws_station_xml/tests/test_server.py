@@ -29,12 +29,9 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestKeywordParserMixin,
     _TestRoutingMixin,
 )
-from eidaws.utils.settings import FDSNWS_STATION_PATH_QUERY
-
-
-# TODO(damb): Implement validate_station_xml(tree) in order to validate the
-# number of net, sta, cha objects. The function should return a list of tuples
-# with three elements.
+from eidaws.utils.settings import (FDSNWS_STATION_PATH_QUERY,
+        STATIONXML_TAGS_NETWORK, STATIONXML_TAGS_STATION,
+        STATIONXML_TAGS_CHANNEL)
 
 
 @pytest.fixture
@@ -47,8 +44,25 @@ def xml_schema(load_data):
 @pytest.fixture
 def content_tester(xml_schema):
     async def _content_tester(resp, expected=None):
-        xml = etree.parse(io.BytesIO(await resp.read()))
-        assert xml_schema.validate(xml)
+        station_xml = etree.parse(io.BytesIO(await resp.read()))
+        assert xml_schema.validate(station_xml)
+
+        assert expected is not None
+        # validate tree
+        root = station_xml.getroot()
+        t = []
+        for net_element in root.iter(*STATIONXML_TAGS_NETWORK):
+            stas = []
+            for sta_element in net_element.iter(*STATIONXML_TAGS_STATION):
+                chas = 0
+                for cha_element in sta_element.iter(*STATIONXML_TAGS_CHANNEL):
+                    chas += 1
+
+                stas.append((1, chas))
+
+            t.append((1,stas))
+
+        assert t == expected
 
     return _content_tester
 
@@ -148,6 +162,8 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1, [])]
+
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -226,6 +242,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,0)])]
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -304,6 +321,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,1)])]
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -382,6 +400,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,1)])]
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -477,6 +496,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,1),(1,1)])]
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -532,8 +552,10 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHN 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHN 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -573,6 +595,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,2)])]
         }
         await tester(
             self.FED_PATH_QUERY,
@@ -628,10 +651,12 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/station/1/query\n"
-                            "CH  -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "CH  -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                             "\n"
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -673,6 +698,7 @@ class TestFDSNStationXMLServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_xml_content_type,
+            "result": [(1,[(1,1)]), (1,[(1,1)])]
         }
         await tester(
             self.FED_PATH_QUERY,
