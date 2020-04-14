@@ -2,6 +2,10 @@
 Webservice implementations being part of EIDA NG
 ================================================
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
+
+
 This repository hosts implementations of:
 
 - `eidaws-federator <https://github.com/damb/eidaws/tree/master/eidaws.federator/README.rst>`_
