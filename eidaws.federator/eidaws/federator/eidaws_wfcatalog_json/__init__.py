@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from eidaws.federator.eidaws_wfcatalog.route import setup_routes
+from eidaws.federator.eidaws_wfcatalog_json.route import setup_routes
 from eidaws.federator.utils.app import create_app as _create_app
 from eidaws.federator.settings import FED_WFCATALOG_JSON_SERVICE_ID
 

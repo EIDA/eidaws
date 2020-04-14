@@ -45,7 +45,7 @@ _ENTRY_POINTS = {
         ),
         (
             "eida-federator-wfcatalog-json= "
-            "eidaws.federator.eidaws_wfcatalog.app:main"
+            "eidaws.federator.eidaws_wfcatalog_json.app:main"
         ),
     ]
 }
