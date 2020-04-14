@@ -145,6 +145,10 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
 
             await self.finalize()
 
+    async def finalize(self):
+        self._network_elements = {}
+        self._queue.task_done()
+
     async def _parse_response(self, resp):
         if resp is None:
             return None
