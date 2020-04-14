@@ -25,7 +25,9 @@ eidaws.federator:
     # unix_path:
     #
     # ----
-    # Serve static files (i.e. version and application.wadl).
+    # Serve static files (i.e. version and application.wadl). For development
+    # purposes, only. In general, it is much better to handle static files by
+    # means of a Reverse Proxy.
     # Default: False
     #
     # serve_static: False
