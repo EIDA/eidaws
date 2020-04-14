@@ -15,6 +15,13 @@ Packages are deployed as `Python namespace distributions
 installation instructions come along with the corresponding distributions.
 
 
+Issues
+======
+
+Please report bugs, issues, feature requests, etc. on `GitHub
+<https://github.com/damb/eidaws/issues>`_.
+
+
 License
 =======
 
