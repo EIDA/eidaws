@@ -44,13 +44,6 @@ Installation
 Standalone
 ----------
 
-First of all, choose an installation directory:
-
-.. code::
-
-  $ export PATH_INSTALLATION_DIRECTORY=$HOME/work
-
-
 **Dependencies**:
 
 Make sure the following software is installed:
@@ -66,7 +59,7 @@ Debian/Ubuntu:
 
 .. code::
 
-  $ sudo apt-get install libxml2-dev libxslt-dev python3-dev python3-venv
+  $ sudo apt-get install libxml2-dev libxslt-dev python3-dev
 
 
 **Download**:
@@ -75,8 +68,7 @@ Clone the repository:
 
 .. code::
 
-  $ mkdir -p $PATH_INSTALLATION_DIRECTORY
-  $ cd $PATH_INSTALLATION_DIRECTORY && git clone https://github.com/damb/eidaws.git
+  $ git clone https://github.com/damb/eidaws.git && cd eidaws
 
 
 **Installation**:
@@ -146,7 +138,7 @@ the ``-h|--help`` flag. E.g.
 
 Note, that for production it has several advantages running the services behind
 a *reverse proxy server* such as e.g. `nginx <https://nginx.org/en/>`_. In
-particular, if providing a fully compliant `FDSNWS
+particular, if providing a fully compliant `FDSN webservice
 <https://www.fdsn.org/webservices/>`_ API is desired.
 
 
@@ -220,4 +212,6 @@ Limitations
 - A ``fdsnws-station-xml&level=channel|response`` metadata request including only a
   single datacenter might be quite imperformant compared to a direct request to
   the corresponding datacenter.
-- In certain cases, HTTP response codes might be misleading
+- In certain cases, HTTP response codes might be misleading due to limitations
+  of the `FDSN webservice <https://www.fdsn.org/webservices/>`_ specification
+  not fully prepared to operate in a distributed environment.
