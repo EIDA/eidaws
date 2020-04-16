@@ -40,7 +40,9 @@ def _callable_or_raise(obj):
         return obj
 
 
-def get_config(service_id, path_config=None, defaults={}, json_schema=None):
+def get_config(
+    service_id, path_config=None, cli_config={}, defaults={}, json_schema=None
+):
 
     user_config = {FED_BASE_ID: {}}
 
@@ -70,6 +72,7 @@ def get_config(service_id, path_config=None, defaults={}, json_schema=None):
     config_dict = {
         "config": {
             service_id: ChainMap(
+                cli_config,
                 user_config[FED_BASE_ID][service_id],
                 user_config[FED_BASE_ID]["common"],
                 defaults,

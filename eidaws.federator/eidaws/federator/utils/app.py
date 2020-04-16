@@ -2,6 +2,7 @@
 
 import aiohttp_cors
 import argparse
+import copy
 import functools
 import sys
 
@@ -299,6 +300,23 @@ def _main(
 ):
     # does all the dirty work
 
+    def prepare_cli_config(
+        args, remove_none_defaults=True, attrs_to_remove=["config"]
+    ):
+        args_view = vars(args)
+        if remove_none_defaults:
+            cli_config = {k: v for k, v in args_view.items() if v is not None}
+        else:
+            cli_config = copy.deepcopy(args_view)
+
+        for attr in attrs_to_remove:
+            try:
+                del cli_config[attr]
+            except KeyError:
+                pass
+
+        return cli_config
+
     DEFAULT_PATH_CONFIG = (
         FED_DEFAULT_CONFIG_BASEDIR / "config" / FED_DEFAULT_CONFIG_FILE
     )
@@ -309,6 +327,23 @@ def _main(
     )
 
     parser.add_argument(
+        "-H",
+        "--hostname",
+        dest="hostname",
+        help="TCP/IP hostname to serve on",
+    )
+    parser.add_argument(
+        "-P", "--port", help="TCP/IP port to serve on", dest="port", type=int,
+    )
+    parser.add_argument(
+        "-U",
+        "--unix-path",
+        dest="unix_path",
+        metavar="PATH",
+        help="Unix file system path to serve on. Specifying a path will cause "
+        "hostname and port arguments to be ignored.",
+    )
+    parser.add_argument(
         "-c",
         "--config",
         type=real_file_path,
@@ -317,11 +352,13 @@ def _main(
     )
 
     args = parser.parse_args(args=argv)
+    cli_config = prepare_cli_config(args)
 
     # load config
     config_dict = get_config(
         service_id,
         path_config=args.config,
+        cli_config=cli_config,
         defaults=default_config,
         json_schema=config_schema,
     )
