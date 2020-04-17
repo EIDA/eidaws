@@ -24,7 +24,7 @@ for i in `seq -w ${instances}`; \
 
 # create nginx backend service config
 sed -e "s/{{SERVICE_ID}}/${service}/" \
-  -e "s/{{UNIX_SERVERS}}/ r /tmp/${service}.upstream" \
+  -e "/{{UNIX_SERVERS}}/ r /tmp/${service}.upstream" \
   -e "/{{UNIX_SERVERS}}/d" \
   /tmp/backend.conf.template >> /etc/nginx/conf.d/backends/${service}.conf
 
