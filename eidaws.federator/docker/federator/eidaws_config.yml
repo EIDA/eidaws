@@ -39,6 +39,7 @@ eidaws.federator:
     # Default: None
     #
     # logging_conf: ~/work/projects/eidaws/config/logging.conf
+    logging_conf: /etc/eidaws-federator/logging.conf
     #
     # ----
     # Task worker pool size. If None, the processor's pool_size is determined

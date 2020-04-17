@@ -45,7 +45,8 @@ RUN mkdir /etc/service/nginx && \
 	chmod +x /etc/service/nginx/run
 
 # Install backend services
-RUN mkdir -p /var/www/eidaws-federator /run/eidaws-federator /usr/local/src
+RUN mkdir -p /var/www/eidaws-federator /run/eidaws-federator \
+  /etc/eidaws-federator/ /usr/local/src
 COPY $CONTEXT/../../../ /usr/local/src/eidaws
 
 # Setup virtualenv and install services
@@ -55,8 +56,8 @@ RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
   pip install /usr/local/src/eidaws/eidaws.utils \
   /usr/local/src/eidaws/eidaws.federator && deactivate"
 
-# Backend service configuration file
-COPY $CONTEXT/eidaws_config.yml /etc
+# Backend service configuration files
+COPY $CONTEXT/eidaws_config.yml $CONTEXT/logging.conf /etc/eidaws-federator
 
 # Add backend services with installation script
 COPY $CONTEXT/backend.conf.template $CONTEXT/install_backend.sh /tmp
