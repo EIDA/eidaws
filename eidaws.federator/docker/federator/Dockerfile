@@ -57,10 +57,10 @@ RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
   /usr/local/src/eidaws/eidaws.federator && deactivate"
 
 # Backend service configuration files
-COPY $CONTEXT/eidaws_config.yml $CONTEXT/logging.conf /etc/eidaws-federator
+COPY $CONTEXT/eidaws_config.yml /etc/eidaws-federator
 
 # Add backend services with installation script
-COPY $CONTEXT/backend.conf.template $CONTEXT/install_backend.sh /tmp
+COPY $CONTEXT/*.template $CONTEXT/install_backend.sh /tmp
 RUN chmod +x /tmp/install_backend.sh && \
   ./tmp/install_backend.sh \
   eida-federator-dataselect-miniseed $INSTANCES_DATASELECT_MINISEED && \

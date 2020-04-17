@@ -38,7 +38,7 @@ eidaws.federator:
     # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
     # Default: None
     #
-    logging_conf: /etc/eidaws-federator/logging.conf
+    # logging_conf:
     #
     # ----
     # Task worker pool size. If None, the processor's pool_size is determined
@@ -257,12 +257,18 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   fdsnws.station.text:
     # ----
+    # Absolute path to a logging configuration file. The file must follow the format
+    # defined in
+    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
+    # Default: None
+    #
+    logging_conf: /etc/eidaws-federator/eida-federator-station-text-logging.conf
+    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
     endpoint_timeout_sock_read: 3
-
     # -----
     # Frontend cache configuration
     cache_config:
@@ -276,12 +282,18 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   fdsnws.station.xml:
     # ----
+    # Absolute path to a logging configuration file. The file must follow the format
+    # defined in
+    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
+    # Default: None
+    #
+    logging_conf: /etc/eidaws-federator/eida-federator-station-xml-logging.conf
+    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
     endpoint_timeout_sock_read: 10
-
     # -----
     # Frontend cache configuration
     cache_config:
@@ -295,12 +307,18 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   fdsnws.dataselect.miniseed:
     # ----
+    # Absolute path to a logging configuration file. The file must follow the format
+    # defined in
+    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
+    # Default: None
+    #
+    logging_conf: /etc/eidaws-federator/eida-federator-dataselect-miniseed-logging.conf
+    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
     endpoint_timeout_sock_read: 60
-
     # ----
     # Maximum per stream epoch duration in days before returning a HTTP 413
     # (Request too large) response.
@@ -316,7 +334,6 @@ eidaws.federator:
     # Default: None
     #
     max_total_stream_epoch_duration: 1000
-
     # ----
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
@@ -349,12 +366,18 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   eidaws.wfcatalog.json:
     # ----
+    # Absolute path to a logging configuration file. The file must follow the format
+    # defined in
+    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
+    # Default: None
+    #
+    logging_conf: /etc/eidaws-federator/eida-federator-wfcatalog-json-logging.conf
+    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
     endpoint_timeout_sock_read: 10
-
     # ----
     # Maximum total stream epoch duration in days before returning a HTTP 413
     # (Request too large) response.
@@ -362,7 +385,6 @@ eidaws.federator:
     # Default: None
     #
     max_total_stream_epoch_duration: 1000
-
     # ----
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:

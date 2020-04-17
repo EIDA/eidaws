@@ -1,0 +1,28 @@
+[loggers]
+keys=root,eidaws
+
+[handlers]
+keys=eidawsFileHandler
+
+[formatters]
+keys=eidaws
+
+[logger_root]
+level=NOTSET
+handlers=eidawsFileHandler
+
+[logger_eidaws]
+level=DEBUG
+handlers=eidawsFileHandler
+qualname=eidaws
+propagate=0
+
+[handler_eidawsFileHandler]
+class=handlers.TimedRotatingFileHandler
+level=INFO
+formatter=eidaws
+
+[formatter_eidaws]
+args=("/var/log/eidaws-federator/{{SERVICE_ID}}.log", 'D', 1, 30)
+format=<EIDA> %(asctime)s %(levelname)s %(name)s %(process)d %(filename)s:%(lineno)d - %(message)s
+datefmt=%Y-%m-%dT%H:%M:%S%z
