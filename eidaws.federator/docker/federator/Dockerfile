@@ -53,7 +53,7 @@ COPY $CONTEXT/../../../ /usr/local/src/eidaws
 RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
   /bin/bash -c "source /var/www/eidaws-federator/venv/bin/activate && \
   pip install --upgrade pip && \
-  pip install /usr/local/src/eidaws/eidaws.utils \
+  pip install -e /usr/local/src/eidaws/eidaws.utils \
   /usr/local/src/eidaws/eidaws.federator && deactivate"
 
 # Backend service configuration files
