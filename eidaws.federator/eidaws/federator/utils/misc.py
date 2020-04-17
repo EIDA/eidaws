@@ -116,6 +116,7 @@ def setup_logger(service_id, path_logging_conf=None, capture_warnings=False):
                 f"WARNING: Setup logging failed for {path_logging_conf!r} "
                 f"with error: {err!r}."
             )
+            logger = logging.getLogger(LOGGER)
     else:
         logger = logging.getLogger(LOGGER)
         logger.addHandler(logging.NullHandler())
