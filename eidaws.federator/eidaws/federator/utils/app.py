@@ -66,7 +66,7 @@ config_schema = {
         "unix_path": {
             "oneOf": [
                 {"type": "null"},
-                {"type": "string", "format": "uri", "pattern": r"^unix:/"},
+                {"type": "string", "pattern": r"^/"},
             ]
         },
         "serve_static": {"type": "boolean"},
