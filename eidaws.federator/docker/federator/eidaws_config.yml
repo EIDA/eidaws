@@ -38,7 +38,6 @@ eidaws.federator:
     # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
     # Default: None
     #
-    # logging_conf: ~/work/projects/eidaws/config/logging.conf
     logging_conf: /etc/eidaws-federator/logging.conf
     #
     # ----
@@ -46,7 +45,7 @@ eidaws.federator:
     # based on the 'endpoint_connection_limit' (see below).
     # Default: None or int
     #
-    # pool_size:
+    pool_size: 12
     #
     # ----
     # Maximum body size in bytes of POST requests. If the limit is exceeded a
@@ -92,14 +91,14 @@ eidaws.federator:
     # Absolute StationLite routing URL
     # Default: 'http://localhost/eidaws/routing/1/query'
     #
-    # url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
+    url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
     #
     # ----
     # Maximum number of concurrent connections
     # Allowed values: int
     # Default: 100
     #
-    # routing_connection_limit: 25
+    routing_connection_limit: 25
 
     # ----
     # Endpoint specific configuration options
@@ -116,7 +115,7 @@ eidaws.federator:
     # Allowed values: int
     # Default: 120; Note(damb): # EIDA datacenters is currently 12
     #
-    # endpoint_connection_limit: 120
+    endpoint_connection_limit: 120
     #
     # ----
     # Maximum number of concurrent HTTP connections per host with respect to
@@ -124,7 +123,7 @@ eidaws.federator:
     # Allowed values: int
     # Default: 10
     #
-    # endpoint_connection_limit_per_host: 10
+    endpoint_connection_limit_per_host: 10
     #
     # ----
     # Total timeout for acquiring a connection from pool. The time consists
@@ -157,6 +156,7 @@ eidaws.federator:
     # Default: 'redis://localhost:6379
     #
     # redis_url: 'redis://localhost:6379'
+    redis_url: 'redis://federator-redis:6379/1'
     #
     # Minimum size of the connection pool
     # Default: 1
@@ -166,32 +166,32 @@ eidaws.federator:
     # Maximum size of the connection pool
     # Default: 10
     #
-    # redis_pool_maxsize: 10
+    redis_pool_maxsize: 20
     #
     # Timeout for connections
     # Allowed values: None or int
     # Default: None
     #
-    # redis_pool_timeout:
+    redis_pool_timeout: 2
     #
     # ----
     # Threshold in percent before endpoint requests are being dropped.
     # Default: 1.0
     #
-    # client_retry_budget_threshold: 1.0
+    client_retry_budget_threshold: 0.5
     #
     # ----
     # TTL in seconds for response codes when performing statistics. If 0, the
     # TTL is disabled.
     # Default: 3600
     #
-    # client_retry_budget_ttl: 1800
+    client_retry_budget_ttl: 1800
     #
     # ----
     # Rolling window size with respect to response code time series.
     # Default: 10000
     #
-    # client_retry_budget_window_size: 4096
+    client_retry_budget_window_size: 4096
 
     # ----
     # Cache specific configuration options
@@ -256,16 +256,68 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.station.text:
+    # ----
+    # A timeout for reading a portion of data from a peer.
+    # Allowed values: None or float (seconds)
+    # Default: 30
+    #
+    endpoint_timeout_sock_read: 3
+
+    # -----
+    # Frontend cache configuration
+    cache_config:
+      cache_type: 'redis'
+      cache_kwargs:
+        url: 'redis://federator-redis:6379/0'
+        default_timeout: 43200
 
   # fdsnws-station-xml (i.e. format=xml) resource specific configuration
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.station.xml:
+    # ----
+    # A timeout for reading a portion of data from a peer.
+    # Allowed values: None or float (seconds)
+    # Default: 30
+    #
+    endpoint_timeout_sock_read: 10
+
+    # -----
+    # Frontend cache configuration
+    cache_config:
+      cache_type: 'redis'
+      cache_kwargs:
+        url: 'redis://federator-redis:6379/0'
+        default_timeout: 43200
 
   # fdsnws-dataselect (i.e. format=miniseed) resource specific configuration
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.dataselect.miniseed:
+    # ----
+    # A timeout for reading a portion of data from a peer.
+    # Allowed values: None or float (seconds)
+    # Default: 30
+    #
+    endpoint_timeout_sock_read: 60
+
+    # ----
+    # Maximum per stream epoch duration in days before returning a HTTP 413
+    # (Request too large) response.
+    # Allowed values: None or int (days)
+    # Default: None
+    #
+    max_stream_epoch_duration: 35
+    #
+    # ----
+    # Maximum total stream epoch duration in days before returning a HTTP 413
+    # (Request too large) response.
+    # Allowed values: None or int (days)
+    # Default: None
+    #
+    max_total_stream_epoch_duration: 1000
+
+    # ----
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
     #
@@ -283,19 +335,35 @@ eidaws.federator:
     # when data is buffered on disk. If 0, data is never buffered on disk.
     # Default: 0
     #
-    # buffer_rollover_size: 0
+    buffer_rollover_size: 2097152  # 2MB
     #
     # ----
     # Absolute path to a temporary directory where buffers are stored.
     # Allowed values: None or absolute path
     # Default: None
     #
-    # tempdir:
+    tempdir: /tmp
 
   # eidaws-wfcatalog (i.e. format=json) resource specific configuration
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   eidaws.wfcatalog.json:
+    # ----
+    # A timeout for reading a portion of data from a peer.
+    # Allowed values: None or float (seconds)
+    # Default: 30
+    #
+    endpoint_timeout_sock_read: 10
+
+    # ----
+    # Maximum total stream epoch duration in days before returning a HTTP 413
+    # (Request too large) response.
+    # Allowed values: None or int (days)
+    # Default: None
+    #
+    max_total_stream_epoch_duration: 1000
+
+    # ----
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
     #
@@ -313,12 +381,12 @@ eidaws.federator:
     # when data is buffered on disk. If 0, data is never buffered on disk.
     # Default: 0
     #
-    # buffer_rollover_size: 0
+    buffer_rollover_size: 2097152  # 2MB
     #
     # ----
     # Absolute path to a temporary directory where buffers are stored.
     # Allowed values: None or absolute path
     # Default: None
     #
-    # tempdir:
+    tempdir: /tmp
 ...
