@@ -46,7 +46,7 @@ RUN mkdir /etc/service/nginx && \
 
 # Install backend services
 RUN mkdir -p /var/www/eidaws-federator /run/eidaws-federator \
-  /etc/eidaws-federator/ /usr/local/src
+  /etc/eidaws-federator/ /usr/local/src /var/log/eidaws-federator/
 COPY $CONTEXT/../../../ /usr/local/src/eidaws
 
 # Setup virtualenv and install services
