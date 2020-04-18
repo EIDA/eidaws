@@ -64,10 +64,7 @@ config_schema = {
         "hostname": {"type": "string", "format": "ipv4"},
         "port": {"type": "integer", "minimum": 1, "maximum": 65535},
         "unix_path": {
-            "oneOf": [
-                {"type": "null"},
-                {"type": "string", "pattern": r"^/"},
-            ]
+            "oneOf": [{"type": "null"}, {"type": "string", "pattern": r"^/"},]
         },
         "serve_static": {"type": "boolean"},
         "logging_conf": {"type": "string", "pattern": r"^(\/|~)"},
@@ -244,6 +241,10 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     """
 
     config = config_dict["config"][service_id]
+
+    if config["unix_path"] is not None:
+        # ignore hostname:port
+        config["hostname"] = config["port"] = None
 
     app = web.Application(
         # XXX(damb): The ordering of middlewares matters
