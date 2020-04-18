@@ -13,7 +13,8 @@ for i in `seq -w ${instances}`; \
     # create runit config
     mkdir -p /etc/service/${service}-${i} && \
     echo -e "#!/bin/sh\n"\
-"exec ${PATH_VENV}/bin/${service} -U /run/eidaws-federator/${service}-${i}.sock "\
+"exec /sbin/setuser www-data "\
+"${PATH_VENV}/bin/${service} -U /run/eidaws-federator/${service}-${i}.sock "\
 "-c /etc/eidaws-federator/eidaws_config.yml 2>&1" >> \
     /etc/service/${service}-${i}/run && \
     chmod +x /etc/service/${service}-${i}/run; \
