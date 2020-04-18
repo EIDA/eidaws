@@ -21,8 +21,8 @@ propagate=0
 class=handlers.TimedRotatingFileHandler
 level=INFO
 formatter=eidaws
+args=("/var/log/eidaws-federator/{{SERVICE_ID}}.log", 'D', 1, 30)
 
 [formatter_eidaws]
-args=("/var/log/eidaws-federator/{{SERVICE_ID}}.log", 'D', 1, 30)
 format=<EIDA> %(asctime)s %(levelname)s %(name)s %(process)d %(filename)s:%(lineno)d - %(message)s
 datefmt=%Y-%m-%dT%H:%M:%S%z
