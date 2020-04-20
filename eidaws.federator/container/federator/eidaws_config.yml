@@ -45,7 +45,7 @@ eidaws.federator:
     # based on the 'endpoint_connection_limit' (see below).
     # Default: None or int
     #
-    pool_size: 12
+    # pool_size:
     #
     # ----
     # Maximum body size in bytes of POST requests. If the limit is exceeded a
