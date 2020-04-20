@@ -11,13 +11,14 @@ PATH_VENV=/var/www/eidaws-federator/venv
 for i in `seq -w ${instances}`; \
   do 
     # create runit config
-    mkdir -p /etc/service/${service}-${i} && \
+    runit_service_dir=/etc/service/${service}-${i}
+    mkdir -p "${runit_service_dir}" && \
     echo -e "#!/bin/sh\n"\
 "exec /sbin/setuser www-data "\
 "${PATH_VENV}/bin/${service} -U /run/eidaws-federator/${service}-${i}.sock "\
 "-c /etc/eidaws-federator/eidaws_config.yml 2>&1" >> \
-    /etc/service/${service}-${i}/run && \
-    chmod +x /etc/service/${service}-${i}/run; \
+    "${runit_service_dir}/run" && \
+    chmod +x "${runit_service_dir}/run"; \
     # create upstream template
     echo "  server unix:/run/eidaws-federator/${service}-${i}.sock "\
 "fail_timeout=0;" >> /tmp/${service}.upstream
