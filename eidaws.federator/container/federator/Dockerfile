@@ -32,7 +32,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
                                        python3.7-dev \
                                        python3.7-venv \
                                        python3-pip \
-                                       python3-setuptools \
                                        nginx
 
 # Configure nginx
