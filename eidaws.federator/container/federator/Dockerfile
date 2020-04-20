@@ -16,7 +16,7 @@ ARG INSTANCES_DATASELECT_MINISEED=8
 ARG INSTANCES_STATION_TEXT=4
 ARG INSTANCES_STATION_XML=8
 ARG INSTANCES_WFCATALOG_JSON=6
-ARG CONTEXT=eidaws.federator/docker/federator
+ARG CONTEXT=eidaws.federator/container/federator
 
 # Add label metadata
 LABEL maintainer="Daniel Armbruster"
