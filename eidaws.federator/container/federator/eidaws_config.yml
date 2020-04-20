@@ -268,7 +268,7 @@ eidaws.federator:
     # Allowed values: None or float (seconds)
     # Default: 30
     #
-    endpoint_timeout_sock_read: 3
+    endpoint_timeout_sock_read: 5
     # -----
     # Frontend cache configuration
     cache_config:
@@ -293,7 +293,7 @@ eidaws.federator:
     # Allowed values: None or float (seconds)
     # Default: 30
     #
-    endpoint_timeout_sock_read: 10
+    endpoint_timeout_sock_read: 15
     # -----
     # Frontend cache configuration
     cache_config:
