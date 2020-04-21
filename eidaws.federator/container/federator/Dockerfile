@@ -16,7 +16,7 @@ ARG INSTANCES_DATASELECT_MINISEED=8
 ARG INSTANCES_STATION_TEXT=4
 ARG INSTANCES_STATION_XML=8
 ARG INSTANCES_WFCATALOG_JSON=6
-ARG CONTEXT=eidaws.federator/container/federator
+ARG DIR_CONTAINERFILE=eidaws.federator/container/federator
 
 # Add label metadata
 LABEL maintainer="Daniel Armbruster"
@@ -35,8 +35,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
                                        nginx
 
 # Configure nginx
-COPY $CONTEXT/conf.d /etc/nginx/conf.d
-COPY $CONTEXT/nginx.conf /etc/nginx
+COPY $DIR_CONTAINERFILE/conf.d /etc/nginx/conf.d
+COPY $DIR_CONTAINERFILE/nginx.conf /etc/nginx
 
 # Add the nginx service
 RUN mkdir /etc/service/nginx && \
@@ -57,12 +57,13 @@ RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
   pip install -e /usr/local/src/eidaws/eidaws.federator && deactivate"
 
 # Backend service configuration files
-COPY $CONTEXT/eidaws_config.yml $CONTEXT/logging.conf /etc/eidaws-federator
-COPY $CONTEXT/eidaws-federator.syslog-ng.conf \
+COPY $DIR_CONTAINERFILE/eidaws_config.yml \
+  $DIR_CONTAINERFILE/logging.conf /etc/eidaws-federator
+COPY $DIR_CONTAINERFILE/eidaws-federator.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-federator.conf
 
 # Add backend services with installation script
-COPY $CONTEXT/*.template $CONTEXT/install_backend.sh /tmp
+COPY $DIR_CONTAINERFILE/*.template $DIR_CONTAINERFILE/install_backend.sh /tmp
 RUN chmod +x /tmp/install_backend.sh && \
   ./tmp/install_backend.sh \
   eida-federator-dataselect-miniseed $INSTANCES_DATASELECT_MINISEED && \
@@ -74,7 +75,7 @@ RUN chmod +x /tmp/install_backend.sh && \
   eida-federator-wfcatalog-json $INSTANCES_WFCATALOG_JSON
 
 # Static content
-COPY $CONTEXT/static /var/www/eidaws-federator/static
+COPY $DIR_CONTAINERFILE/static /var/www/eidaws-federator/static
 
 # Expose HTTP default port
 EXPOSE 8080
