@@ -18,6 +18,8 @@ Packages are deployed as `Python namespace distributions
 <https://packaging.python.org/guides/packaging-namespace-packages/>`_. Detailed
 installation instructions come along with the corresponding distributions.
 
+For production most of the services provide container files ready to be build
+and deployed.
 
 Issues
 ======

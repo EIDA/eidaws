@@ -1,3 +1,5 @@
+.. _NGINX: http://nginx.org/ 
+
 =========================
 EIDA Federator webservice 
 =========================
@@ -40,6 +42,70 @@ Features
 
 Installation
 ============
+
+Container
+---------
+
+A basic knowledge about container engines (e.g. `Podman <https://podman.io/>`_,
+`Docker <https://docs.docker.com/engine/>`_) and how application containers work
+is required. For more information about operating system support (which
+includes Linux, macOS and specific versions of Windows) and on how to install a
+container engine please refer to the official websites, e.g. `Podman website
+<https://podman.io/getting-started/installation>`_, `Docker website
+<https://www.docker.com/products/docker>`_.
+
+**Features provided**:
+
+* based on `baseimage <https://hub.docker.com/r/phusion/baseimage/>`_
+* NGINX_ + configurable number of standalone backend
+  applications
+* Python3.7
+* logging (syslog)
+
+**Introduction**:
+
+To build a container image with the appropriate configuration it is recommended
+to build your image from a Dockerfile. Thus, first of all clone the repository. 
+
+.. code::
+
+  $ git clone https://github.com/damb/eidaws.git && cd eidaws
+
+**Configuration**:
+
+The ``Dockerfile`` allows the number of backend applications to be configured
+during build time. The build args ``INSTANCES_DATASELECT_MINISEED``,
+``INSTANCES_STATION_TEXT``, ``INSTANCES_STATION_XML`` and
+``INSTANCES_WFCATALOG_JSON`` are provided in order to configure the number of
+federating backend services.
+
+**Building**:
+
+Once you environment variables are configured you are ready to build the
+container images, e.g.
+
+.. code::
+
+  $ docker build [--build-arg=INSTANCE_XXX=20] -t eidaws-federator:1.0 \
+    -f eidaws.federator/container/federator/Dockerfile .
+
+**Compose Configuration**:
+
+In case you want to manage your own volumes now is the time. The configuration
+provided relies on named container volumes.
+
+**Deployment**:
+
+The containers should be run using the provided ``docker-compose.yml``
+configuration file.
+
+.. code::
+
+  $ docker-compose -f eidaws.federator/container/docker-compose.yml up -d
+
+When the containers are running the service is available under
+``http://localhost:8080``.
+
 
 Standalone
 ----------
@@ -137,9 +203,9 @@ the ``-h|--help`` flag. E.g.
 
 
 Note, that for production it has several advantages running the services behind
-a *reverse proxy server* such as e.g. `nginx <https://nginx.org/en/>`_. In
-particular, if providing a fully compliant `FDSN webservice
-<https://www.fdsn.org/webservices/>`_ API is desired.
+a *reverse proxy server* such as e.g. NGINX_. In particular, if providing a
+fully compliant `FDSN webservice <https://www.fdsn.org/webservices/>`_ API is
+desired.
 
 
 Configuration
