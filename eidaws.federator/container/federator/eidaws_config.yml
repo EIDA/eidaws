@@ -38,7 +38,7 @@ eidaws.federator:
     # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
     # Default: None
     #
-    # logging_conf:
+    logging_conf: /etc/eidaws-federator/logging.conf
     #
     # ----
     # Task worker pool size. If None, the processor's pool_size is determined
@@ -257,13 +257,6 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   fdsnws.station.text:
     # ----
-    # Absolute path to a logging configuration file. The file must follow the format
-    # defined in
-    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
-    # Default: None
-    #
-    logging_conf: /etc/eidaws-federator/eida-federator-station-text-logging.conf
-    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
@@ -282,13 +275,6 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   fdsnws.station.xml:
     # ----
-    # Absolute path to a logging configuration file. The file must follow the format
-    # defined in
-    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
-    # Default: None
-    #
-    logging_conf: /etc/eidaws-federator/eida-federator-station-xml-logging.conf
-    # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
@@ -306,13 +292,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.dataselect.miniseed:
-    # ----
-    # Absolute path to a logging configuration file. The file must follow the format
-    # defined in
-    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
-    # Default: None
-    #
-    logging_conf: /etc/eidaws-federator/eida-federator-dataselect-miniseed-logging.conf
     # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
@@ -365,13 +344,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   eidaws.wfcatalog.json:
-    # ----
-    # Absolute path to a logging configuration file. The file must follow the format
-    # defined in
-    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
-    # Default: None
-    #
-    logging_conf: /etc/eidaws-federator/eida-federator-wfcatalog-json-logging.conf
     # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)

@@ -24,10 +24,6 @@ for i in `seq -w ${instances}`; \
 "fail_timeout=0;" >> /tmp/${service}.upstream
   done
 
-# create logging config
-sed -e "s/{{SERVICE_ID}}/${service}/" /tmp/logging.conf.template >> \
-  /etc/eidaws-federator/${service}-logging.conf
-
 # create nginx backend service config
 sed -e "s/{{SERVICE_ID}}/${service}/" \
   -e "/{{UNIX_SERVERS}}/ r /tmp/${service}.upstream" \
