@@ -2,7 +2,6 @@
 
 import aiohttp_cors
 import argparse
-import copy
 import functools
 import sys
 
@@ -54,7 +53,7 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
-from eidaws.utils.error import Error
+from eidaws.utils.app import prepare_cli_config
 from eidaws.utils.misc import realpath, real_file_path
 
 
@@ -64,7 +63,7 @@ config_schema = {
         "hostname": {"type": "string", "format": "ipv4"},
         "port": {"type": "integer", "minimum": 1, "maximum": 65535},
         "unix_path": {
-            "oneOf": [{"type": "null"}, {"type": "string", "pattern": r"^/"},]
+            "oneOf": [{"type": "null"}, {"type": "string", "pattern": r"^/"}]
         },
         "serve_static": {"type": "boolean"},
         "logging_conf": {"type": "string", "pattern": r"^(\/|~)"},
@@ -165,7 +164,8 @@ config_schema = {
                     # allow IPv4(:PORT) or FQDN(:PORT)
                     "pattern": (
                         r"^(((?:[0-9]{1,3}\.){3}[0-9]{1,3})"
-                        r"|(([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,}))"
+                        r"|(([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,})"
+                        r"|(localhost))"
                         r"(?:\:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|"
                         r"65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$"
                     ),
@@ -300,24 +300,6 @@ def _main(
     config_schema=config_schema,
 ):
     # does all the dirty work
-
-    def prepare_cli_config(
-        args, remove_none_defaults=True, attrs_to_remove=["config"]
-    ):
-        args_view = vars(args)
-        if remove_none_defaults:
-            cli_config = {k: v for k, v in args_view.items() if v is not None}
-        else:
-            cli_config = copy.deepcopy(args_view)
-
-        for attr in attrs_to_remove:
-            try:
-                del cli_config[attr]
-            except KeyError:
-                pass
-
-        return cli_config
-
     DEFAULT_PATH_CONFIG = (
         FED_DEFAULT_CONFIG_BASEDIR / "config" / FED_DEFAULT_CONFIG_FILE
     )
@@ -388,11 +370,3 @@ def _main(
         path=config["unix_path"],
     )
     parser.exit(message="Stopped\n")
-
-
-class AppError(Error):
-    """Base application error ({})."""
-
-
-class ConfigurationError(AppError):
-    """Configuration errro: {}"""
