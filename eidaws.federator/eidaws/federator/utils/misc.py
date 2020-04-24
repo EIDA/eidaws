@@ -55,7 +55,7 @@ def get_config(
         with open(path_config) as ifd:
             _user_config = yaml.safe_load(ifd)
 
-        if isinstance(
+        if _user_config is not None and isinstance(
             _user_config.get(FED_BASE_ID),
             (collections.abc.Mapping, collections.abc.MutableMapping),
         ):
