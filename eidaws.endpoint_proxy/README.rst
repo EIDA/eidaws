@@ -17,9 +17,9 @@ The service is intented to be used in conjunction with `eidaws-federator
 <https://docs.aiohttp.org/en/stable/>`_ and thus implements proxying the
 following resources:
 
-- ``fdsnws/dataselect/1/query``
-- ``fdsnws/station/1/query``
-- ``eidaws/wfcatalog/1/query``
+- ``/fdsnws/dataselect/1/query``
+- ``/fdsnws/station/1/query``
+- ``/eidaws/wfcatalog/1/query``
 
 The implementation is based on Python's `aiohttp
 <https://docs.aiohttp.org/en/stable/>`_ framework.
@@ -27,11 +27,6 @@ The implementation is based on Python's `aiohttp
 
 Installation
 ============
-
-Container
----------
-
-TODO
 
 Standalone
 ----------
