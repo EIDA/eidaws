@@ -1,0 +1,61 @@
+---
+# eidaws-endpoint-proxy configuration section
+eidaws.endpoint_proxy:
+    # ----
+    # TCP/IP hostname to serve on.
+    # Default: localhost
+    #
+    # hostname: 'localhost'
+    #
+    # ----
+    # TCP/IP port to serve on.
+    # Default: 8080
+    #
+    # port: 8080
+    #
+    # ----
+    # Unix file system path to serve on. Specifying "unix_path" will cause
+    # hostname and port arguments to be ignored.
+    # Default: None
+    #
+    # unix_path:
+    #
+    # ----
+    # Absolute path to a logging configuration file. The file must follow the
+    # format defined in
+    # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
+    # Default: None
+    #
+    logging_conf: /etc/eidaws-endpoint-proxy/logging.conf
+    #
+    # ----
+    # Overall maximum number of concurrent HTTP connections to the proxied
+    # endpoint.
+    # Allowed values: int
+    # Default: 20
+    #
+    endpoint_connection_limit: {{CONNECTION_LIMIT}}
+    #
+    # ----
+    # Total timeout for acquiring a connection from pool. The time consists
+    # connection establishment for a new connection or waiting for a free
+    # connection from a pool if pool connection limits are exceeded.
+    # Allowed values: None or float (seconds)
+    # Default: None
+    #
+    # endpoint_timeout_connect:
+    #
+    # ----
+    # A timeout for connecting to a peer for a new connection.
+    # Allowed values: None or float (seconds)
+    # Default: 2
+    #
+    # endpoint_timeout_sock_connect: 2
+    #
+    # ----
+    # A timeout for reading a portion of data from a peer.
+    # Allowed values: None or float (seconds)
+    # Default: 30
+    #
+    # endpoint_timeout_sock_read: 30
+...
