@@ -37,7 +37,7 @@ class RedirectView(web.View):
             ],
         )
 
-    # post = get
+    post = get
 
     async def _redirect(self, request, connector):
 
