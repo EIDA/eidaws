@@ -14,7 +14,12 @@ an error to the client. Limited access to the proxied endpoint resource is grant
 by a configurable connection pool size.
 
 The service is intented to be used in conjunction with `eidaws-federator
-<https://docs.aiohttp.org/en/stable/>`_.
+<https://docs.aiohttp.org/en/stable/>`_ and thus implements proxying the
+following resources:
+
+- ``fdsnws/dataselect/1/query``
+- ``fdsnws/station/1/query``
+- ``eidaws/wfcatalog/1/query``
 
 The implementation is based on Python's `aiohttp
 <https://docs.aiohttp.org/en/stable/>`_ framework.
@@ -31,14 +36,73 @@ TODO
 Standalone
 ----------
 
-TODO
+**Download**:
+
+Clone the repository:
+
+.. code::
+
+  $ git clone https://github.com/damb/eidaws.git && cd eidaws
+
+
+**Installation**:
+
+In order to install the ``eidaws.endpoint_proxy`` service, invoke
+
+.. code::
+
+  $ pip install eidaws.utils eidaws.endpoint_proxy
+
+Note, that encapsulating the installation by means of a `virtual environment
+<https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.
+
+**Running**:
+
+In order to run the service simply invoke:
+
+.. code::
+
+  $ eida-endpoint-proxy
+
+Additional information and help is provided when invoking the application with
+the ``-h|--help`` flag. I.e.
+
+.. code::
+
+  $ eida-endpoint-proxy -h
+
 
 Configuration
 =============
 
-TODO
+The service is configured by means of a `YAML
+<https://en.wikipedia.org/wiki/YAML>`_ configuration file. An exemplary fully
+documented configuration file is provided under
+``eidaws.endpoint_proxy/config/eidaws_config.yml.example``. In order to change the default
+configuration make a copy of the example configuration with e.g.
+
+.. code::
+
+  $ cp -v eidaws.endpoint_proxy/config/eidaws_config.yml.example \
+    eidaws.endpoint_proxy/config/eidaws_config.yml
+
+and adopt the file according to your needs. Then start the application with
+the ``-c|--config`` flag e.g.
+
+.. code::
+
+  $ eida-endpoint-proxy -c eidaws.endpoint_proxy/config/eidaws_config.yml
+
 
 Logging
 =======
 
-TODO
+The *eidaws.endpoint_proxy* distribution uses standard `logging
+<https://docs.python.org/3/library/logging.html#module-logging>`_ for tracking
+the application activity. Besides of `loggers
+<https://docs.aiohttp.org/en/stable/logging.html>`_ from ``aiohttp`` an
+application specific logger named ``eidaws.endpoint_proxy`` is provided. 
+
+When configuring logging by means of a logging configuration file (see also the
+`Configuration`_ section), you may subscribe to these loggers for getting log
+messages.
