@@ -4,7 +4,8 @@
 # docker build -t eidaws-federator:1.0 .
 #
 # Run Container:
-# docker run [-d] [--rm] [--name eidaws-federator] -p 8080:80 eidaws-federator:1.0
+# docker run [-d] [--rm] [--name eidaws-federator] -p 8080:8080 \
+#   eidaws-federator:1.0
 #
 # Modify running container:
 # docker exec -it eidaws-federator /bin/bash
