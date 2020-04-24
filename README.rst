@@ -9,6 +9,7 @@ Webservice implementations being part of EIDA NG
 This repository hosts implementations of:
 
 - `eidaws-federator <https://github.com/damb/eidaws/tree/master/eidaws.federator/README.rst>`_
+- `eidaws-endpoint-proxy <https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy/README.rst>`_
 
 
 Installation
