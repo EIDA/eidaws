@@ -10,7 +10,7 @@ or the `NGINX <http://nginx.org/>`_'s `limit_conn
 <http://nginx.org/en/docs/http/ngx_http_limit_conn_module.html#limit_conn>`_
 configuration option, it implements the `Leaky Bucket Algorithm
 <https://en.wikipedia.org/wiki/Leaky_bucket>`_ instead of returning immediately
-an error to client. Limited access to the proxied endpoint resource is granted
+an error to the client. Limited access to the proxied endpoint resource is granted
 by a configurable connection pool size.
 
 The service is intented to be used in conjunction with `eidaws-federator
