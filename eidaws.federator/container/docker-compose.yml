@@ -20,5 +20,20 @@ services:
     image: redis:5
     restart: always
 
+  # eidaws-endpoint-proxy
+  endpoint-proxy:
+    container_name: eidaws-endpoint-proxy
+    image: eidaws-endpoint-proxy:1.0
+    restart: always
+    volumes:
+      - type: volume
+        source: eidaws_endpoint_proxy_cache
+        target: /var/cache/nginx
+        volume:
+          nocopy: false
+    ports:
+      - "8090:8090"
+
 volumes:
   eidaws_federator_log:
+  eidaws_endpoint_proxy_cache:
