@@ -27,7 +27,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
                                        python3.7-dev \
                                        python3.7-venv \
                                        python3-pip \
-                                       nginx
+                                       nginx \
+                                       nginx-extras
 
 # Configure nginx
 COPY $DIR_CONTAINERFILE/conf.d /etc/nginx/conf.d
