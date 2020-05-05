@@ -56,11 +56,14 @@ container engine please refer to the official websites, e.g. `Podman website
 
 **Features provided**:
 
-* based on `baseimage <https://hub.docker.com/r/phusion/baseimage/>`_
+* Based on `baseimage <https://hub.docker.com/r/phusion/baseimage/>`_
 * NGINX_ + configurable number of standalone backend
   applications
+* Backend caching powered by a NGINX_ HTTP reverse caching proxy
+  (currently for ``fdsnws-station`` metadata, only)
+* Bandwith limitation while fetching data from endpoints
 * Python3.7
-* logging (syslog)
+* Logging (syslog)
 
 **Introduction**:
 
@@ -88,6 +91,8 @@ container images, e.g.
 
   $ docker build [--build-arg=INSTANCE_XXX=20] -t eidaws-federator:1.0 \
     -f eidaws.federator/container/federator/Dockerfile .
+  $ docker build -t eidaws-endpoint-proxy:1.0 \
+    -f eidaws.federator/container/proxy/Dockerfile .
 
 **Compose Configuration**:
 
