@@ -59,6 +59,7 @@ class RedirectView(web.View):
                 connector=connector,
                 timeout=self.client_timeout,
                 connector_owner=False,
+                auto_decompress=False,
             ) as session:
                 async with session.request(
                     request.method, request.url, data=body,
