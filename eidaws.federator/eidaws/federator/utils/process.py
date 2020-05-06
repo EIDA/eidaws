@@ -36,17 +36,6 @@ def _duration_to_timedelta(*args, **kwargs):
         return None
 
 
-def _patch_response_write(response, write_callback):
-
-    response_write = response.write
-
-    async def write(*args, **kwargs):
-        await response_write(*args, **kwargs)
-        write_callback(*args, **kwargs)
-
-    response.write = write
-
-
 def cached(func):
     """
     Method decorator providing caching facilities.
@@ -298,6 +287,23 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         )
 
         await asyncio.shield(self.finalize())
+
+        return response
+
+    def make_stream_response(self, *args, **kwargs):
+        """
+        Factory for a :py:class:`aiohttp.web.StreamResponse`.
+        """
+
+        response = web.StreamResponse(*args, **kwargs)
+
+        response_write = response.write
+
+        async def write(*args, **kwargs):
+            await response_write(*args, **kwargs)
+            self.dump_to_cache_buffer(*args, **kwargs)
+
+        response.write = write
 
         return response
 
