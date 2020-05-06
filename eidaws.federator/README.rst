@@ -61,8 +61,10 @@ container engine please refer to the official websites, e.g. `Podman website
   applications
 * Backend caching powered by a NGINX_ HTTP reverse caching proxy
   (currently for ``fdsnws-station`` metadata, only)
-* Bandwith limitation while fetching data from endpoints
-* Python3.7
+* Bandwith limitation while fetching data from endpoints (implemented by means
+  of `eidaws.endpoint_proxy
+  <https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy>`_) *
+  Python3.7
 * Logging (syslog)
 
 **Introduction**:
