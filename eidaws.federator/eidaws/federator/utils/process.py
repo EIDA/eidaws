@@ -58,18 +58,45 @@ def cached(func):
             self.query_params, self.stream_epochs, key_prefix=type(self)
         )
 
-        cached, found = await self.get_cache(cache_key)
+        # use compressed cache content if available; qvalues are not
+        # taken into account
+        accept_encoding = self.request.headers.get(
+            "Accept-Encoding", ""
+        ).lower()
+
+        cache_config = self.config["cache_config"]
+        compressed_cache = bool(
+            cache_config
+            and cache_config.get("cache_type") == "redis"
+            and cache_config.get("cache_kwargs")
+            and cache_config["cache_kwargs"].get("compress", True)
+        )
+        decompress = (
+            False
+            if not compressed_cache
+            or "gzip" in accept_encoding
+            and compressed_cache
+            else True
+        )
+
+        cached, found = await self.get_cache(cache_key, decompress=decompress)
 
         self._await_on_close.insert(
             0, functools.partial(self.set_cache, cache_key)
         )
 
         if found:
-            return web.Response(
+            resp = web.Response(
                 content_type=self.content_type,
                 charset=self.charset,
                 body=cached,
             )
+            if decompress:
+                resp.enable_compression()
+            elif compressed_cache:
+                resp.headers["Content-Encoding"] = "gzip"
+
+            return resp
 
         return await func(self, *args, **kwargs)
 
@@ -278,7 +305,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         routes,
         req_method="GET",
         timeout=aiohttp.ClientTimeout(total=60),
-        **kwargs
+        **kwargs,
     ):
         """
         Template method to be implemented by concrete processor

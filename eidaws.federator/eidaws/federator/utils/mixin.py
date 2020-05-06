@@ -104,21 +104,21 @@ class CachingMixin:
         if self.cache is not None:
             self.cache_buffer.append(data)
 
-    async def set_cache(self, cache_key, timeout=None):
+    async def set_cache(self, cache_key, timeout=None, **kwargs):
         if not self.cache_buffer:
             return
 
         await self.cache.set(
-            cache_key, b"".join(self.cache_buffer), timeout=timeout
+            cache_key, b"".join(self.cache_buffer), timeout=timeout, **kwargs
         )
 
-    async def get_cache(self, cache_key):
+    async def get_cache(self, cache_key, **kwargs):
         """
         Lookup ``cache_key`` from the cache.
         """
 
         try:
-            retval = await self.cache.get(cache_key)
+            retval = await self.cache.get(cache_key, **kwargs)
             found = True
 
             # If the value returned by cache.get() is None, it might be

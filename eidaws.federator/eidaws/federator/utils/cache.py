@@ -44,7 +44,7 @@ class CachingBackend(abc.ABC):
             return self._default_timeout
         return timeout
 
-    async def get(self, key):
+    async def get(self, key, **kwargs):
         """
         Look up ``key`` in the cache and return the value for it.
 
@@ -65,7 +65,7 @@ class CachingBackend(abc.ABC):
 
         return True
 
-    async def set(self, key, value, timeout=None):
+    async def set(self, key, value, timeout=None, **kwargs):
         """
         Add a new ``key: value`` to the cache. The value is overwritten in case
         the ``key`` is already cached.
@@ -125,17 +125,17 @@ class RedisCache(CachingBackend):
             return self.key_prefix
         return self.key_prefix()
 
-    async def get(self, key):
+    async def get(self, key, **kwargs):
         return self._deserialize(
-            await self.redis.get(self._create_key_prefix() + key)
+            await self.redis.get(self._create_key_prefix() + key), **kwargs
         )
 
     async def delete(self, key):
         return await self.redis.delete(self._create_key_prefix() + key)
 
-    async def set(self, key, value, timeout=None):
+    async def set(self, key, value, timeout=None, **kwargs):
         key = self._create_key_prefix() + key
-        value = self._serialize(value)
+        value = self._serialize(value, **kwargs)
 
         timeout = self._normalize_timeout(timeout)
         return await self.redis.set(key, value, expire=timeout)
@@ -143,13 +143,14 @@ class RedisCache(CachingBackend):
     async def exists(self, key):
         return await self.redis.exists(self._create_key_prefix() + key)
 
-    def _serialize(self, value):
-        if self._compress:
+    def _serialize(self, value, compress=None):
+        compress = self._compress if compress is None else bool(compress)
+        if compress:
             return gzip.compress(value)
 
         return value
 
-    def _deserialize(self, value):
+    def _deserialize(self, value, decompress=None):
         """
         The complementary method of :py:meth:`_serialize`. Can be called with
         ``None``.
@@ -158,7 +159,8 @@ class RedisCache(CachingBackend):
         if value is None:
             return None
 
-        if self._compress:
+        decompress = self._compress if decompress is None else bool(decompress)
+        if decompress:
             return gzip.decompress(value)
 
         return value
