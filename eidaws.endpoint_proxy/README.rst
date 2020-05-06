@@ -1,3 +1,5 @@
+.. _aiohttp: https://docs.aiohttp.org/en/stable/
+
 ==============================
 EIDA Endpoint Proxy webservice
 ==============================
@@ -21,8 +23,7 @@ following resources:
 - ``/fdsnws/station/1/query``
 - ``/eidaws/wfcatalog/1/query``
 
-The implementation is based on Python's `aiohttp
-<https://docs.aiohttp.org/en/stable/>`_ framework.
+The implementation is based on Python's aiohttp_ framework.
 
 
 Installation
@@ -101,3 +102,16 @@ application specific logger named ``eidaws.endpoint_proxy`` is provided.
 When configuring logging by means of a logging configuration file (see also the
 `Configuration`_ section), you may subscribe to these loggers for getting log
 messages.
+
+
+Limitations
+===========
+
+The bandwiths limitation is based on the facilities provided by aiohttp_'s
+`TCPConnector
+<https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp-client-reference-connectors>`_
+facilities. Thus, the queue size is not configurable.
+
+Full featured bandwith limitation is implemented by e.g. the `bottleneck
+<https://www.npmjs.com/package/bottleneck>`_ package. In future, an improved
+implementation might be based on these facilites.
