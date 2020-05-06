@@ -51,6 +51,7 @@ def cached(func):
     """
     Method decorator providing caching facilities.
     """
+    ENCODING = "gzip"
 
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
@@ -74,7 +75,7 @@ def cached(func):
         decompress = (
             False
             if not compressed_cache
-            or "gzip" in accept_encoding
+            or ENCODING in accept_encoding
             and compressed_cache
             else True
         )
@@ -94,7 +95,7 @@ def cached(func):
             if decompress:
                 resp.enable_compression()
             elif compressed_cache:
-                resp.headers["Content-Encoding"] = "gzip"
+                resp.headers["Content-Encoding"] = ENCODING
 
             return resp
 
