@@ -19,6 +19,7 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
+from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
 
 
@@ -87,9 +88,6 @@ def get_config(
                 schema=json_schema,
             )
         except ValidationError as err:
-            # avoid circular imports
-            from eidaws.federator.utils.app import ConfigurationError
-
             raise ConfigurationError(str(err))
 
     return config_dict
