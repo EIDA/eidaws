@@ -200,6 +200,11 @@ async def setup_cache(service_id, app):
         return
 
     cache = await Cache.create(cache_config)
+
+    async def close_cache(app):
+        await cache.close()
+
+    app.on_cleanup.append(close_cache)
     app["cache"] = cache
     return cache
 

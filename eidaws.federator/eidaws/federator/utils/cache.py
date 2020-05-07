@@ -83,6 +83,11 @@ class CachingBackend(abc.ABC):
 
         return True
 
+    async def close(self):
+        """
+        Gracefully shutdown a caching backend.
+        """
+
     @abc.abstractmethod
     async def exists(self, key):
         """
@@ -142,6 +147,10 @@ class RedisCache(CachingBackend):
 
     async def exists(self, key):
         return await self.redis.exists(self._create_key_prefix() + key)
+
+    async def close(self):
+        self.redis.close()
+        await self.redis.wait_closed()
 
     def _serialize(self, value, compress=None):
         compress = self._compress if compress is None else bool(compress)
@@ -207,3 +216,6 @@ class Cache:
 
     async def exists(self, *args, **kwargs):
         return await self._cache.__contains__(*args, **kwargs)
+
+    async def close(self, *args, **kwargs):
+        return await self._cache.close(*args, **kwargs)
