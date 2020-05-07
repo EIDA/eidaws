@@ -213,6 +213,7 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
 class DataselectRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
+    ACCESS = "open"
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 
