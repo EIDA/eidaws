@@ -108,6 +108,7 @@ class FakeServer:
 
         return route, None
 
+
 @pytest.fixture
 def make_federated_eida(aiohttp_client):
     class FakedEndpointDictWrapper(dict):
@@ -185,6 +186,7 @@ fdsnws_error_content_type = fdsnws_station_text_content_type
 def eidaws_wfcatalog_content_type():
     return "application/json"
 
+
 @pytest.fixture(scope="session")
 def eidaws_routing_path_query():
     return "/eidaws/routing/1/query"
@@ -205,7 +207,7 @@ def load_data(request):
         {"pool_size": 1, "endpoint_request_method": "GET"},
         {"pool_size": 1, "endpoint_request_method": "POST"},
     ],
-    ids=["req_method=GET", "req_method=POST"]
+    ids=["req_method=GET", "req_method=POST"],
 )
 def server_config(request):
     def _get_config(config_factory, **kwargs):
@@ -226,6 +228,7 @@ def tester(make_federated_eida, content_tester):
         mocked_routing,
         mocked_endpoints,
         expected,
+        headers={},
     ):
 
         client, faked_routing, faked_endpoints = await make_federated_eida(
@@ -235,8 +238,9 @@ def tester(make_federated_eida, content_tester):
         )
 
         method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(path, **kwargs)
+        req_kwargs = {"params" if method == "get" else "data": params_or_data}
+        req_kwargs["headers"] = headers
+        resp = await getattr(client, method)(path, **req_kwargs)
 
         assert resp.status == expected["status"]
         assert (
