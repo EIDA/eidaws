@@ -29,7 +29,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
     QUERY_FORMAT = FED_STATION_TEXT_FORMAT
 
-    @with_exception_handling
+    @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, req_method="GET", **kwargs):
 
         while True:
@@ -199,7 +199,7 @@ class StationTextRequestProcessor(BaseRequestProcessor):
                     prepare_callback=self._prepare_response,
                 )
 
-                task = asyncio.create_task(
+                task = self.request.loop.create_task(
                     worker.run(req_method=req_method, **kwargs)
                 )
                 self._tasks.append(task)

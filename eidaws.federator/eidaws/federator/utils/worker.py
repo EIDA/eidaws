@@ -25,33 +25,53 @@ def _split_stream_epoch(stream_epoch, num, default_endtime):
     return stream_epoch.slice(num=num, default_endtime=default_endtime)
 
 
-def with_exception_handling(coro):
+def with_exception_handling(ignore_runtime_exception=False):
     """
     Method decorator providing general purpose exception handling for worker
     tasks.
     """
 
-    @functools.wraps(coro)
-    async def wrapper(self, *args, **kwargs):
+    def decorator(coro):
+        @functools.wraps(coro)
+        async def wrapper(self, *args, **kwargs):
 
-        try:
-            await coro(self, *args, **kwargs)
-        except asyncio.CancelledError:
-            raise
-        except Exception as err:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.logger.critical(f"Local TaskWorker exception: {type(err)}")
-            self.logger.critical(
-                "Traceback information: "
-                + repr(
-                    traceback.format_exception(
-                        exc_type, exc_value, exc_traceback
+            try:
+                await coro(self, *args, **kwargs)
+            except asyncio.CancelledError:
+                raise
+            except RuntimeError as err:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                log = getattr(
+                    self.logger,
+                    "debug" if ignore_runtime_exception else "error",
+                )
+                log(f"TaskWorker RuntimeError: {err}")
+                log(
+                    "Traceback information: "
+                    + repr(
+                        traceback.format_exception(
+                            exc_type, exc_value, exc_traceback
+                        )
                     )
                 )
-            )
-            await self.finalize()
+            except Exception as err:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.logger.critical(
+                    f"Local TaskWorker exception: {type(err)}"
+                )
+                self.logger.critical(
+                    "Traceback information: "
+                    + repr(
+                        traceback.format_exception(
+                            exc_type, exc_value, exc_traceback
+                        )
+                    )
+                )
+                await self.finalize()
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
 class WorkerError(ErrorWithTraceback):
@@ -140,7 +160,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
 
         assert self._query_format is not None, 'Undefined "query_format"'
 
-    @with_exception_handling
+    @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, req_method="GET", **kwargs):
         def route_with_single_stream(route):
             streams = set([])

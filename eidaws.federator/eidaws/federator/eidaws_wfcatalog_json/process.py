@@ -194,7 +194,7 @@ class WFCatalogRequestProcessor(BaseRequestProcessor):
                     write_callback=self.dump_to_cache_buffer,
                 )
 
-                task = asyncio.create_task(
+                task = self.request.loop.create_task(
                     worker.run(req_method=req_method, **kwargs)
                 )
                 self._tasks.append(task)

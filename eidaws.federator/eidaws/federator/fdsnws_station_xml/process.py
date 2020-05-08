@@ -14,9 +14,7 @@ from eidaws.federator.settings import (
     FED_STATION_XML_FORMAT,
     FED_STATION_XML_SERVICE_ID,
 )
-from eidaws.federator.utils.process import (
-    BaseRequestProcessor,
-)
+from eidaws.federator.utils.process import BaseRequestProcessor
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
@@ -95,7 +93,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
 
         self._network_elements = {}
 
-    @with_exception_handling
+    @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, req_method="GET", **kwargs):
 
         while True:
@@ -415,7 +413,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
                     level=self._level,
                 )
 
-                task = asyncio.create_task(
+                task = self.request.loop.create_task(
                     worker.run(req_method=req_method, **kwargs)
                 )
                 self._tasks.append(task)

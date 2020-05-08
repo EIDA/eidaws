@@ -300,8 +300,12 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         response_write = response.write
 
         async def write(*args, **kwargs):
-            await response_write(*args, **kwargs)
-            self.dump_to_cache_buffer(*args, **kwargs)
+            try:
+                await response_write(*args, **kwargs)
+            except ConnectionResetError:
+                pass
+            else:
+                self.dump_to_cache_buffer(*args, **kwargs)
 
         response.write = write
 
@@ -357,13 +361,24 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     async def _teardown_tasks(self, **kwargs):
 
-        return_exceptions = kwargs.get("return_exceptions", True)
-
         self.logger.debug("Teardown worker tasks ...")
         for task in self._tasks:
             task.cancel()
 
-        await asyncio.gather(*self._tasks, return_exceptions=return_exceptions)
+        results = await asyncio.gather(*self._tasks, return_exceptions=True)
+
+        for result in results:
+            if isinstance(result, asyncio.CancelledError):
+                continue
+
+            if isinstance(result, RuntimeError):
+                self.logger.debug(
+                    f"RuntimeError while tearing down tasks: {result}"
+                )
+            elif isinstance(result, Exception):
+                self.logger.error(
+                    f"Error while tearing down tasks: {type(result)}"
+                )
 
     async def _gc_response_code_stats(self):
 
