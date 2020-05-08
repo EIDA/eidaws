@@ -161,6 +161,13 @@ def make_federated_eida(loop, aiohttp_client):
             client = await aiohttp_client(app)
         except RedisError as err:
             pytest.skip(str(err))
+        else:
+            _redis = app["redis_connection_pool"]
+            if await _redis.dbsize():
+                raise EnvironmentError(
+                    f"Redis database number {_redis.db} is not empty, "
+                    "tests could harm your data."
+                )
 
         created_apps.append(app)
         return client, faked_routing, faked_endpoints
@@ -174,7 +181,7 @@ def make_federated_eida(loop, aiohttp_client):
 
             # flush Redis backend
             await app["redis_connection_pool"].flushall()
-            # flush Redis cache
+            # flush cache
             cache = app["cache"]
             if cache is not None:
                 await cache.flush_all()
