@@ -347,16 +347,38 @@ class _TestCommonServerConfig:
 
         assert resp.status == 413
 
-    @pytest.mark.parametrize("method", ["GET", "POST"])
-    async def test_max_stream_epoch_duration(
-        self, make_federated_eida, eidaws_routing_path_query, method,
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHA",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                },
+            ),
+            ("POST", b"NET STA LOC CHA 2020-01-01 2020-01-02"),
+        ],
+    )
+    async def test_max_stream_epoch_duration_ok(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
         # NOTE(damb): For fdsnws-station-* resource implementations the query
         # filter parameter level=channel would be required to simulate a
         # proper behaviour; however, since the response depends actually on the
         # routing service's response the mixin can be used for testing
         # fdsnws-station-* implementations, too.
-        config_dict = self.get_config(**{"max_stream_epoch_duration": 1})
+        config_dict = self.get_config(
+            **{"pool_size": 1, "max_stream_epoch_duration": 1}
+        )
 
         mocked_routing = {
             "localhost": [
@@ -386,24 +408,45 @@ class _TestCommonServerConfig:
         )
 
         _method = method.lower()
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHA",
-                "start": "2020-01-01",
-                "end": "2020-01-02",
-            }
-            if _method == "get"
-            else b"NET STA LOC CHA 2020-01-01 2020-01-02"
-        )
         kwargs = {"params" if _method == "get" else "data": params_or_data}
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 204
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHA",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02T00:00:01",
+                },
+            ),
+            ("POST", b"NET STA LOC CHA 2020-01-01 2020-01-02T00:00:01"),
+        ],
+    )
+    async def test_max_stream_epoch_duration_exceeded(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(
+            **{"pool_size": 1, "max_stream_epoch_duration": 1}
+        )
 
         mocked_routing = {
             "localhost": [
@@ -426,34 +469,45 @@ class _TestCommonServerConfig:
             mocked_routing_config=mocked_routing,
         )
 
+        _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHA",
-                "start": "2020-01-01",
-                "end": "2020-01-02T00:00:01",
-            }
-            if _method == "get"
-            else b"NET STA LOC CHA 2020-01-01 2020-01-02T00:00:01"
-        )
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 413
 
         faked_routing.assert_no_unused_routes()
 
-    @pytest.mark.parametrize("method", ["GET", "POST"])
-    async def test_max_total_stream_epoch_duration(
-        self, make_federated_eida, eidaws_routing_path_query, method
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHA?",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                },
+            ),
+            ("POST", b"NET STA LOC CHA? 2020-01-01 2020-01-02"),
+        ],
+    )
+    async def test_max_total_stream_epoch_duration_ok(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
         # NOTE(damb): For fdsnws-station-* resource implementations the query
         # filter parameter level=channel would be required to simulate a
         # proper behaviour; however, since the response depends actually on the
         # routing service's response the mixin can be used for testing
         # fdsnws-station-* implementations, too.
-        config_dict = self.get_config(**{"max_total_stream_epoch_duration": 3})
+        config_dict = self.get_config(
+            **{"pool_size": 1, "max_total_stream_epoch_duration": 3}
+        )
 
         mocked_routing = {
             "localhost": [
@@ -487,24 +541,45 @@ class _TestCommonServerConfig:
         )
 
         _method = method.lower()
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHA?",
-                "start": "2020-01-01",
-                "end": "2020-01-02",
-            }
-            if _method == "get"
-            else b"NET STA LOC CHA? 2020-01-01 2020-01-02"
-        )
         kwargs = {"params" if _method == "get" else "data": params_or_data}
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 204
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHA?",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02T00:00:01",
+                },
+            ),
+            ("POST", b"NET STA LOC CHA? 2020-01-01 2020-01-02T00:00:01"),
+        ],
+    )
+    async def test_max_total_stream_epoch_duration_exceeded(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(
+            **{"pool_size": 1, "max_total_stream_epoch_duration": 3}
+        )
 
         mocked_routing = {
             "localhost": [
@@ -529,27 +604,36 @@ class _TestCommonServerConfig:
             mocked_routing_config=mocked_routing,
         )
 
+        _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHA?",
-                "start": "2020-01-01",
-                "end": "2020-01-02T00:00:01",
-            }
-            if _method == "get"
-            else b"NET STA LOC CHA? 2020-01-01 2020-01-02T00:00:01"
-        )
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 413
 
         faked_routing.assert_no_unused_routes()
 
-    @pytest.mark.parametrize("method", ["GET", "POST"])
-    async def test_max_stream_epoch_durations(
-        self, make_federated_eida, eidaws_routing_path_query, method
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHAZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-03",
+                },
+            ),
+            ("POST", b"NET STA LOC CHAZ 2020-01-01 2020-01-03"),
+        ],
+    )
+    async def test_max_stream_epoch_durations_ok(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
     ):
         # NOTE(damb): For fdsnws-station-* resource implementations the query
         # filter parameter level=channel would be required to simulate a
@@ -591,18 +675,6 @@ class _TestCommonServerConfig:
         )
 
         _method = method.lower()
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHAZ",
-                "start": "2020-01-01",
-                "end": "2020-01-03",
-            }
-            if _method == "get"
-            else b"NET STA LOC CHAZ 2020-01-01 2020-01-03"
-        )
         kwargs = {"params" if _method == "get" else "data": params_or_data}
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 204
@@ -610,6 +682,47 @@ class _TestCommonServerConfig:
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
 
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NET",
+                    "sta": "STA",
+                    "loc": "LOC",
+                    "cha": "CHAN,CHAZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-03",
+                },
+            ),
+            (
+                "POST",
+                (
+                    b"NET STA LOC CHAN 2020-01-01 2020-01-03\n"
+                    b"NET STA LOC CHAZ 2020-01-01 2020-01-03"
+                ),
+            ),
+        ],
+    )
+    async def test_max_stream_epoch_durations_exceeded(
+        self,
+        make_federated_eida,
+        eidaws_routing_path_query,
+        method,
+        params_or_data,
+    ):
+        # NOTE(damb): For fdsnws-station-* resource implementations the query
+        # filter parameter level=channel would be required to simulate a
+        # proper behaviour; however, since the response depends actually on the
+        # routing service's response the mixin can be used for testing
+        # fdsnws-station-* implementations, too.
+        config_dict = self.get_config(
+            **{
+                "max_stream_epoch_durations": 2,
+                "max_total_stream_epoch_duration": 3,
+            }
+        )
         mocked_routing = {
             "localhost": [
                 (
@@ -632,22 +745,8 @@ class _TestCommonServerConfig:
             mocked_routing_config=mocked_routing,
         )
 
+        _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        params_or_data = (
-            {
-                "net": "NET",
-                "sta": "STA",
-                "loc": "LOC",
-                "cha": "CHAN,CHAZ",
-                "start": "2020-01-01",
-                "end": "2020-01-03",
-            }
-            if _method == "get"
-            else (
-                b"NET STA LOC CHAN 2020-01-01 2020-01-03T00:00:00\n"
-                b"NET STA LOC CHAZ 2020-01-01 2020-01-03T00:00:00"
-            )
-        )
         resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
         assert resp.status == 413
 
