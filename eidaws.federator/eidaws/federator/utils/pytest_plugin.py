@@ -236,6 +236,21 @@ def server_config(request):
     return _get_config
 
 
+@pytest.fixture(
+    params=[
+        {
+            "cache_config": {
+                "cache_type": "redis",
+                "cache_kwargs": {"url": "redis://localhost:6379"},
+            }
+        }
+    ],
+    ids=["redis-cache"],
+)
+def cache_config(request):
+    return request.param
+
+
 @pytest.fixture
 def tester(make_federated_eida, content_tester):
     async def _tester(

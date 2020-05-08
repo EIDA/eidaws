@@ -19,6 +19,7 @@ from eidaws.federator.utils.pytest_plugin import (
     load_data,
     make_federated_eida,
     server_config,
+    cache_config,
     tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
@@ -633,4 +634,81 @@ class TestFDSNDataselectServer(
             mocked_routing,
             mocked_endpoints,
             expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2019-01-05",
+                },
+            ),
+            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-05",),
+        ],
+    )
+    async def test_cached(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_dataselect_content_type,
+        load_data,
+        cache_config,
+        method,
+        params_or_data,
+    ):
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
+                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config, **cache_config)
+        mocked_endpoints = {
+            "eida.ethz.ch": [
+                (
+                    self.PATH_QUERY,
+                    self.lookup_config("endpoint_request_method", config_dict),
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45"
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_dataselect_content_type,
+            "result": "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+            test_cached=True,
         )
