@@ -110,11 +110,13 @@ class FakeServer:
 
 
 @pytest.fixture
-def make_federated_eida(aiohttp_client):
+def make_federated_eida(loop, aiohttp_client):
     class FakedEndpointDictWrapper(dict):
         def assert_no_unused_routes(self):
             for faked_server in self.values():
                 faked_server.assert_no_unused_routes()
+
+    created_apps = []
 
     async def _make_federated_eida(
         app_factory, mocked_routing_config={}, mocked_endpoint_config={},
@@ -123,6 +125,7 @@ def make_federated_eida(aiohttp_client):
         assert len(mocked_routing_config.keys()) <= 1
 
         app = app_factory()
+
         faked_routing = None
         # create mocked routing
         for host, mocked in mocked_routing_config.items():
@@ -159,9 +162,24 @@ def make_federated_eida(aiohttp_client):
         except RedisError as err:
             pytest.skip(str(err))
 
+        created_apps.append(app)
         return client, faked_routing, faked_endpoints
 
-    return _make_federated_eida
+    yield _make_federated_eida
+
+    async def finalize():
+        while created_apps:
+
+            app = created_apps.pop()
+
+            # flush Redis backend
+            await app["redis_connection_pool"].flushall()
+            # flush Redis cache
+            cache = app["cache"]
+            if cache is not None:
+                await cache.flush_all()
+
+    loop.run_until_complete(finalize())
 
 
 @pytest.fixture(scope="session")
@@ -228,8 +246,31 @@ def tester(make_federated_eida, content_tester):
         mocked_routing,
         mocked_endpoints,
         expected,
-        headers={},
+        test_cached=False,
     ):
+        async def request_and_validate_response(
+            client, encoding=None, **kwargs
+        ):
+            if encoding is not None:
+                if "headers" in kwargs:
+                    kwargs["headers"]["Accept-Encoding"] = encoding
+                else:
+                    kwargs["headers"] = {"Accept-Encoding": encoding}
+
+            resp = await getattr(client, method)(path, **kwargs)
+
+            assert resp.status == expected["status"]
+            assert (
+                "Content-Type" in resp.headers
+                and resp.headers["Content-Type"] == expected["content_type"]
+            )
+            if encoding is not None:
+                assert (
+                    "Content-Encoding" in resp.headers
+                    and resp.headers["Content-Encoding"] in encoding
+                )
+
+            await content_tester(resp, expected=expected.get("result"))
 
         client, faked_routing, faked_endpoints = await make_federated_eida(
             app_factory(),
@@ -239,18 +280,22 @@ def tester(make_federated_eida, content_tester):
 
         method = method.lower()
         req_kwargs = {"params" if method == "get" else "data": params_or_data}
-        req_kwargs["headers"] = headers
-        resp = await getattr(client, method)(path, **req_kwargs)
-
-        assert resp.status == expected["status"]
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == expected["content_type"]
-        )
-
-        await content_tester(resp, expected=expected.get("result"))
+        await request_and_validate_response(client, **req_kwargs)
 
         faked_routing.assert_no_unused_routes()
         faked_endpoints.assert_no_unused_routes()
+
+        if test_cached and client.app["cache"] is None:
+            raise RuntimeError("Cache not configured.")
+        elif test_cached:
+            await request_and_validate_response(client, **req_kwargs)
+            # test cached gzip encoded
+            await request_and_validate_response(
+                client, encoding="gzip", **req_kwargs
+            )
+            # test cached deflated encoded
+            await request_and_validate_response(
+                client, encoding="gzip", **req_kwargs
+            )
 
     return _tester
