@@ -97,6 +97,12 @@ class CachingBackend(abc.ABC):
         :param key: Key to validate
         """
 
+    @abc.abstractmethod
+    async def flush_all(self):
+        """
+        Delete all cache entries.
+        """
+
 
 class NullCache(CachingBackend):
     """
@@ -105,6 +111,9 @@ class NullCache(CachingBackend):
 
     async def exists(self, key):
         return False
+
+    async def flush_all(self):
+        pass
 
 
 class RedisCache(CachingBackend):
@@ -147,6 +156,9 @@ class RedisCache(CachingBackend):
 
     async def exists(self, key):
         return await self.redis.exists(self._create_key_prefix() + key)
+
+    async def flush_all(self, **kwargs):
+        await self.redis.flushall(*kwargs)
 
     async def close(self):
         self.redis.close()
@@ -219,3 +231,6 @@ class Cache:
 
     async def close(self, *args, **kwargs):
         return await self._cache.close(*args, **kwargs)
+
+    async def flush_all(self, *args, **kwargs):
+        return await self._cache.flush_all(*args, **kwargs)
