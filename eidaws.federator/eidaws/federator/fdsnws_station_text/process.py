@@ -54,35 +54,6 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
                 await self.finalize()
                 continue
 
-            msg = (
-                f"Response: {resp.reason}: resp.status={resp.status}, "
-                f"resp.request_info={resp.request_info}, "
-                f"resp.url={resp.url}, resp.headers={resp.headers}"
-            )
-
-            try:
-                resp.raise_for_status()
-            except aiohttp.ClientResponseError:
-                if resp.status == 413:
-                    await self._handle_413()
-                else:
-                    await self._handle_error(msg=msg)
-
-                await self.finalize()
-                continue
-            else:
-                if resp.status != 200:
-                    if resp.status in FDSNWS_NO_CONTENT_CODES:
-                        self.logger.info(msg)
-                    else:
-                        await self._handle_error(msg=msg)
-
-                    await self.finalize()
-                    continue
-            finally:
-                await self.update_cretry_budget(req_handler.url, resp.status)
-
-            self.logger.debug(msg)
             data = await self._parse_resp(resp)
 
             if data is not None:
@@ -96,9 +67,36 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
                     await self._response.write(data)
 
+            await self.update_cretry_budget(req_handler.url, resp.status)
             await self.finalize()
 
     async def _parse_resp(self, resp):
+        msg = (
+            f"Response: {resp.reason}: resp.status={resp.status}, "
+            f"resp.request_info={resp.request_info}, "
+            f"resp.url={resp.url}, resp.headers={resp.headers}"
+        )
+
+        try:
+            resp.raise_for_status()
+        except aiohttp.ClientResponseError:
+            if resp.status == 413:
+                await self._handle_413()
+            else:
+                await self._handle_error(msg=msg)
+
+            return None
+        else:
+            if resp.status != 200:
+                if resp.status in FDSNWS_NO_CONTENT_CODES:
+                    self.logger.info(msg)
+                else:
+                    await self._handle_error(msg=msg)
+
+                return None
+            else:
+                self.logger.debug(msg)
+
         # XXX(damb): Read the entire response into memory
         try:
             text = await resp.read()
