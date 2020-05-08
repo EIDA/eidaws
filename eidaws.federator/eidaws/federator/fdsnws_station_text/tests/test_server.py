@@ -19,6 +19,7 @@ from eidaws.federator.utils.pytest_plugin import (
     load_data,
     make_federated_eida,
     server_config,
+    cache_config,
     tester,
 )
 from eidaws.federator.utils.tests.server_mixin import (
@@ -359,7 +360,9 @@ class TestFDSNStationTextServer(
         }
 
         config_dict = server_config(self.get_config)
-        endpoint_request_method = self.lookup_config("endpoint_request_method", config_dict)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
@@ -457,7 +460,9 @@ class TestFDSNStationTextServer(
         }
 
         config_dict = server_config(self.get_config)
-        endpoint_request_method = self.lookup_config("endpoint_request_method", config_dict)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
@@ -500,4 +505,83 @@ class TestFDSNStationTextServer(
             mocked_routing,
             mocked_endpoints,
             expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "NL",
+                    "start": "2013-11-10",
+                    "end": "2013-11-11",
+                    "level": "network",
+                    "format": "text",
+                },
+            ),
+            (
+                "POST",
+                b"level=network\nformat=text\nNL * * * 2013-11-10 2013-11-11",
+            ),
+        ],
+    )
+    async def test_cached(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        cache_config,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
+                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config, **cache_config)
+        mocked_endpoints = {
+            "www.orfeus-eu.org": [
+                (
+                    self.PATH_QUERY,
+                    self.lookup_config("endpoint_request_method", config_dict),
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "NL....2013-11-10.2013-11-11.network",
+                            reader="read_text",
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "NL....2013-11-10.2013-11-11.network",
+        }
+        await tester(
+            self.FED_PATH_QUERY,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+            test_cached=True,
         )

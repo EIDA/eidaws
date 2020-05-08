@@ -7,7 +7,6 @@ import datetime
 import hashlib
 import io
 
-from aiohttp import web
 from lxml import etree
 
 from eidaws.federator.settings import (
@@ -16,7 +15,6 @@ from eidaws.federator.settings import (
     FED_STATION_XML_SERVICE_ID,
 )
 from eidaws.federator.utils.process import (
-    _patch_response_write,
     BaseRequestProcessor,
 )
 from eidaws.federator.utils.worker import (
@@ -394,9 +392,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
                 await queue.put(job)
 
         queue = asyncio.Queue()
-        response = web.StreamResponse()
-        _patch_response_write(response, self.dump_to_cache_buffer)
-
+        response = self.make_stream_response()
         lock = asyncio.Lock()
 
         await dispatch(queue, routes)

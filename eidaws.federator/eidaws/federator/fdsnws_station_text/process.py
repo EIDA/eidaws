@@ -3,18 +3,13 @@
 import asyncio
 import aiohttp
 
-from aiohttp import web
-
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_TEXT_FORMAT,
     FED_STATION_TEXT_SERVICE_ID,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
-from eidaws.federator.utils.process import (
-    _patch_response_write,
-    BaseRequestProcessor,
-)
+from eidaws.federator.utils.process import BaseRequestProcessor
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
@@ -184,9 +179,7 @@ class StationTextRequestProcessor(BaseRequestProcessor):
                 await queue.put(job)
 
         queue = asyncio.Queue()
-        response = web.StreamResponse()
-        _patch_response_write(response, self.dump_to_cache_buffer)
-
+        response = self.make_stream_response()
         lock = asyncio.Lock()
 
         await dispatch(queue, routes)
