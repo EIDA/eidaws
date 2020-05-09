@@ -10,4 +10,5 @@ cscope.*
 *.egg-info
 __pycache__
 venv
+*.coverage
 pytest.log
