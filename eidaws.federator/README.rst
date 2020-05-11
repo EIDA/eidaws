@@ -275,7 +275,7 @@ In order to run the tests, invoke
 
 .. code::
 
-  $ pytest eidaws.federator
+  $ pytest eidaws.utils eidaws.federator
 
 
 Limitations
