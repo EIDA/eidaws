@@ -5,6 +5,17 @@ General purpose utilities for EIDA NG services
 ``eidaws.utils`` is deployed as part of the ``eidaws`` namespace distribution.
 
 
+Installation
+============
+
+After obtaining a copy of the repo the ``eidaws.utils`` namespace distribution
+is installed with
+
+.. code::
+
+  $ pip install eidaws.utils
+
+
 Testing
 =======
 
