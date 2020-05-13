@@ -9,52 +9,20 @@ import datetime
 
 from aiohttp.web import HTTPException
 
-from eidaws.utils.settings import FDSNWS_SERVICE_DOCUMENTATION_URI
+from eidaws.utils.http_error import (
+    make_error_message,
+    FDSNHTTPError as _FDSNHTTPError,
+)
 
 
-# Error <CODE>: <SIMPLE ERROR DESCRIPTION>
-# <MORE DETAILED ERROR DESCRIPTION>
-# Usage details are available from <SERVICE DOCUMENTATION URI>
-# Request:
-# <SUBMITTED URL>
-# Request Submitted:
-# <UTC DATE TIME>
-# Service version:
-# <3-LEVEL VERSION>
-
-ERROR_MESSAGE_TEMPLATE = """
-Error %s: %s
-
-%s
-
-Usage details are available from %s
-
-Request:
-%s
-
-Request Submitted:
-%s
-
-Service version:
-%s
-"""
-
-
-# -----------------------------------------------------------------------------
-class FDSNHTTPError(HTTPException):
+class FDSNHTTPError(HTTPException, _FDSNHTTPError):
     """
     General HTTP error class for 5xx and 4xx errors for FDSN web services,
     with error message according to standards. Needs to be subclassed for
     individual error types.
     """
 
-    status_code = 0
-    error_desc_short = ""
-
-    DEFAULT_DOCUMENTATION_URI = FDSNWS_SERVICE_DOCUMENTATION_URI
-    DEFAULT_SERVICE_VERSION = ""
-
-    CONTENT_TYPE = "text/plain"
+    status_code = -1
 
     @staticmethod
     def create(status_code, *args, **kwargs):
@@ -92,7 +60,7 @@ class FDSNHTTPError(HTTPException):
         error_desc_long = error_desc_long or self.error_desc_short
         request_submitted = request_submitted or datetime.datetime.utcnow()
 
-        text = self.make_error_message(
+        text = make_error_message(
             self.status_code,
             self.error_desc_short,
             error_desc_long,
@@ -103,30 +71,6 @@ class FDSNHTTPError(HTTPException):
         )
 
         super().__init__(text=text, content_type=self.CONTENT_TYPE)
-
-    @staticmethod
-    def make_error_message(
-        status_code,
-        description_short,
-        description_long,
-        documentation_uri,
-        request_url,
-        request_time,
-        service_version,
-    ):
-        """
-        Return text of error message.
-        """
-
-        return ERROR_MESSAGE_TEMPLATE % (
-            status_code,
-            description_short,
-            description_long,
-            documentation_uri,
-            request_url,
-            request_time,
-            service_version,
-        )
 
 
 class HTTPNoContent(FDSNHTTPError):
