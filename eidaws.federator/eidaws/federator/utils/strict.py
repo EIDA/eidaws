@@ -173,15 +173,17 @@ class AsyncKeywordParser:
         to parse the request. Overrides the parser's ``handle_error``
         method.
 
-        Example: ::
+        Example: 
 
-            from strict import flask_keywordparser
+        .. code ::
+
+            from eidaws.federator.utils.strict import keyword_parser
 
             class CustomError(Exception):
                 pass
 
 
-            @flask_keywordparser.error_handler
+            @keyword_parser.error_handler
             def handle_error(error, req):
                 raise CustomError(error.messages)
 
