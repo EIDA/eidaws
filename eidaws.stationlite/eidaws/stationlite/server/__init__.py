@@ -14,6 +14,7 @@ from webargs.exceptions import HTTPException
 
 from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.server.parser import setup_parser_error_handler
+from eidaws.stationlite.server.route import setup_routes
 from eidaes.stationlite.server.strict import setup_keywordparser_error_handler
 from eidaws.stationlite.version import __version__
 
@@ -56,6 +57,8 @@ def create_app(config_dict, service_version=__version__):
             )
         )
         return FDSNHTTPError.create(500, service_version=service_version)
+
+    setup_routes(app)
 
     setup_parser_error_handler(service_version=service_version)
     setup_keywordparser_error_handler(service_version=service_version)

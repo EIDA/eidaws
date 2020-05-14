@@ -66,7 +66,7 @@ class StationLiteWadlResource(Resource):
     post = get
 
 
-class StationLiteResource(Resource):
+class StationLiteQueryResource(Resource):
     """
     ``query`` resource implementation for eidaws-stationlite
     """
