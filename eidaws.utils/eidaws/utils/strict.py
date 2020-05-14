@@ -3,6 +3,7 @@
 import inspect
 import logging
 
+from collections import Iterable
 from marshmallow import exceptions, Schema
 
 from eidaws.utils.error import Error
@@ -124,11 +125,15 @@ class KeywordParser:
         elif isinstance(schemas, Schema):
             schemas = [schemas]
 
+        if not isinstance(locations, Iterable):
+            raise ValueError(f"Must be iterable: {locations!r}")
+
         valid_fields = set()
         for schema in [s() if inspect.isclass(s) else s for s in schemas]:
             valid_fields.update(schema.fields.keys())
 
         parsers = []
+
         for l in locations:
             try:
                 fn = self.__location_map__[l]
@@ -155,6 +160,13 @@ class KeywordParser:
                 self.error_callback(err, req)
             else:
                 self.handle_error(err, req)
+
+    def with_strict_args(self, schemas, locations=None):
+        """
+        Wrapper of :py:func:`parse`.
+        """
+
+        raise NotImplementedError
 
     def error_handler(self, func):
         """
