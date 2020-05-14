@@ -13,6 +13,8 @@ STL_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
 STL_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"
 STL_DEFAULT_PORT = 8090
 
+STL_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
+
 # ----------------------------------------------------------------------------
 STL_HARVEST_BASE_ID = "eidaws.stationlite.harvest"
 
