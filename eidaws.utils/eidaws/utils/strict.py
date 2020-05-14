@@ -108,7 +108,7 @@ class KeywordParser:
 
         return parsed_list
 
-    async def parse(self, schemas, req, locations):
+    def parse(self, schemas, req, locations):
         """
         Validate request query parameters.
 
