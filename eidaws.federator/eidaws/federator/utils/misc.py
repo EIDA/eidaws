@@ -27,9 +27,6 @@ class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
 
 
-Route = collections.namedtuple("Route", ["url", "stream_epochs"])
-
-
 def _callable_or_raise(obj):
     """
     Makes sure an object is callable if it is not ``None``. If not
