@@ -2,7 +2,7 @@
 
 from flask_restful import Api
 
-from eidaws.stationlite.server.views import (
+from eidaws.stationlite.server.view import (
     StationLiteVersionResource,
     StationLiteWadlResource,
     StationLiteQueryResource,

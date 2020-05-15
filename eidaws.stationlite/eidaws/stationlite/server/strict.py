@@ -4,7 +4,7 @@ import functools
 
 from flask import request
 
-from eidaws.stationlite.http_error import FDSNHTTPError
+from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.settings import STL_DEFAULT_CLIENT_MAX_SIZE
 from eidaws.stationlite.version import __version__
 from eidaws.utils.strict import KeywordParser

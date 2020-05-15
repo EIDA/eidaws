@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from marshmallow import exceptions, Schema
 
 from eidaws.utils.error import Error
-from eidaws.federator.utils.misc import _callable_or_raise
+from eidaws.utils.misc import _callable_or_raise
 from eidaws.utils.settings import FDSNWS_QUERY_VALUE_SEPARATOR_CHAR
 
 

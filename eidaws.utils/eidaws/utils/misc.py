@@ -30,6 +30,17 @@ _iso8601_re = re.compile(
 
 
 # -----------------------------------------------------------------------------
+def _callable_or_raise(obj):
+    """
+    Makes sure an object is callable if it is not ``None``. If not
+    callable, a ``ValueError`` is raised.
+    """
+    if obj and not callable(obj):
+        raise ValueError(f"{obj!r} is not callable.")
+    else:
+        return obj
+
+
 def realpath(p):
     return os.path.realpath(os.path.expanduser(p))
 

@@ -12,7 +12,7 @@ from webargs import core
 from webargs.flaskparser import FlaskParser
 
 from eidaws.stationlite.version import __version__
-from eidaws.stationlite.http_error import FDSNHTTPError
+from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.settings import STL_DEFAULT_CLIENT_MAX_SIZE
 from eidaws.utils.parser import FDSNWSParserMixin
 from eidaws.utils.schema import FDSNWSBool, Latitude, Longitude, NoData

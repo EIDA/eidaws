@@ -25,7 +25,7 @@ from eidaws.stationlite.engine.db_query import (
     resolve_vnetwork,
     find_streamepochs_and_routes,
 )
-from eidaws.stationlite.server import db
+from eidaws.stationlite.server.db import db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.server.schema import StationLiteSchema
 from eidaws.stationlite.server.stream import OutputStream

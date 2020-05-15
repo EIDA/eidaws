@@ -12,7 +12,7 @@ from marshmallow import (
     ValidationError,
 )
 
-from eidangservices.utils.schema import FDSNWSBool, Latitude, Longitude, NoData
+from eidaws.utils.schema import FDSNWSBool, Latitude, Longitude, NoData
 
 
 # ----------------------------------------------------------------------------

@@ -12,12 +12,12 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from eidaws.federator.settings import FED_BASE_ID
-from eidaws.federator.utils.misc import _callable_or_raise
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
 from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.utils.error import ErrorWithTraceback
+from eidaws.utils.misc import _callable_or_raise
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 

@@ -9,17 +9,14 @@ import sys
 import traceback
 
 from flask import Flask, g
-from flask_sqlalchemy import SQLAlchemy
-from webargs.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException
 
+from eidaws.stationlite.server.db import setup_db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.server.parser import setup_parser_error_handler
 from eidaws.stationlite.server.route import setup_routes
-from eidaes.stationlite.server.strict import setup_keywordparser_error_handler
+from eidaws.stationlite.server.strict import setup_keywordparser_error_handler
 from eidaws.stationlite.version import __version__
-
-
-db = SQLAlchemy()
 
 
 logger = logging.getLogger("eidaws.stationlite.server")
@@ -63,6 +60,6 @@ def create_app(config_dict, service_version=__version__):
     setup_parser_error_handler(service_version=service_version)
     setup_keywordparser_error_handler(service_version=service_version)
 
-    db.init_app(app)
+    setup_db(app)
 
     return app
