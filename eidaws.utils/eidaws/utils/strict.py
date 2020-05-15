@@ -3,7 +3,7 @@
 import inspect
 import logging
 
-from collections import Iterable
+from collections.abc import Iterable
 from marshmallow import exceptions, Schema
 
 from eidaws.utils.error import Error
