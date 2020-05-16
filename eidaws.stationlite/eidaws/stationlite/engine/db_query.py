@@ -125,7 +125,7 @@ def find_streamepochs_and_routes(
     :param str service: String specifying the webservice
     :param str level: Optional `fdsnws-station` *level* parameter
     :param str access: Optional access parameter; The parameter is only taken
-        into consideration if :code:`service` equal :code:`dataselect`
+        into consideration if ``service`` equal ``dataselect``
     :param float minlat: Latitude larger than or equal to the specified minimum
     :param float maxlat: Latitude smaller than or equal to the specified
         maximum
@@ -250,4 +250,4 @@ def find_streamepochs_and_routes(
 
             routes[row[8]].add(stream_epoch)
 
-    return [Route(url=url, streams=streams) for url, streams in routes.items()]
+    return [Route(url=url, stream_epochs=streams) for url, streams in routes.items()]
