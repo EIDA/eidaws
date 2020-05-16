@@ -9,7 +9,7 @@ from marshmallow import (
     ValidationError,
 )
 from webargs import core
-from webargs.flaskparser import FlaskParser
+from webargs.flaskparser import parser, FlaskParser
 
 from eidaws.stationlite.version import __version__
 from eidaws.stationlite.server.http_error import FDSNHTTPError
