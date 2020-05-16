@@ -10,9 +10,6 @@ STL_BASE_ID = "eidaws.stationlite"
 STL_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
 STL_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
 
-STL_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"
-STL_DEFAULT_PORT = 8090
-
 STL_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
 
 # ----------------------------------------------------------------------------
@@ -44,7 +41,7 @@ STL_HARVEST_DEFAULT_URLS_ROUTING = [
 ]
 
 STL_HARVEST_DEFAULT_URLS_ROUTING_VNET = STL_HARVEST_DEFAULT_URLS_ROUTING
-STL_HARVEST_DEFAULT_URL_DB = STL_DEFAULT_URL_DB
+STL_HARVEST_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"
 STL_HARVEST_DEFAULT_SERVICES = ("station", "dataselect", "wfcatalog")
 STL_HARVEST_DEFAULT_PATH_PIDFILE = os.path.join(
     "/var/tmp", "eida-stationlite-harvest.pid"
