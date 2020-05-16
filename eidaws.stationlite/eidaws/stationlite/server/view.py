@@ -6,7 +6,7 @@ import pathlib
 import socket
 
 from cached_property import cached_property
-from flask import request, make_response
+from flask import request, make_response, render_template
 from flask_restful import Resource
 from webargs.flaskparser import use_args
 
@@ -51,14 +51,10 @@ class StationLiteWadlResource(Resource):
 
     @cached_property
     def wadl(self):
-        path_wadl = pathlib.Path(__file__) / "static" / "routing.wadl"
-
-        with open(path_wadl) as ifd:
-            return ifd.read().format(
-                "http://{}{}".format(
-                    socket.getfqdn(), EIDAWS_ROUTING_PATH_QUERY
-                )
-            )
+        return render_template(
+            "routing.wadl",
+            url=f"http://{socket.getfqdn()}{EIDAWS_ROUTING_PATH_QUERY}",
+        )
 
     def get(self):
         return make_response(self.wadl, {"Content-Type": "application/xml"})
@@ -114,9 +110,9 @@ class StationLiteQueryResource(Resource):
                 int(args.get("nodata", FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE))
             )
 
-            return make_response(
-                payload, {"Content-Type": "text/plain; charset=utf-8"}
-            )
+        return make_response(
+            payload, {"Content-Type": "text/plain; charset=utf-8"}
+        )
 
     def _process_request(self, args, stream_epochs):
         # resolve virtual network stream epochs
