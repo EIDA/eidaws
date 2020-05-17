@@ -21,6 +21,7 @@ from eidaws.stationlite.server.parser import setup_parser_error_handler
 from eidaws.stationlite.server.route import setup_routes
 from eidaws.stationlite.server.strict import setup_keywordparser_error_handler
 from eidaws.stationlite.server.utils import setup_logger
+from eidaws.stationlite.settings import STL_BASE_ID
 from eidaws.stationlite.version import __version__
 
 
@@ -65,7 +66,6 @@ def create_app(config_dict=None, service_version=__version__):
                 traceback.format_exception(exc_type, exc_value, exc_traceback)
             )
         )
-        print(error)
         return FDSNHTTPError.create(500, service_version=service_version)
 
     setup_routes(app)
@@ -74,5 +74,8 @@ def create_app(config_dict=None, service_version=__version__):
     setup_keywordparser_error_handler(service_version=service_version)
 
     setup_db(app)
+
+    logger.info(f'{STL_BASE_ID}: Version v{__version__}')
+    logger.debug(f'Configuration: {app.config!r}')
 
     return app

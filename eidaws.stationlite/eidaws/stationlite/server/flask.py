@@ -4,17 +4,18 @@ import os
 import errno
 from flask import Config as _Config, Flask
 
+from eidaws.stationlite.settings import STL_BASE_ID
 from eidaws.utils.config import interpolate_environment_variables
 
 
 # XXX(damb): Backport from Flask==2.0 providing environment variable
 # interpolation facilities
 
-_CONFIG_SECTION = 'eidaws.stationlite'
-
 
 class Config(_Config):
-    def from_file(self, filename, load, silent=False, interpolate=True):
+    def from_file(
+        self, filename, load, silent=False, interpolate=True, converter=None
+    ):
         """
         Update the values in the config from a file that is loaded
         using the ``load`` parameter. The loaded data is passed to the
@@ -33,7 +34,9 @@ class Config(_Config):
             implements a ``read`` method.
         :param silent: Ignore the file if it doesn't exist.
         :param interpolate: Interpolate environment variables within the
-            configuration file
+            configuration file.
+        :param converter: :py:class:`~eidaws.utils.config.ConversionMap` used
+            when interpolating environment variables.
         """
 
         filename = os.path.join(self.root_path, filename)
@@ -49,15 +52,17 @@ class Config(_Config):
             raise
 
         if interpolate:
-            obj = interpolate_environment_variables(obj, SECTION, os.environ)
+            obj = interpolate_environment_variables(
+                obj, STL_BASE_ID, os.environ, converter
+            )
+            try:
+                obj = obj[STL_BASE_ID]
+            except KeyError:
+                if silent:
+                    obj = {}
+                raise
 
         return self.from_mapping(obj)
-
-
-
-
-
-
 
 
 Flask.config_class = Config

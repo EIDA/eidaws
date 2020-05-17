@@ -84,9 +84,9 @@ def recursive_interpolate(obj, interpolator, config_path, converter):
     def append(config_path, key):
         return f"{config_path}/{key}"
 
+    converter = converter or _converter
+
     if isinstance(obj, str):
-        if converter is None:
-            return interpolator.interpolate(obj)
         return converter.convert(config_path, interpolator.interpolate(obj))
     if isinstance(obj, dict):
         return dict(
@@ -237,3 +237,6 @@ class ConversionMap:
                         )
                     )
         return value
+
+
+_converter = ConversionMap()

@@ -2,6 +2,15 @@
 
 import os
 
+from eidaws.utils.config import (
+    PATH_JOKER,
+    to_boolean,
+    to_int,
+    re_path,
+    ConversionMap as _ConversionMap,
+)
+from eidaws.stationlite.settings import STL_BASE_ID
+
 
 class Config:
     DEBUG = False
@@ -19,3 +28,15 @@ class Config:
             if not db_user
             else "{}{}@".format(db_user, f":{db_pass}" if db_pass else "")
         )
+
+
+def stl_path(*args):
+    return re_path(STL_BASE_ID, PATH_JOKER, *args)
+
+
+class ConversionMap(_ConversionMap):
+    MAP = {
+        stl_path("DEBUG"): to_boolean,
+        stl_path("PROPAGATE_EXCEPTIONS"): to_boolean,
+        stl_path("SQLALCHEMY_TRACK_MODIFICATIONS"): to_boolean,
+    }
