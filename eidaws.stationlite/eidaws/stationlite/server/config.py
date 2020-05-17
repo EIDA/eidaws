@@ -6,6 +6,7 @@ import os
 class Config:
     DEBUG = False
     PROPAGATE_EXCEPTIONS = False
+    PATH_LOGGING_CONF = None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     @property
