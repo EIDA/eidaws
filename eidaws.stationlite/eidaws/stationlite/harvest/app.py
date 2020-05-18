@@ -1340,7 +1340,7 @@ class StationLiteHarvestApp:
 
         # do all the dirty work of parsing and merging the configuration
         def _parse_urls_localconfig(ifd):
-            return [url.strip() for url in ifd.readline()]
+            return [url.strip() for url in ifd.read().split()]
 
         def _validate(config_dict):
             try:
