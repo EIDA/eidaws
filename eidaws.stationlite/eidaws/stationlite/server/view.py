@@ -2,7 +2,6 @@
 
 import collections
 import logging
-import pathlib
 import socket
 
 from cached_property import cached_property
