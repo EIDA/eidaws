@@ -54,8 +54,8 @@ def interpolate_environment_variables(
     )
 
 
-def get_config_path(config_key, section, name):
-    return f"{section}/{name}/{config_key}"
+def get_config_path(config_key, section):
+    return f"{section}/{config_key}"
 
 
 def interpolate_value(
@@ -65,7 +65,7 @@ def interpolate_value(
         return recursive_interpolate(
             value,
             interpolator,
-            get_config_path(config_key, section, name),
+            get_config_path(config_key, section),
             converter,
         )
     except InvalidInterpolation as err:
@@ -84,7 +84,7 @@ def recursive_interpolate(obj, interpolator, config_path, converter):
     def append(config_path, key):
         return f"{config_path}/{key}"
 
-    converter = converter or _converter
+    converter = converter or null_converter
 
     if isinstance(obj, str):
         return converter.convert(config_path, interpolator.interpolate(obj))
@@ -239,4 +239,4 @@ class ConversionMap:
         return value
 
 
-_converter = ConversionMap()
+null_converter = ConversionMap()

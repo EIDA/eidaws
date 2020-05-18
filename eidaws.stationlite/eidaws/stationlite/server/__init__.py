@@ -13,7 +13,7 @@ import yaml
 from flask import g
 from werkzeug.exceptions import HTTPException
 
-from eidaws.stationlite.server.config import Config
+from eidaws.stationlite.server.config import Config, ConversionMap
 from eidaws.stationlite.server.db import setup_db
 from eidaws.stationlite.server.flask import Flask
 from eidaws.stationlite.server.http_error import FDSNHTTPError
@@ -39,7 +39,9 @@ def create_app(config_dict=None, service_version=__version__):
     if config_dict is None:
         config_file = os.environ.get("EIDAWS_STATIONLITE_SETTINGS")
         if config_file is not None:
-            app.config.from_file(config_file, load=yaml.safe_load)
+            app.config.from_file(
+                config_file, load=yaml.safe_load, converter=ConversionMap()
+            )
 
     else:
         app.config.from_mapping(config_dict)
@@ -75,7 +77,7 @@ def create_app(config_dict=None, service_version=__version__):
 
     setup_db(app)
 
-    logger.info(f'{STL_BASE_ID}: Version v{__version__}')
-    logger.debug(f'Configuration: {app.config!r}')
+    logger.info(f"{STL_BASE_ID}: Version v{__version__}")
+    logger.debug(f"Configuration: {app.config!r}")
 
     return app

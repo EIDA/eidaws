@@ -3,7 +3,7 @@
 import os
 
 from eidaws.utils.config import (
-    PATH_JOKER,
+    to_str,
     to_boolean,
     to_int,
     re_path,
@@ -31,12 +31,16 @@ class Config:
 
 
 def stl_path(*args):
-    return re_path(STL_BASE_ID, PATH_JOKER, *args)
+    return re_path(STL_BASE_ID, *args)
 
 
 class ConversionMap(_ConversionMap):
     MAP = {
+        stl_path("PATH_LOGGING_CONF"): to_str,
         stl_path("DEBUG"): to_boolean,
         stl_path("PROPAGATE_EXCEPTIONS"): to_boolean,
         stl_path("SQLALCHEMY_TRACK_MODIFICATIONS"): to_boolean,
+        stl_path("SQLALCHEMY_ENGINE_OPTIONS", "pool_size"): to_int,
+        stl_path("SQLALCHEMY_ENGINE_OPTIONS", "pool_timeout"): to_int,
+        stl_path("SQLALCHEMY_DATABASE_URI"): to_str,
     }
