@@ -38,7 +38,7 @@ def create_app(config_dict=None, service_version=__version__):
 
     if config_dict is None:
         config_file = os.environ.get("EIDAWS_STATIONLITE_SETTINGS")
-        if config_file is not None:
+        if config_file:
             app.config.from_file(
                 config_file, load=yaml.safe_load, converter=ConversionMap()
             )
