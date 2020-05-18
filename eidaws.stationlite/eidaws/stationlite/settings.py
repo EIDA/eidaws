@@ -42,7 +42,7 @@ STL_HARVEST_DEFAULT_URLS_ROUTING = [
 
 STL_HARVEST_DEFAULT_URLS_ROUTING_VNET = STL_HARVEST_DEFAULT_URLS_ROUTING
 STL_HARVEST_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"
-STL_HARVEST_DEFAULT_SERVICES = ("station", "dataselect", "wfcatalog")
+STL_HARVEST_DEFAULT_SERVICES = ["station", "dataselect", "wfcatalog"]
 STL_HARVEST_DEFAULT_PATH_PIDFILE = os.path.join(
     "/var/tmp", "eida-stationlite-harvest.pid"
 )
