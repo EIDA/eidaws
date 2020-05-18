@@ -1286,10 +1286,7 @@ class StationLiteHarvestApp:
                 ]
             },
             "path_logging_conf": {
-                "oneOf": [
-                    {"type": "null"},
-                    {"type": "string"},
-                ]
+                "oneOf": [{"type": "null"}, {"type": "string"},]
             },
             "strict_restricted": {"type": "boolean"},
             "services": {
@@ -1303,14 +1300,8 @@ class StationLiteHarvestApp:
             "truncate": {
                 "oneOf": [
                     {"type": "null"},
-                    {
-                        "type": "string",
-                        "format": "date"
-                    },
-                    {
-                        "type": "string",
-                        "format": "date-time"
-                    },
+                    {"type": "string", "format": "date"},
+                    {"type": "string", "format": "date-time"},
                 ],
             },
             "url_db": {"type": "string", "format": "uri"},
