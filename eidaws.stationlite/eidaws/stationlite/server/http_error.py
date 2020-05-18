@@ -55,7 +55,7 @@ class FDSNHTTPError(HTTPException, _FDSNHTTPError):
         error_desc_long = error_desc_long or self.error_desc_short
 
         description = make_error_message(
-            self.status_code,
+            self.code,
             self.error_desc_short,
             error_desc_long,
             documentation_uri,
@@ -75,9 +75,14 @@ class FDSNHTTPError(HTTPException, _FDSNHTTPError):
 
 class NoDataError(HTTPException):
     def __init__(self, status_code=204):
+        self.code = status_code
         description = ""
-        response = make_response(description, self.code)
-        response.headers["Content-Type"] = _FDSNHTTPError.CONTENT_TYPE
+
+        response = make_response(
+            description,
+            self.code,
+            {"Content-Type": f"{_FDSNHTTPError.CONTENT_TYPE}; charset=utf-8"},
+        )
 
         super().__init__(description=description, response=response)
 
