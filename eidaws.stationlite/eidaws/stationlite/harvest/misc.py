@@ -143,9 +143,9 @@ class StationLiteDBInitApp:
                     f"WARNING: Setup logging failed for {path_logging_conf!r} "
                     f"with error: {err!r}."
                 )
-                logger = logging.getLogger(self.LOGGER)
+                logger = logging.getLogger(LOGGER)
         else:
-            logger = logging.getLogger(self.LOGGER)
+            logger = logging.getLogger(LOGGER)
             logger.addHandler(logging.NullHandler())
 
         logging.captureWarnings(bool(capture_warnings))
