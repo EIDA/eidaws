@@ -150,7 +150,8 @@ In order to install ``eidaws.federator`` services, invoke
 
 .. code::
 
-  $ pip install eidaws.utils eidaws.federator
+  $ pip install eidaws.utils
+  $ pip install eidaws.federator
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.
