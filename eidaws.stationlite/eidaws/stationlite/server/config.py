@@ -36,6 +36,7 @@ def stl_path(*args):
 
 class ConversionMap(_ConversionMap):
     MAP = {
+        stl_path("ENV"): to_str,
         stl_path("PATH_LOGGING_CONF"): to_str,
         stl_path("DEBUG"): to_boolean,
         stl_path("PROPAGATE_EXCEPTIONS"): to_boolean,
