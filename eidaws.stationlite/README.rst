@@ -71,6 +71,9 @@ the built-in Flask_ server:
   $ export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
 
 
+For additional details execute ``flask run -h``.
+
+
 **Configuration**:
 
 The service application can be configured by means of a `YAML
