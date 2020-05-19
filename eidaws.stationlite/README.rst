@@ -37,3 +37,20 @@ TODO
 
 Testing
 =======
+
+After installing the ``eidaws.utils`` and ``eidaws.stationlite`` distributions,
+required test dependencies can be installed with  
+
+.. code::
+
+  $ pip install -r eidaws.stationlite/requirements/test.txt
+
+
+In order to run the tests, invoke
+
+.. code::
+
+  $ pytest eidaws.utils eidaws.stationlite
+
+
+
