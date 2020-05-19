@@ -14,7 +14,7 @@ from eidaws.stationlite.settings import STL_BASE_ID
 
 class Config:
     DEBUG = False
-    PROPAGATE_EXCEPTIONS = False
+    PROPAGATE_EXCEPTIONS = True
     PATH_LOGGING_CONF = None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
