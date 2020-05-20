@@ -10,6 +10,7 @@ import functools
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
+import os
 import sys
 import traceback
 import warnings
@@ -53,6 +54,12 @@ from eidaws.utils.app import (
     AppError,
     ConfigurationError,
     CustomParser,
+)
+from eidaws.utils.config import (
+    to_boolean,
+    re_path,
+    interpolate_environment_variables,
+    ConversionMap as _ConversionMap,
 )
 from eidaws.utils.error import Error, ExitCodes
 from eidaws.utils.misc import realpath, real_file_path
@@ -1286,7 +1293,7 @@ class StationLiteHarvestApp:
                 ]
             },
             "path_logging_conf": {
-                "oneOf": [{"type": "null"}, {"type": "string"},]
+                "oneOf": [{"type": "null"}, {"type": "string"}]
             },
             "strict_restricted": {"type": "boolean"},
             "services": {
@@ -1364,13 +1371,13 @@ class StationLiteHarvestApp:
             )
         )
 
-        # configuration from yaml configuration file
         if args.path_config is None:
             config_dict = collections.ChainMap(cli_config, default_config)
             _validate(config_dict)
             configure_logging(config_dict)
             return config_dict
 
+        # configuration from yaml configuration file
         file_config = {}
         try:
             with open(args.path_config) as ifd:
@@ -1386,7 +1393,25 @@ class StationLiteHarvestApp:
                 _file_config.get(STL_HARVEST_BASE_ID),
                 (collections.abc.Mapping, collections.abc.MutableMapping),
             ):
-                file_config = _file_config
+
+                def stl_harvest_path(*args):
+                    return re_path(STL_HARVEST_BASE_ID, *args)
+
+                class ConversionMap(_ConversionMap):
+                    MAP = {
+                        stl_harvest_path("no_routes"): to_boolean,
+                        stl_harvest_path("no_vnetworks"): to_boolean,
+                        stl_harvest_path("strict_restricted"): to_boolean,
+                    }
+
+                # interpolate environment variables
+                _file_config = interpolate_environment_variables(
+                    _file_config,
+                    STL_HARVEST_BASE_ID,
+                    os.environ,
+                    converter=ConversionMap(),
+                )
+                file_config = _file_config[STL_HARVEST_BASE_ID]
 
         config_dict = collections.ChainMap(
             cli_config, file_config, default_config
