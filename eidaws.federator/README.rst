@@ -97,8 +97,8 @@ to build your image from a Dockerfile. Thus, first of all clone the repository.
 
 **Building**:
 
-Once you environment variables are configured you are ready to build the
-container images, e.g.
+Once your environment is configured you are ready to build the container
+images, e.g.
 
 .. code::
 
