@@ -16,6 +16,7 @@ FROM docker.io/phusion/baseimage:0.11
 ARG DIR_CONTAINERFILE=eidaws.stationlite/container/stationlite
 
 ENV EIDAWS_STATIONLITE_SETTINGS=/etc/eidaws-stationlite/eidaws_config.yml
+ENV FLASK_APP=/usr/local/src/eidaws/eidaws.stationlite/eidaws/stationlite/server/
 
 # Add label metadata
 LABEL maintainer="Daniel Armbruster"
