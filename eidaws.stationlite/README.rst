@@ -70,7 +70,6 @@ the built-in Flask_ server:
 
   $ export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
 
-
 For additional details execute ``flask run -h``.
 
 
@@ -94,6 +93,14 @@ corresponding service application with
 
    $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_config.yml \
      FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
+
+When deploying for the first time you are required to initialize the database
+for ``eidaws-stationlite``. This will create the database schema.
+
+.. code::
+
+   $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_config.yml \
+     FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask db-init
 
 Logging
 =======

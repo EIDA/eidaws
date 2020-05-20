@@ -1,0 +1,37 @@
+version: '3.3'
+services:
+  # eidaws-stationlite
+  stationlite:
+    container_name: eidaws-stationlite
+    image: eidaws-stationlite:1.0 
+    env_file:
+      - env
+    restart: always
+    volumes:
+      - type: volume
+        source: eidaws_stationlite_log
+        target: /var/log/eidaws-stationlite
+        volume:
+          nocopy: false
+    ports:
+      - "8090:8090"
+
+  # eidaws-stationlite PostgreSQL backend
+  stationlite-psql:
+    container_name: eidaws-stationlite-psql
+    image: postgres:12
+    env_file:
+      - env
+    restart: always
+    volumes:
+      - type: volume
+        source: eidaws_stationlite_pgdata
+        target: /var/lib/postgresql/data
+        volume:
+          nocopy: false
+    ports:
+      - "5432:5432"
+
+volumes:
+  eidaws_stationlite_log:
+  eidaws_stationlite_pgdata:
