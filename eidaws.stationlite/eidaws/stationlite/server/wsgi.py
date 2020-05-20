@@ -3,4 +3,4 @@
 from eidaws.stationlite.server import create_app
 
 
-app = create_app()
+application = create_app()
