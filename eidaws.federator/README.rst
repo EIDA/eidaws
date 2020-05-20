@@ -1,5 +1,6 @@
 .. _NGINX: http://nginx.org/ 
 .. _PostgreSQL: https://www.postgresql.org/
+.. _eidaws.stationlite: https://github.com/damb/eidaws/tree/master/eidaws.stationlite 
 
 =========================
 EIDA Federator webservice 
@@ -65,7 +66,10 @@ container engine please refer to the official websites, e.g. `Podman website
 * Bandwith limitation while fetching data from endpoints (implemented by means
   of `eidaws.endpoint_proxy
   <https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy>`_)
-* Python3.7
+* eidaws.stationlite_ deployed with `Apache2 <https://httpd.apache.org/>`_ +
+  `mod_wsgi <https://modwsgi.readthedocs.io/en/develop/>`_; harvesting via
+  ``cron`` powered by PostgreSQL_
+* Python3.6/3.7
 * Logging (syslog)
 
 **Introduction**:
