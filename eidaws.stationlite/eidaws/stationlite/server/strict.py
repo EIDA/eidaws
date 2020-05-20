@@ -5,8 +5,8 @@ import functools
 from flask import request
 
 from eidaws.stationlite.server.http_error import FDSNHTTPError
+from eidaws.stationlite.server.parser import validate_content_length
 from eidaws.stationlite.settings import STL_DEFAULT_CLIENT_MAX_SIZE
-from eidaws.stationlite.version import __version__
 from eidaws.utils.strict import KeywordParser
 
 
@@ -54,9 +54,7 @@ class FlaskKeywordParser(KeywordParser):
         :returns: Byte string or rather unicode string, respectively. Depending
             on the :code:`as_text` parameter.
         """
-        if req.content_length > max_content_length:
-            raise FDSNHTTPError(413, service_version=__version__)
-
+        validate_content_length(req, max_content_length)
         return req.get_data(cache=True, as_text=as_text)
 
 

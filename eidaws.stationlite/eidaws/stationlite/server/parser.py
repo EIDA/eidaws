@@ -158,10 +158,20 @@ class FDSNWSFlaskParser(FDSNWSParserMixin, FlaskParser):
         :returns: Byte string or rather unicode string, respectively. Depending
             on the :code:`as_text` parameter.
         """
-        if req.content_length > max_content_length:
-            raise FDSNHTTPError(413, service_version=__version__)
+        validate_content_length(req, max_content_length)
 
         return req.get_data(cache=True, as_text=as_text)
+
+
+def validate_content_length(req, max_content_length):
+    if req.content_length is None:
+        raise FDSNHTTPError.create(
+            400,
+            error_desc_long="'Content-Length' not specified.",
+            service_version=__version__,
+        )
+    if req.content_length > max_content_length:
+        raise FDSNHTTPError.create(413, service_version=__version__)
 
 
 fdsnws_parser = FDSNWSFlaskParser()
