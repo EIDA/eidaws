@@ -59,7 +59,8 @@ the database for ``eidaws-stationlite``. This will create the database schema.
 
 .. code::
 
-   $ FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask db-init
+   $ export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && \
+     flask db-init
 
 
 Routing information is harvested by means of the ``eida-stationlite-harvest``
