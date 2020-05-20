@@ -62,7 +62,18 @@ def access_args(request):
 @pytest.fixture
 def content_type():
     def _content_type(query_format_or_status_code):
-        if query_format_or_status_code in ("post", "get", 200, 204, 413, 500):
+        if query_format_or_status_code in (
+            "post",
+            "get",
+            200,
+            204,
+            400,
+            404,
+            413,
+            414,
+            500,
+            503,
+        ):
             return "text/plain; charset=utf-8"
 
     return _content_type
@@ -383,3 +394,46 @@ class TestStationLiteServer:
             assert resp.data.startswith(
                 b"\nError 500: Internal server error\n"
             )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "get",
+                {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                },
+            ),
+            ("post", [b"CH HASLI -- LHZ 2020-01-01 2020-01-02"]),
+        ],
+        ids=["method=get", "method=post"],
+    )
+    def test_keywordparser_invalid_args(
+        self, client, content_type, method, params_or_data
+    ):
+        req_kwargs = create_request_kwargs(
+            method, params_or_data, **{"foo": "bar"}
+        )
+        resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
+
+        assert resp.status_code == 400
+        assert resp.headers["Content-Type"] == content_type(400)
+        assert resp.data.startswith(
+            b"\nError 400: Bad request\n"
+        )
+
+    @pytest.mark.parametrize(
+        "data", [b"", b"="])
+    def test_keywordparser_post_invalid(self, client, content_type, data):
+        resp = client.post(EIDAWS_ROUTING_PATH_QUERY, data=data)
+
+        assert resp.status_code == 400
+        assert resp.headers["Content-Type"] == content_type(400)
+        assert resp.data.startswith(
+            b"\nError 400: Bad request\n"
+        )
