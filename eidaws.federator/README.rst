@@ -1,4 +1,5 @@
 .. _NGINX: http://nginx.org/ 
+.. _PostgreSQL: https://www.postgresql.org/
 
 =========================
 EIDA Federator webservice 
@@ -78,11 +79,17 @@ to build your image from a Dockerfile. Thus, first of all clone the repository.
 
 **Configuration**:
 
-The ``Dockerfile`` allows the number of backend applications to be configured
-during build time. The build args ``INSTANCES_DATASELECT_MINISEED``,
-``INSTANCES_STATION_TEXT``, ``INSTANCES_STATION_XML`` and
-``INSTANCES_WFCATALOG_JSON`` are provided in order to configure the number of
-federating backend services.
+1. The ``eidaws.federator/container/federator/Dockerfile`` allows the number of
+   backend applications to be configured during build time. The build args
+   ``INSTANCES_DATASELECT_MINISEED``, ``INSTANCES_STATION_TEXT``,
+   ``INSTANCES_STATION_XML`` and ``INSTANCES_WFCATALOG_JSON`` are provided in
+   order to configure the number of federating backend services.
+
+2. Before building and running the ``eidaws-stationlite`` container adjust the
+   variables defined within ``eidaws.federator/container/env`` configuration
+   file according to your needs.  Make sure to pick a proper username and
+   password for the internally used PostgreSQL_ database and write these down
+   for later.
 
 **Building**:
 
@@ -95,6 +102,8 @@ container images, e.g.
     -f eidaws.federator/container/federator/Dockerfile .
   $ docker build -t eidaws-endpoint-proxy:1.0 \
     -f eidaws.federator/container/proxy/Dockerfile .
+  $ docker built -t eidaws-stationlite:1.0 \
+    -f eidaws.federator/container/stationlite/Dockerfile .
 
 **Compose Configuration**:
 
@@ -110,8 +119,23 @@ configuration file.
 
   $ docker-compose -f eidaws.federator/container/docker-compose.yml up -d
 
+If you're deploying the services for the very first time you are required to
+create the database schema
+
+.. code::
+
+  $ docker exec eidaws-stationlite flask db-init
+
+and perform an inital harvesting run
+
+.. code::
+
+  $ docker exec eidaws-stationlite \
+    /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest
+
 When the containers are running the service is available under
-``http://localhost:8080``.
+``http://localhost:8080`` (the internally used ``eidaws-stationlite`` routing
+service is available under ``http://localhost:8089``).
 
 
 Standalone

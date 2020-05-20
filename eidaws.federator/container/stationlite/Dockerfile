@@ -13,7 +13,7 @@
 # Base image
 FROM docker.io/phusion/baseimage:0.11
 
-ARG DIR_CONTAINERFILE=eidaws.stationlite/container/stationlite
+ARG DIR_CONTAINERFILE=eidaws.federator/container/stationlite
 
 ENV EIDAWS_STATIONLITE_SETTINGS=/etc/eidaws-stationlite/eidaws_config.yml
 ENV FLASK_APP=/usr/local/src/eidaws/eidaws.stationlite/eidaws/stationlite/server/
@@ -78,7 +78,7 @@ RUN (crontab -l ; echo "0 1 * * * source /etc/eidaws-stationlite/env; /var/www/e
 RUN (crontab -l ; echo "0 4 * * * source /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_station_config.yml") | crontab
 
 # Expose HTTP default port
-EXPOSE 8090
+EXPOSE 8089
 
 # Cleanup (baseimage recommended)
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

@@ -91,7 +91,7 @@ eidaws.federator:
     # Absolute StationLite routing URL
     # Default: 'http://localhost/eidaws/routing/1/query'
     #
-    url_routing: 'http://eida-federator.ethz.ch/eidaws/routing/1/query'
+    url_routing: 'http://eidaws-stationlite:8089/eidaws/routing/1/query'
     #
     # ----
     # Maximum number of concurrent connections
