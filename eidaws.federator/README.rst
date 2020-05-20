@@ -109,7 +109,7 @@ images, e.g.
     -f eidaws.federator/container/federator/Dockerfile .
   $ docker build -t eidaws-endpoint-proxy:1.0 \
     -f eidaws.federator/container/proxy/Dockerfile .
-  $ docker built -t eidaws-stationlite:1.0 \
+  $ docker build -t eidaws-stationlite:1.0 \
     -f eidaws.federator/container/stationlite/Dockerfile .
 
 **Compose Configuration**:
