@@ -1304,7 +1304,7 @@ class StationLiteHarvestApp:
                     {"type": "string", "format": "date-time"},
                 ],
             },
-            "url_db": {"type": "string", "format": "uri"},
+            "sqlalchemy_database_uri": {"type": "string", "format": "uri"},
             "urls_localconfig": {
                 "type": "array",
                 "items": {"type": "string", "format": "uri"},
@@ -1325,7 +1325,7 @@ class StationLiteHarvestApp:
             "strict_restricted": STL_HARVEST_DEFAULT_STRICT_RESTRICTED,
             "services": STL_HARVEST_DEFAULT_SERVICES,
             "truncate": STL_HARVEST_DEFAULT_TRUNCATE_TIMESTAMP,
-            "url_db": STL_HARVEST_DEFAULT_URL_DB,
+            "sqlalchemy_database_uri": STL_HARVEST_DEFAULT_URL_DB,
             "urls_localconfig": STL_HARVEST_DEFAULT_URLS_ROUTING,
         }
 
@@ -1431,7 +1431,7 @@ class StationLiteHarvestApp:
             )
 
             Session = db.ScopedSession()
-            engine = create_engine(self.config["url_db"])
+            engine = create_engine(self.config["sqlalchemy_database_uri"])
             Session.configure(bind=engine)
 
             if engine.name == "sqlite":
@@ -1579,7 +1579,7 @@ class StationLiteHarvestApp:
         parser.add_argument(
             "--db",
             type=str,
-            dest="url_db",
+            dest="sqlalchemy_database_uri",
             metavar="URL",
             help=(
                 "DB URL indicating the database dialect and "
