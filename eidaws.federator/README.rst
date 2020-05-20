@@ -1,6 +1,7 @@
 .. _NGINX: http://nginx.org/ 
 .. _PostgreSQL: https://www.postgresql.org/
 .. _eidaws.stationlite: https://github.com/damb/eidaws/tree/master/eidaws.stationlite 
+.. _eidaws.endpoint_proxy: https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy
 
 =========================
 EIDA Federator webservice 
@@ -56,6 +57,9 @@ container engine please refer to the official websites, e.g. `Podman website
 <https://podman.io/getting-started/installation>`_, `Docker website
 <https://www.docker.com/products/docker>`_.
 
+The deployment described includes containerized versions of
+``eidaws.federator``, eidaws.stationlite_ and eidaws.endpoint_proxy_.
+
 **Features provided**:
 
 * Based on `baseimage <https://hub.docker.com/r/phusion/baseimage/>`_
@@ -64,8 +68,7 @@ container engine please refer to the official websites, e.g. `Podman website
 * Backend caching powered by a NGINX_ HTTP reverse caching proxy
   (currently for ``fdsnws-station`` metadata, only)
 * Bandwith limitation while fetching data from endpoints (implemented by means
-  of `eidaws.endpoint_proxy
-  <https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy>`_)
+  of eidaws.endpoint_proxy_)
 * eidaws.stationlite_ deployed with `Apache2 <https://httpd.apache.org/>`_ +
   `mod_wsgi <https://modwsgi.readthedocs.io/en/develop/>`_; harvesting via
   ``cron`` powered by PostgreSQL_
