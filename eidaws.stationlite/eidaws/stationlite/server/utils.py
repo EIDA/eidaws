@@ -4,7 +4,35 @@ import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
 
+import click
+
+from flask.cli import with_appcontext
+
+from eidaws.stationlite.server.db import db
+from eidaws.stationlite.engine.orm import ORMBase
 from eidaws.stationlite.settings import STL_BASE_ID
+
+
+@click.command("db-init")
+@with_appcontext
+def db_init_command():
+    """
+    Initialize the database.
+    """
+
+    ORMBase.metadata.create_all(db.get_engine())
+    click.echo("Database initialized.")
+
+
+@click.command("db-drop")
+@with_appcontext
+def db_drop_command():
+    """
+    Remove database tables.
+    """
+
+    ORMBase.metadata.drop_all(db.get_engine())
+    click.echo("Database tables dropped.")
 
 
 def setup_logger(app, logger=STL_BASE_ID, capture_warnings=False):

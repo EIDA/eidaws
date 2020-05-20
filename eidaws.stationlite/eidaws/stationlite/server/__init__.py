@@ -4,7 +4,6 @@ eidaws-stationlite implementation.
 """
 
 import datetime
-import logging
 import os
 import sys
 import traceback
@@ -20,7 +19,11 @@ from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.server.parser import setup_parser_error_handler
 from eidaws.stationlite.server.route import setup_routes
 from eidaws.stationlite.server.strict import setup_keywordparser_error_handler
-from eidaws.stationlite.server.utils import setup_logger
+from eidaws.stationlite.server.utils import (
+    db_init_command,
+    db_drop_command,
+    setup_logger,
+)
 from eidaws.stationlite.settings import STL_BASE_ID
 from eidaws.stationlite.version import __version__
 
@@ -47,6 +50,9 @@ def create_app(config_dict=None, service_version=__version__):
         app.config.from_mapping(config_dict)
 
     logger = setup_logger(app)
+
+    app.cli.add_command(db_init_command)
+    app.cli.add_command(db_drop_command)
 
     @app.before_request
     def before_request():
