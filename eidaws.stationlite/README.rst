@@ -1,5 +1,6 @@
 .. _eidaws-routing: https://github.com/EIDA/routing 
 .. _Flask: https://flask.palletsprojects.com/
+.. _PostgreSQL: https://www.postgresql.org/
 
 ===========================
 EIDA Stationlite webservice
@@ -26,7 +27,63 @@ Installation
 Container
 ---------
 
-TODO
+**Download**:
+
+Clone the repository:
+
+.. code::
+
+  $ git clone https://github.com/damb/eidaws.git && cd eidaws
+
+**Configuration**:
+
+Before building and running the container adjust the variables defined within
+``eidaws.stationlite/container/.env`` configuration file according
+to your needs. Make sure to pick a proper username and password for the
+internally used PostgreSQL_ database and write these down for later.
+
+**Building**:
+
+Once you environment variables are configured you are ready to build the
+container image, e.g.
+
+.. code::
+
+   $ docker built -t eidaws-stationlite:1.0 \
+     -f eidaws.stationlite/container/stationlite/Dockerfile .
+
+**Compose Configuration**:
+
+In case you want to manage your own volumes now is the time. The configuration
+provided relies on named container volumes.
+
+**Deployment**:
+
+The containers should be run using the provided ``docker-compose.yml``
+configuration file.
+
+.. code::
+
+  $ docker-compose -f eidaws.stationlite/container/docker-compose.yml up -d
+
+
+If you're deploying the services for the very first time you are required to
+create the database schema
+
+.. code::
+
+  $ docker exec eidaws-stationlite flask db-init
+
+and perform an inital harvesting run
+
+.. code::
+
+  $ docker exec eidaws-stationlite \
+    /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest
+
+When the containers are running the service is available under
+``http://localhost:8090``.
+
 
 Development
 -----------
@@ -50,7 +107,7 @@ In order to install the ``eidaws.stationlite`` distribution, invoke
   $ pip install eidaws.stationlite[postgres]
 
 The installation of the ``postgres`` feature is only required if the
-application is run with a `PostgreSQL <https://www.postgresql.org/>`_ backend.
+application is run with a PostgreSQL_ backend.
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.
@@ -67,15 +124,8 @@ the database for ``eidaws-stationlite``. This will create the database schema.
 
 
 Routing information is harvested by means of the ``eida-stationlite-harvest``
-application:
-
-.. code::
-
-  $ eida-stationlite-harvest
-
-
-For further details on how to use the harvesting application, simply invoke
-``eida-stationlite-harvest -h``.
+application. For further details on how to use the harvesting application,
+simply invoke ``eida-stationlite-harvest -h``.
 
 
 Webservice
