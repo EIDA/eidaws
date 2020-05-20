@@ -58,7 +58,25 @@ Note, that encapsulating the installation by means of a `virtual environment
 Harvesting
 ==========
 
-TODO
+When running the application for the first time you are required to initialize
+the database for ``eidaws-stationlite``. This will create the database schema.
+
+.. code::
+
+   $ FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask db-init
+
+
+Routing information is harvested by means of the ``eida-stationlite-harvest``
+application:
+
+.. code::
+
+  $ eida-stationlite-harvest
+
+
+For further details on how to use the harvesting application, simply invoke
+``eida-stationlite-harvest -h``.
+
 
 Webservice
 ==========
@@ -93,14 +111,6 @@ corresponding service application with
 
    $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_config.yml \
      FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
-
-When deploying for the first time you are required to initialize the database
-for ``eidaws-stationlite``. This will create the database schema.
-
-.. code::
-
-   $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_config.yml \
-     FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask db-init
 
 Logging
 =======
