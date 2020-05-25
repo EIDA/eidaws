@@ -25,10 +25,12 @@ for i in `seq -w ${instances}`; \
   done
 
 # create nginx backend service config
+path_backend_config=/etc/nginx/conf.d/backends 
+mkdir -p "${path_backend_config}"
 sed -e "s/{{SERVICE_ID}}/${service}/" \
   -e "/{{UNIX_SERVERS}}/ r /tmp/${service}.upstream" \
   -e "/{{UNIX_SERVERS}}/d" \
-  /tmp/backend.conf.template >> /etc/nginx/conf.d/backends/${service}.conf
+  /tmp/backend.conf.template >> ${path_backend_config}/${service}.conf
 
 # clean up
 rm -f "/tmp/nginx/conf.d/backends/${service}.upstream"
