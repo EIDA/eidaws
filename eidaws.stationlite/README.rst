@@ -42,6 +42,7 @@ In order to install the ``eidaws.stationlite`` distribution, invoke
 
 .. code::
 
+  $ pip install numpy
   $ pip install eidaws.utils
   $ pip install eidaws.stationlite[postgres]
 
