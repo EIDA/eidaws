@@ -295,8 +295,7 @@ Testing
 Make sure that an `Redis <https://redis.io/>`_ server instance is up and
 running at ``redis://localhost:6379``.
 
-After installing the ``eidaws.utils`` and ``eidaws.federator`` distributions,
-required test dependencies can be installed with  
+Required test dependencies can be installed with  
 
 .. code::
 

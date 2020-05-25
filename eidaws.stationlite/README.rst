@@ -117,8 +117,7 @@ subscribe to this logger for getting log messages.
 Testing
 =======
 
-After installing the ``eidaws.utils`` and ``eidaws.stationlite`` distributions,
-required test dependencies can be installed with  
+Required test dependencies can be installed with  
 
 .. code::
 

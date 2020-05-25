@@ -19,8 +19,7 @@ is installed with
 Testing
 =======
 
-After installing the ``eidaws.utils`` distribution, required test dependencies
-can be installed with
+Required test dependencies can be installed with
 
 .. code::
 
