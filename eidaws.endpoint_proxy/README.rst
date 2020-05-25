@@ -47,7 +47,8 @@ In order to install the ``eidaws.endpoint_proxy`` service, invoke
 
 .. code::
 
-  $ pip install eidaws.utils eidaws.endpoint_proxy
+  $ pip install eidaws.utils
+  $ pip install eidaws.endpoint_proxy
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.

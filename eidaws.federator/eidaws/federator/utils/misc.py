@@ -27,20 +27,6 @@ class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
 
 
-Route = collections.namedtuple("Route", ["url", "stream_epochs"])
-
-
-def _callable_or_raise(obj):
-    """
-    Makes sure an object is callable if it is not ``None``. If not
-    callable, a ``ValueError`` is raised.
-    """
-    if obj and not callable(obj):
-        raise ValueError(f"{obj!r} is not callable.")
-    else:
-        return obj
-
-
 def get_config(
     service_id, path_config=None, cli_config={}, defaults={}, json_schema=None
 ):

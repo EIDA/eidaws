@@ -1,4 +1,7 @@
 .. _NGINX: http://nginx.org/ 
+.. _PostgreSQL: https://www.postgresql.org/
+.. _eidaws.stationlite: https://github.com/damb/eidaws/tree/master/eidaws.stationlite 
+.. _eidaws.endpoint_proxy: https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy
 
 =========================
 EIDA Federator webservice 
@@ -54,6 +57,9 @@ container engine please refer to the official websites, e.g. `Podman website
 <https://podman.io/getting-started/installation>`_, `Docker website
 <https://www.docker.com/products/docker>`_.
 
+The deployment described includes containerized versions of
+``eidaws.federator``, eidaws.stationlite_ and eidaws.endpoint_proxy_.
+
 **Features provided**:
 
 * Based on `baseimage <https://hub.docker.com/r/phusion/baseimage/>`_
@@ -62,9 +68,11 @@ container engine please refer to the official websites, e.g. `Podman website
 * Backend caching powered by a NGINX_ HTTP reverse caching proxy
   (currently for ``fdsnws-station`` metadata, only)
 * Bandwith limitation while fetching data from endpoints (implemented by means
-  of `eidaws.endpoint_proxy
-  <https://github.com/damb/eidaws/tree/master/eidaws.endpoint_proxy>`_)
-* Python3.7
+  of eidaws.endpoint_proxy_)
+* eidaws.stationlite_ deployed with `Apache2 <https://httpd.apache.org/>`_ +
+  `mod_wsgi <https://modwsgi.readthedocs.io/en/develop/>`_; harvesting via
+  ``cron`` powered by PostgreSQL_
+* Python3.6/3.7
 * Logging (syslog)
 
 **Introduction**:
@@ -78,16 +86,22 @@ to build your image from a Dockerfile. Thus, first of all clone the repository.
 
 **Configuration**:
 
-The ``Dockerfile`` allows the number of backend applications to be configured
-during build time. The build args ``INSTANCES_DATASELECT_MINISEED``,
-``INSTANCES_STATION_TEXT``, ``INSTANCES_STATION_XML`` and
-``INSTANCES_WFCATALOG_JSON`` are provided in order to configure the number of
-federating backend services.
+1. The ``eidaws.federator/container/federator/Dockerfile`` allows the number of
+   backend applications to be configured during build time. The build args
+   ``INSTANCES_DATASELECT_MINISEED``, ``INSTANCES_STATION_TEXT``,
+   ``INSTANCES_STATION_XML`` and ``INSTANCES_WFCATALOG_JSON`` are provided in
+   order to configure the number of federating backend services.
+
+2. Before building and running the ``eidaws-stationlite`` container adjust the
+   variables defined within ``eidaws.federator/container/env`` configuration
+   file according to your needs.  Make sure to pick a proper username and
+   password for the internally used PostgreSQL_ database and write these down
+   for later.
 
 **Building**:
 
-Once you environment variables are configured you are ready to build the
-container images, e.g.
+Once your environment is configured you are ready to build the container
+images, e.g.
 
 .. code::
 
@@ -95,6 +109,8 @@ container images, e.g.
     -f eidaws.federator/container/federator/Dockerfile .
   $ docker build -t eidaws-endpoint-proxy:1.0 \
     -f eidaws.federator/container/proxy/Dockerfile .
+  $ docker build -t eidaws-stationlite:1.0 \
+    -f eidaws.federator/container/stationlite/Dockerfile .
 
 **Compose Configuration**:
 
@@ -110,8 +126,23 @@ configuration file.
 
   $ docker-compose -f eidaws.federator/container/docker-compose.yml up -d
 
+If you're deploying the services for the very first time you are required to
+create the database schema
+
+.. code::
+
+  $ docker exec eidaws-stationlite flask db-init
+
+and perform an inital harvesting run
+
+.. code::
+
+  $ docker exec eidaws-stationlite \
+    /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest
+
 When the containers are running the service is available under
-``http://localhost:8080``.
+``http://localhost:8080`` (the internally used ``eidaws-stationlite`` routing
+service is available under ``http://localhost:8089``).
 
 
 Standalone
@@ -150,7 +181,8 @@ In order to install ``eidaws.federator`` services, invoke
 
 .. code::
 
-  $ pip install eidaws.utils eidaws.federator
+  $ pip install eidaws.utils
+  $ pip install eidaws.federator
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.

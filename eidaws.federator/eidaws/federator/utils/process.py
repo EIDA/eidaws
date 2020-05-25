@@ -12,7 +12,6 @@ from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.misc import (
     make_context_logger,
-    Route,
 )
 from eidaws.federator.utils.mixin import (
     CachingMixin,
@@ -22,6 +21,7 @@ from eidaws.federator.utils.mixin import (
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
+from eidaws.utils.misc import Route
 from eidaws.utils.settings import (
     FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
     FDSNWS_NO_CONTENT_CODES,

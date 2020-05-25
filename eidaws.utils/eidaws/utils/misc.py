@@ -11,21 +11,36 @@ from marshmallow.utils import from_iso_date
 dateutil_available = False
 try:
     from dateutil import parser
+
     dateutil_available = True
 except ImportError:
     dateutil_available = False
 
 
+Route = collections.namedtuple("Route", ["url", "stream_epochs"])
+
+
 # from marshmallow (originally from Django)
 _iso8601_re = re.compile(
-    r'(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})'
-    r'[T ](?P<hour>\d{1,2}):(?P<minute>\d{1,2})'
-    r'(?::(?P<second>\d{1,2})(?:\.(?P<microsecond>\d{1,6})\d{0,6})?)?'
-    r'(?P<tzinfo>Z|(?![+-]\d{2}(?::?\d{2})?))?$'
+    r"(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})"
+    r"[T ](?P<hour>\d{1,2}):(?P<minute>\d{1,2})"
+    r"(?::(?P<second>\d{1,2})(?:\.(?P<microsecond>\d{1,6})\d{0,6})?)?"
+    r"(?P<tzinfo>Z|(?![+-]\d{2}(?::?\d{2})?))?$"
 )
 
 
 # -----------------------------------------------------------------------------
+def _callable_or_raise(obj):
+    """
+    Makes sure an object is callable if it is not ``None``. If not
+    callable, a ``ValueError`` is raised.
+    """
+    if obj and not callable(obj):
+        raise ValueError(f"{obj!r} is not callable.")
+    else:
+        return obj
+
+
 def realpath(p):
     return os.path.realpath(os.path.expanduser(p))
 
@@ -62,19 +77,21 @@ def from_fdsnws_datetime(datestring, use_dateutil=True):
 
     if len(datestring) == 10:
         # only YYYY-mm-dd is defined
-        return datetime.datetime.combine(from_iso_date(datestring),
-                                         datetime.time())
+        return datetime.datetime.combine(
+            from_iso_date(datestring), datetime.time()
+        )
     else:
         # from marshmallow
         if not _iso8601_re.match(datestring):
-            raise ValueError('Not a valid ISO8601-formatted string.')
+            raise ValueError("Not a valid ISO8601-formatted string.")
         # Use dateutil's parser if possible
         if dateutil_available and use_dateutil:
             return parser.parse(datestring, ignoretz=IGNORE_TZ)
         else:
             # Strip off microseconds and timezone info.
-            return datetime.datetime.strptime(datestring[:19],
-                                              '%Y-%m-%dT%H:%M:%S')
+            return datetime.datetime.strptime(
+                datestring[:19], "%Y-%m-%dT%H:%M:%S"
+            )
 
 
 def fdsnws_isoformat(dt, localtime=False, *args, **kwargs):
@@ -115,7 +132,7 @@ def convert_sncl_dicts_to_query_params(stream_epochs_dict):
 
         :py:class:`~sncl.StreamEpoch` objects are flattened.
     """
-    _temporal_constraints_params = ('starttime', 'endtime')
+    _temporal_constraints_params = ("starttime", "endtime")
 
     retval = DefaultOrderedDict(set)
     if stream_epochs_dict:
@@ -126,11 +143,13 @@ def convert_sncl_dicts_to_query_params(stream_epochs_dict):
     for key, values in retval.items():
         if key in _temporal_constraints_params:
             if len(values) != 1:
-                raise ValueError("StreamEpoch objects provide "
-                                 "multiple temporal constraints.")
+                raise ValueError(
+                    "StreamEpoch objects provide "
+                    "multiple temporal constraints."
+                )
             retval[key] = values.pop()
         else:
-            retval[key] = ','.join(values)
+            retval[key] = ",".join(values)
 
     return retval
 
@@ -144,10 +163,11 @@ class DefaultOrderedDict(collections.OrderedDict):
     instance variable. The remaining functionality is the same as for the
     :code:`OrderedDict` class and is not documented here.
     """
+
     # Source: http://stackoverflow.com/a/6190500/562769
     def __init__(self, default_factory=None, *args, **kwargs):
         if default_factory is not None and not callable(default_factory):
-            raise TypeError('first argument must be callable')
+            raise TypeError("first argument must be callable")
 
         super().__init__(*args, **kwargs)
         self.default_factory = default_factory
@@ -168,7 +188,7 @@ class DefaultOrderedDict(collections.OrderedDict):
         if self.default_factory is None:
             args = tuple()
         else:
-            args = self.default_factory,
+            args = (self.default_factory,)
         return type(self), args, None, None, self.items()
 
     def copy(self):
@@ -179,5 +199,5 @@ class DefaultOrderedDict(collections.OrderedDict):
 
     def __deepcopy__(self, memo):
         import copy
-        return type(self)(self.default_factory,
-                          copy.deepcopy(self.items()))
+
+        return type(self)(self.default_factory, copy.deepcopy(self.items()))

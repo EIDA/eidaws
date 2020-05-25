@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import copy
+import sys
 
-from eidaws.utils.error import Error
+from eidaws.utils.error import Error, ExitCodes
 
 
 def prepare_cli_config(
@@ -29,3 +31,18 @@ class AppError(Error):
 
 class ConfigurationError(AppError):
     """Configuration error: {}"""
+
+
+class CustomParser(argparse.ArgumentParser):
+    """
+    Custom argument parser.
+    """
+
+    def error(self, message):
+        """
+        Display both an error and print the help.
+        :param str message: Error message to be displayed
+        """
+        sys.stderr.write("USAGE ERROR: %s\n" % message)
+        self.print_help()
+        sys.exit(ExitCodes.EXIT_ERROR)

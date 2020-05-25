@@ -2,94 +2,30 @@
 
 import asyncio
 import inspect
-import logging
 
-from marshmallow import Schema, exceptions
+from marshmallow import Schema
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
-from eidaws.federator.utils.misc import _callable_or_raise
-from eidaws.utils.error import Error
-from eidaws.utils.settings import FDSNWS_QUERY_VALUE_SEPARATOR_CHAR
+from eidaws.utils.strict import (
+    KeywordParser,
+    ValidationError,
+)
 
 
-class KeywordParserError(Error):
-    """Base KeywordParser error ({})."""
-
-
-class ValidationError(KeywordParserError, exceptions.ValidationError):
-    """ValidationError: {}."""
-
-
-class AsyncKeywordParser:
+class AsyncKeywordParser(KeywordParser):
     """
     Base class for async keyword parsers.
     """
 
-    LOGGER = "strict.keywordparser"
+    LOGGER = "eidaws.federator.utils.strict.keyword_parser"
 
-    __location_map__ = {"query": "parse_querystring", "form": "parse_form"}
-
-    def __init__(self, error_handler=None):
-        self.error_callback = _callable_or_raise(error_handler)
-        self.logger = logging.getLogger(self.LOGGER)
-
-    @staticmethod
-    def _parse_arg_keys(arg_dict):
-        """
-        :param dict arg_dict: Dictionary like structure to be parsed
-
-        :returns: Tuple with argument keys
-        :rtype: tuple
-        """
-
-        return tuple(arg_dict.keys())
-
-    @staticmethod
-    def _parse_postfile(postfile):
-        """
-        Parse all argument keys from a POST request file.
-
-        :param str postfile: Postfile content
-
-        :returns: Tuple with parsed keys.
-        :rtype: tuple
-        """
-        argmap = {}
-
-        for line in postfile.split("\n"):
-            _line = line.split(FDSNWS_QUERY_VALUE_SEPARATOR_CHAR)
-            if len(_line) != 2:
-                continue
-
-            if all(w == "" for w in _line):
-                raise ValidationError("RTFM :)")
-
-            argmap[_line[0]] = _line[1]
-
-        return tuple(argmap.keys())
-
-    def parse_querystring(self, req):
-        """
-        Parse argument keys from ``req``.
-
-        :param req: Request object to be parsed
-        :type req: :py:class:`flask.Request`
-        """
-
-        return self._parse_arg_keys(self._get_args(req))
-
-    def _get_args(self, req):
-        """
-        Template method returning the query args from ``req``.
-        """
-
-        raise NotImplementedError
-
+    # TODO(damb): Lots of duplicate code here from BaseKeywordParser. Rethink.
     async def parse_form(self, req):
         """
+        Parse argument keys from the ``req``'s form.
+
         :param req: Request object to be parsed
-        :type req: :py:class:`flask.Request`
         """
         try:
             parsed_list = self._parse_postfile(await self._get_data(req))
@@ -165,43 +101,6 @@ class AsyncKeywordParser:
                 self.error_callback(err, req)
             else:
                 self.handle_error(err, req)
-
-    def error_handler(self, func):
-        """
-        Decorator that registers a custom error handling function. The
-        function should received the raised error, request object used
-        to parse the request. Overrides the parser's ``handle_error``
-        method.
-
-        Example: ::
-
-            from strict import flask_keywordparser
-
-            class CustomError(Exception):
-                pass
-
-
-            @flask_keywordparser.error_handler
-            def handle_error(error, req):
-                raise CustomError(error.messages)
-
-        :param callable func: The error callback to register.
-        """
-        self.error_callback = func
-        return func
-
-    def handle_error(self, error, req):
-        """
-        Called if an error occurs while parsing strict args.
-        By default, just logs and raises ``error``.
-
-        :param Exception error: an Error to be handled
-        :param Request req: request object
-
-        :raises: Exception
-        """
-        self.logger.error(error)
-        raise error
 
 
 # ----------------------------------------------------------------------------
