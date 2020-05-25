@@ -131,7 +131,8 @@ create the database schema
 
 .. code::
 
-  $ docker exec eidaws-stationlite flask db-init
+  $ docker exec eidaws-stationlite \
+    /var/www/eidaws-stationlite/venv/bin/flask db-init
 
 and perform an inital harvesting run
 
