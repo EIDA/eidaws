@@ -50,7 +50,7 @@ RUN virtualenv -p $(which python3.6) /var/www/eidaws-stationlite/venv && \
 
 # Copy eidaws-stationlite(-harvest) configuration files
 COPY $DIR_CONTAINERFILE/*.yml $DIR_CONTAINERFILE/logging*.conf \
-  $DIR_CONTAINERFILE/env /etc/eidaws-stationlite
+  $DIR_CONTAINERFILE/env /etc/eidaws-stationlite/
 COPY $DIR_CONTAINERFILE/eidaws-stationlite.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-stationlite.conf
 COPY $DIR_CONTAINERFILE/apache.syslog-ng.conf /etc/syslog-ng/conf.d/apache.conf

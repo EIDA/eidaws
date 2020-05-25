@@ -59,12 +59,12 @@ RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
 
 # Backend service configuration files
 COPY $DIR_CONTAINERFILE/eidaws_config.yml \
-  $DIR_CONTAINERFILE/logging.conf /etc/eidaws-federator
+  $DIR_CONTAINERFILE/logging.conf /etc/eidaws-federator/
 COPY $DIR_CONTAINERFILE/eidaws-federator.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-federator.conf
 
 # Add backend services with installation script
-COPY $DIR_CONTAINERFILE/*.template $DIR_CONTAINERFILE/install_backend.sh /tmp
+COPY $DIR_CONTAINERFILE/*.template $DIR_CONTAINERFILE/install_backend.sh /tmp/
 RUN chmod +x /tmp/install_backend.sh && \
   ./tmp/install_backend.sh \
   eida-federator-dataselect-miniseed $INSTANCES_DATASELECT_MINISEED && \
