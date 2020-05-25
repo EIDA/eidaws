@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def get_version(filename):
@@ -11,11 +11,11 @@ def get_version(filename):
     return metadata["version"]
 
 
+_NAME = "eidaws.stationlite"
 _AUTHOR = "Daniel Armbruster"
 _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "Alternative routing webservice for EIDA"
 _VERSION = get_version(os.path.join("eidaws", "stationlite", "version.py"))
-_INCLUDES = "*"
 _DEPS = [
     "cached-property>=1.5.1",
     "eidaws.utils==0.1",
@@ -39,7 +39,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws.stationlite",
+    name=_NAME,
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
@@ -48,7 +48,7 @@ setup(
     license="GPLv3",
     keywords="seismology waveforms federation routing eida service",
     url="https://github.com/damb/eidaws/eidaws.stationlite",
-    platforms=["Linux",],
+    platforms=["Linux"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
@@ -60,12 +60,13 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Scientific/Engineering",
     ],
-    packages=find_packages(include=_INCLUDES),
+    namespace_packages=["eidaws"],
+    packages=[_NAME],
     zip_safe=False,
     entry_points=_ENTRY_POINTS,
     install_requires=_DEPS,
     extras_require=_EXTRAS,
-    setup_requires=["pytest-runner",],
-    tests_require=["pytest",],
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest"],
     python_requires="~=3.6",
 )

@@ -11,6 +11,7 @@ def get_version(filename):
     return metadata["version"]
 
 
+_NAME = "eidaws.endpoint_proxy"
 _AUTHOR = "Daniel Armbruster"
 _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "Endpoint proxy webservice for EIDA"
@@ -30,7 +31,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws.endpoint_proxy",
+    name=_NAME,
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
@@ -51,11 +52,12 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Scientific/Engineering",
     ],
-    packages=find_packages(include=_INCLUDES),
+    namespace_packages=['eidaws'],
+    packages=[_NAME],
     zip_safe=False,
     entry_points=_ENTRY_POINTS,
     install_requires=_DEPS,
-    # setup_requires=["pytest-runner",],
-    # tests_require=["pytest", "pytest-asyncio", "pytest-aiohttp"],
+    setup_requires=["pytest-runner",],
+    tests_require=["pytest", "pytest-asyncio", "pytest-aiohttp"],
     python_requires="~=3.7",
 )

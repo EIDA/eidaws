@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def get_version(filename):
@@ -11,11 +11,11 @@ def get_version(filename):
     return metadata["version"]
 
 
+_NAME = "eidaws.federator"
 _AUTHOR = "Daniel Armbruster"
 _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "Federating webservice for EIDA"
 _VERSION = get_version(os.path.join("eidaws", "federator", "version.py"))
-_INCLUDES = "*"
 _DEPS = [
     "aiohttp>=3.6.2",
     "aiohttp_cors>=0.7.0",
@@ -52,7 +52,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws.federator",
+    name=_NAME,
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
@@ -61,7 +61,7 @@ setup(
     license="GPLv3",
     keywords="seismology waveforms federation eida service",
     url="https://github.com/damb/eidaws/eidaws.federator",
-    platforms=["Linux",],
+    platforms=["Linux"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
@@ -73,11 +73,12 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Scientific/Engineering",
     ],
-    packages=find_packages(include=_INCLUDES),
+    namespace_packages=["eidaws"],
+    packages=[_NAME],
     zip_safe=False,
     entry_points=_ENTRY_POINTS,
     install_requires=_DEPS,
-    setup_requires=["pytest-runner",],
+    setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-asyncio", "pytest-aiohttp"],
     python_requires="~=3.7",
 )

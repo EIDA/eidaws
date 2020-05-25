@@ -11,4 +11,5 @@ cscope.*
 __pycache__
 venv
 *.coverage
+*.tox
 pytest.log
