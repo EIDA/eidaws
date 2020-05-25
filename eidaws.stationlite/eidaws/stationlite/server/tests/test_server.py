@@ -336,6 +336,78 @@ class TestStationLiteServer:
             (
                 "get",
                 {
+                    "net": "_NFOVALAIS",
+                    "sta": "GRIMS",
+                    "loc": "--",
+                    "cha": "HHZ",
+                    "start": "2012-01-01",
+                    "end": "2012-01-02",
+                },
+            ),
+            ("post", [b"_NFOVALAIS GRIMS -- HHZ 2012-01-01 2012-01-02"],),
+            (
+                "get",
+                {
+                    "net": "_ALPARRAY",
+                    "sta": "GRIMS",
+                    "loc": "--",
+                    "cha": "HHZ",
+                    "start": "2012-01-01",
+                    "end": "2012-01-02",
+                },
+            ),
+            ("post", [b"_ALPARRAY GRIMS -- HHZ 2012-01-01 2012-01-02"],),
+            (
+                "get",
+                {
+                    "net": "_NFOVALAIS,_ALPARRAY",
+                    "sta": "GRIMS",
+                    "loc": "--",
+                    "cha": "HHZ",
+                    "start": "2012-01-01",
+                    "end": "2012-01-02",
+                },
+            ),
+            (
+                "post",
+                [
+                    b"_NFOVALAIS GRIMS -- HHZ 2012-01-01 2012-01-02",
+                    b"_ALPARRAY GRIMS -- HHZ 2012-01-01 2012-01-02",
+                ],
+            ),
+        ],
+        ids=[
+            "method=GET,net=_NFOVALAIS",
+            "method=POST,net=_NFOVALAIS",
+            "method=GET,net=_ALPARRAY",
+            "method=POST,net=_ALPARRAY",
+            "method=GET,net=_NFOVALAIS,_ALPARRAY,CH",
+            "method=POST,net=_NFOVALAIS,_ALPARRAY,CH",
+        ],
+    )
+    def test_vnets(
+        self, client, content_type, service_args, method, params_or_data
+    ):
+        req_kwargs = create_request_kwargs(
+            method, params_or_data, **service_args,
+        )
+        resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
+
+        expected = [
+            create_url("eida.ethz.ch", service_args),
+            b"CH GRIMS -- HHZ 2012-01-01T00:00:00 2012-01-02T00:00:00",
+            b"",
+        ]
+        assert resp.status_code == 200
+        assert resp.headers["Content-Type"] == content_type("post")
+        assert b"\n".join(expected) == resp.data
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "get",
+                {
                     "net": "FOO",
                     "sta": "HASLI",
                     "loc": "--",
@@ -423,17 +495,12 @@ class TestStationLiteServer:
 
         assert resp.status_code == 400
         assert resp.headers["Content-Type"] == content_type(400)
-        assert resp.data.startswith(
-            b"\nError 400: Bad request\n"
-        )
+        assert resp.data.startswith(b"\nError 400: Bad request\n")
 
-    @pytest.mark.parametrize(
-        "data", [b"", b"="])
+    @pytest.mark.parametrize("data", [b"", b"="])
     def test_keywordparser_post_invalid(self, client, content_type, data):
         resp = client.post(EIDAWS_ROUTING_PATH_QUERY, data=data)
 
         assert resp.status_code == 400
         assert resp.headers["Content-Type"] == content_type(400)
-        assert resp.data.startswith(
-            b"\nError 400: Bad request\n"
-        )
+        assert resp.data.startswith(b"\nError 400: Bad request\n")
