@@ -74,6 +74,7 @@ RUN mkdir /etc/service/apache2 && \
 	chmod +x /etc/service/apache2/run
 
 # Add the harvesting cronjobs (once per day)
+RUN sed -e 's/^/export /' -i /etc/eidaws-stationlite/env
 RUN (crontab -l ; echo "0 1 * * * source /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_config.yml") | crontab
 RUN (crontab -l ; echo "0 4 * * * source /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_station_config.yml") | crontab
 
