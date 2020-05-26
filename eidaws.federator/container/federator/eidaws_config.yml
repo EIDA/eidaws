@@ -75,7 +75,7 @@ eidaws.federator:
     # an HTTP caching proxy.
     # Allowed values: None or IPv4(:PORT) or Hostname(:PORT)
     #
-    proxy_netloc: localhost:8090
+    proxy_netloc: eidaws-endpoint-proxy:8090
     #
     # ----
     # Streaming timeout in seconds before the first endpoint request must
