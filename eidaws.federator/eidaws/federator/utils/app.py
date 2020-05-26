@@ -160,12 +160,12 @@ config_schema = {
                 {"type": "null"},
                 {
                     "type": "string",
-                    "format": "uri",
-                    # allow IPv4(:PORT) or FQDN(:PORT)
+                    # allow IPv4(:PORT) or Hostname(:Port)
                     "pattern": (
                         r"^(((?:[0-9]{1,3}\.){3}[0-9]{1,3})"
-                        r"|(([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,})"
-                        r"|(localhost))"
+                        r"|(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*"
+                        r"[a-zA-Z0-9])\.)*"
+                        r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))"
                         r"(?:\:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|"
                         r"65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$"
                     ),

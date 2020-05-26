@@ -73,7 +73,7 @@ eidaws.federator:
     # ----
     # Proxy network location in case eidaws-federator is used coupled with e.g.
     # an HTTP caching proxy.
-    # Allowed values: None or IPv4(:PORT) or FQDN(:PORT)
+    # Allowed values: None or IPv4(:PORT) or Hostname(:PORT)
     #
     # proxy_netloc:
     #
