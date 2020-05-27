@@ -145,6 +145,11 @@ When the containers are running the service is available under
 ``http://localhost:8080`` (the internally used ``eidaws-stationlite`` routing
 service is available under ``http://localhost:8089``).
 
+**Architecture**:
+
+.. image:: docs/eidaws-federator-arch.svg
+   :align: center
+
 
 Standalone
 ----------
