@@ -39,6 +39,8 @@ def with_exception_handling(ignore_runtime_exception=False):
                 await coro(self, *args, **kwargs)
             except asyncio.CancelledError:
                 raise
+            except ConnectionResetError as err:
+                self.logger.debug(f"TaskWorker exception: {type(err)}")
             except RuntimeError as err:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 log = getattr(

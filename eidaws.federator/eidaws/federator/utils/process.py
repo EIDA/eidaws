@@ -300,12 +300,8 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         response_write = response.write
 
         async def write(*args, **kwargs):
-            try:
-                await response_write(*args, **kwargs)
-            except ConnectionResetError:
-                pass
-            else:
-                self.dump_to_cache_buffer(*args, **kwargs)
+            await response_write(*args, **kwargs)
+            self.dump_to_cache_buffer(*args, **kwargs)
 
         response.write = write
 
