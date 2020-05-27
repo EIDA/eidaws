@@ -7,6 +7,7 @@ from copy import deepcopy
 from urllib.parse import urlparse, urlunparse
 
 from eidaws.federator.utils.misc import HelperGETRequest
+from eidaws.federator.version import __version__
 from eidaws.utils.misc import convert_sncl_dicts_to_query_params
 from eidaws.utils.schema import StreamEpochSchema
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
@@ -27,7 +28,9 @@ class RequestHandlerBase:
     RequestHandler base class implementation.
     """
 
-    DEFAULT_HEADERS = {}
+    DEFAULT_HEADERS = {
+        "User-Agent": "EIDA-Federator/" + __version__,
+    }
 
     def __init__(self, url, stream_epochs=[], query_params={}, headers={}):
         """
