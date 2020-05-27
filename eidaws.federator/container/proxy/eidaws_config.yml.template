@@ -50,12 +50,12 @@ eidaws.endpoint_proxy:
     # Allowed values: None or float (seconds)
     # Default: 2
     #
-    # endpoint_timeout_sock_connect: 2
+    endpoint_timeout_sock_connect: {{TIMEOUT_SOCK_CONNECT}}
     #
     # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
-    # endpoint_timeout_sock_read: 30
+    endpoint_timeout_sock_read: {{TIMEOUT_SOCK_READ}}
 ...

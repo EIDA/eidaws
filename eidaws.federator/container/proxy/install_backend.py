@@ -20,6 +20,12 @@ def main():
     BACKEND_MAP_CONF = "backend.map.conf"
     EIDAWS_CONFIG_YML_TEMPLATE = "eidaws_config.yml.template"
 
+    template_map = {
+        r"\{\{CONNECTION_LIMIT\}\}": ("connection_limit", ""),
+        r"\{\{TIMEOUT_SOCK_CONNECT\}\}": ("timeout_sock_connect", 2),
+        r"\{\{TIMEOUT_SOCK_READ\}\}": ("timeout_sock_read", 30),
+    }
+
     backend_configs = json.load(sys.stdin)
 
     if not backend_configs:
@@ -62,17 +68,20 @@ def main():
 
         os.chmod(service_dir / "run", 0o755)
 
+        interpolated = eidaws_yml_template
+        for regex, c in template_map.items():
+            config_key, default = c
+            interpolated = re.sub(
+                regex,
+                str(config.get(config_key, default)),
+                interpolated,
+                flags=re.M,
+            )
+
         with open(
             PATH_EIDAWS_ENDPOINT_PROXY_CONF / f"eidaws_config_{i}.yml", "w"
         ) as ofd:
-            ofd.write(
-                re.sub(
-                    r"\{\{CONNECTION_LIMIT\}\}",
-                    str(config["connection_limit"]),
-                    eidaws_yml_template,
-                    flags=re.M,
-                )
-            )
+            ofd.write(interpolated)
 
 
 if __name__ == "__main__":
