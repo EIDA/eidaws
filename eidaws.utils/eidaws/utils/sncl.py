@@ -11,12 +11,11 @@ from collections import namedtuple, OrderedDict
 
 from intervaltree import IntervalTree
 
-# TODO(damb): Refactor code in order to avoid circular imports
-import eidaws
-
 from eidaws.utils.misc import from_fdsnws_datetime
 from eidaws.utils.settings import (
-    FDSNWS_QUERY_WILDCARD_SINGLE_CHAR, FDSNWS_QUERY_WILDCARD_MULT_CHAR)
+    FDSNWS_QUERY_WILDCARD_SINGLE_CHAR,
+    FDSNWS_QUERY_WILDCARD_MULT_CHAR,
+)
 
 
 Epochs = IntervalTree
@@ -79,12 +78,13 @@ def max_as_empty(endtime):
     """
     end = endtime
     if end == datetime.datetime.max:
-        end = ''
+        end = ""
     yield end
 
 
-def fdsnws_to_sql_wildcards(str_old, like_multiple='%', like_single='_', # noqa
-                            like_escape='/'):
+def fdsnws_to_sql_wildcards(
+    str_old, like_multiple="%", like_single="_", like_escape="/"  # noqa
+):
     """
     Replace the FDSNWS wildcard characters in :code:`str_old` with the
     corresponding SQL LIKE statement character.
@@ -99,16 +99,18 @@ def fdsnws_to_sql_wildcards(str_old, like_multiple='%', like_single='_', # noqa
     :rtype: str
     """
     # NOTE(damb): first escape the *like_single* character, then replace '*'
-    return str_old.replace(
-        like_single, like_escape + like_single).replace(
-        FDSNWS_QUERY_WILDCARD_SINGLE_CHAR, like_single).\
-        replace(FDSNWS_QUERY_WILDCARD_MULT_CHAR, like_multiple)
+    return (
+        str_old.replace(like_single, like_escape + like_single)
+        .replace(FDSNWS_QUERY_WILDCARD_SINGLE_CHAR, like_single)
+        .replace(FDSNWS_QUERY_WILDCARD_MULT_CHAR, like_multiple)
+    )
 
 
 # ----------------------------------------------------------------------------
 @functools.total_ordering
-class Stream(namedtuple('Stream',
-                        ['network', 'station', 'location', 'channel'])):
+class Stream(
+    namedtuple("Stream", ["network", "station", "location", "channel"])
+):
     """
     This class represents a stream coming along with the properties:
         - network
@@ -121,25 +123,30 @@ class Stream(namedtuple('Stream',
         For the sake of simplicity a Stream object is also named SNCL referring
         to the Stream object's properties.
     """
+
     __slots__ = ()
 
-    FIELDS_SHORT = ('net', 'sta', 'loc', 'cha')
+    FIELDS_SHORT = ("net", "sta", "loc", "cha")
 
-    def id(self, sep='.'):
+    def id(self, sep="."):
         """
         Returns the :py:class:`Stream`'s identifier.
 
         :param str sep: Separator to be used
         """
         # TODO(damb): configure separator globally (i.e. in settings module)
-        return sep.join([self.network, self.station, self.location,
-                        self.channel])
+        return sep.join(
+            [self.network, self.station, self.location, self.channel]
+        )
 
-    def __new__(cls, network='*', station='*', location='*', channel='*'):
-        return super().__new__(cls, network=network,
-                               station=station,
-                               location=location,
-                               channel=channel)
+    def __new__(cls, network="*", station="*", location="*", channel="*"):
+        return super().__new__(
+            cls,
+            network=network,
+            station=station,
+            location=location,
+            channel=channel,
+        )
 
     @classmethod
     def from_route_attrs(cls, **kwargs):
@@ -147,11 +154,13 @@ class Stream(namedtuple('Stream',
         Creates a :py:class:`Stream` from attributes found at *eidaws-routing*
         :code:`localconfig` configuration files.
         """
-        return super().__new__(cls,
-                               network=kwargs.get('networkCode', '*'),
-                               station=kwargs.get('stationCode', '*'),
-                               location=kwargs.get('locationCode', '*'),
-                               channel=kwargs.get('streamCode', '*'))
+        return super().__new__(
+            cls,
+            network=kwargs.get("networkCode", "*"),
+            station=kwargs.get("stationCode", "*"),
+            location=kwargs.get("locationCode", "*"),
+            channel=kwargs.get("streamCode", "*"),
+        )
 
     def _asdict(self, short_keys=False):
         """
@@ -170,17 +179,23 @@ class Stream(namedtuple('Stream',
         return self.id() < other.id()
 
     def __repr__(self):
-        return ('<Stream(net=%r, sta=%r, loc=%r, cha=%r)>' %
-                (self.network, self.station, self.location, self.channel))
+        return "<Stream(net=%r, sta=%r, loc=%r, cha=%r)>" % (
+            self.network,
+            self.station,
+            self.location,
+            self.channel,
+        )
 
     def __str__(self):
-        return ' '.join([self.network, self.station, self.location,
-                        self.channel])
+        return " ".join(
+            [self.network, self.station, self.location, self.channel]
+        )
 
 
 @functools.total_ordering
-class StreamEpoch(namedtuple('StreamEpoch',
-                  ['stream', 'starttime', 'endtime'])):
+class StreamEpoch(
+    namedtuple("StreamEpoch", ["stream", "starttime", "endtime"])
+):
     """
     This class represents a stream epoch i.e. a :py:class:`Stream` object +
     epoch (:code:`starttime` + :code:`endtime`).
@@ -188,35 +203,35 @@ class StreamEpoch(namedtuple('StreamEpoch',
 
     __slots__ = ()
 
-    FIELDS_SHORT = ('net', 'sta', 'loc', 'cha', 'start', 'end')
+    FIELDS_SHORT = ("net", "sta", "loc", "cha", "start", "end")
 
     def __new__(cls, stream, starttime=None, endtime=None):
-        return super().__new__(cls,
-                               stream=stream,
-                               starttime=starttime,
-                               endtime=endtime)
+        return super().__new__(
+            cls, stream=stream, starttime=starttime, endtime=endtime
+        )
 
     @classmethod
     def from_sncl(cls, **kwargs):
         """
         Creates a :py:class:StreamEpoch` from SNCL-like attributes.
         """
-        net = kwargs.get('network') or kwargs.get('net', '*')
-        sta = kwargs.get('station') or kwargs.get('sta', '*')
-        cha = kwargs.get('channel') or kwargs.get('cha', '*')
+        net = kwargs.get("network") or kwargs.get("net", "*")
+        sta = kwargs.get("station") or kwargs.get("sta", "*")
+        cha = kwargs.get("channel") or kwargs.get("cha", "*")
         # location / loc might be equal to an empty string
-        loc = (kwargs.get('location') if
-               kwargs.get('location') is not None else
-               kwargs.get('loc', '*'))
-        start = kwargs.get('starttime') or kwargs.get('start', None)
-        end = kwargs.get('endtime') or kwargs.get('end', None)
+        loc = (
+            kwargs.get("location")
+            if kwargs.get("location") is not None
+            else kwargs.get("loc", "*")
+        )
+        start = kwargs.get("starttime") or kwargs.get("start", None)
+        end = kwargs.get("endtime") or kwargs.get("end", None)
 
-        return cls(stream=Stream(network=net,
-                                 station=sta,
-                                 location=loc,
-                                 channel=cha),
-                   starttime=start,
-                   endtime=end)
+        return cls(
+            stream=Stream(network=net, station=sta, location=loc, channel=cha),
+            starttime=start,
+            endtime=end,
+        )
 
     @classmethod
     def from_snclline(cls, line, default_endtime=None):
@@ -230,45 +245,57 @@ class StreamEpoch(namedtuple('StreamEpoch',
         :type default_endtime: :py:class:`datetime.datetime` or None
         """
         if isinstance(line, bytes):
-            line = line.decode('utf-8')
+            line = line.decode("utf-8")
 
-        args = line.strip().split(' ')
+        args = line.strip().split(" ")
         end = None
         if len(args) == 6:
             end = from_fdsnws_datetime(args[5])
         elif len(args) == 5:
             end = default_endtime
 
-        return cls(stream=Stream(network=args[0],
-                                 station=args[1],
-                                 location=args[2],
-                                 channel=args[3]),
-                   starttime=from_fdsnws_datetime(args[4]),
-                   endtime=end)
+        return cls(
+            stream=Stream(
+                network=args[0],
+                station=args[1],
+                location=args[2],
+                channel=args[3],
+            ),
+            starttime=from_fdsnws_datetime(args[4]),
+            endtime=end,
+        )
 
     @classmethod
     def from_orm(cls, stream_epoch):
         """
         Creates a :py:class:`StreamEpoch` from a corresponding ORM object.
         """
-        return cls(stream=Stream(network=stream_epoch.network.name,
-                                 station=stream_epoch.station.name,
-                                 location=stream_epoch.location,
-                                 channel=stream_epoch.channel),
-                   starttime=stream_epoch.starttime,
-                   endtime=stream_epoch.endtime)
+        return cls(
+            stream=Stream(
+                network=stream_epoch.network.name,
+                station=stream_epoch.station.name,
+                location=stream_epoch.location,
+                channel=stream_epoch.channel,
+            ),
+            starttime=stream_epoch.starttime,
+            endtime=stream_epoch.endtime,
+        )
 
     @classmethod
     def from_streamepochs(cls, stream_epochs):
         """
         Creates a :py:class:`StreamEpoch` from :py:class:`StreamEpochs`.
         """
-        return cls(stream=Stream(network=stream_epochs.network,
-                                 station=stream_epochs.station,
-                                 location=stream_epochs.location,
-                                 channel=stream_epochs.channel),
-                   starttime=stream_epochs.starttime,
-                   endtime=stream_epochs.endtime)
+        return cls(
+            stream=Stream(
+                network=stream_epochs.network,
+                station=stream_epochs.station,
+                location=stream_epochs.location,
+                channel=stream_epochs.channel,
+            ),
+            starttime=stream_epochs.starttime,
+            endtime=stream_epochs.endtime,
+        )
 
     @property
     def epochs(self):
@@ -277,7 +304,7 @@ class StreamEpoch(namedtuple('StreamEpoch',
         """
         return Epochs.from_tuples([(self.starttime, self.endtime)])
 
-    def id(self, sep='.'):
+    def id(self, sep="."):
         """
         Returns the :py:class:`StreamEpoch`'s identifier.
 
@@ -285,8 +312,9 @@ class StreamEpoch(namedtuple('StreamEpoch',
         """
         return self.stream.id(sep=sep)
 
-    def fdsnws_to_sql_wildcards(self, like_multiple='%', like_single='_',
-                                like_escape='/'):
+    def fdsnws_to_sql_wildcards(
+        self, like_multiple="%", like_single="_", like_escape="/"
+    ):
         """
         Replace the FDSNWS wildcard characters in *network*, *station*,
         *location* and *channel* with the corresponding SQL LIKE statement
@@ -301,16 +329,21 @@ class StreamEpoch(namedtuple('StreamEpoch',
         :returns: A new :py:class:`StreamEpoch` object
         :rtype: :py:class:`StreamEpoch`
         """
-        net = fdsnws_to_sql_wildcards(self.network, like_multiple, like_single,
-                                      like_escape)
-        sta = fdsnws_to_sql_wildcards(self.station, like_multiple, like_single,
-                                      like_escape)
-        loc = fdsnws_to_sql_wildcards(self.location, like_multiple,
-                                      like_single, like_escape)
-        cha = fdsnws_to_sql_wildcards(self.channel, like_multiple, like_single,
-                                      like_escape)
-        stream = self.stream._replace(network=net, station=sta, location=loc,
-                                      channel=cha)
+        net = fdsnws_to_sql_wildcards(
+            self.network, like_multiple, like_single, like_escape
+        )
+        sta = fdsnws_to_sql_wildcards(
+            self.station, like_multiple, like_single, like_escape
+        )
+        loc = fdsnws_to_sql_wildcards(
+            self.location, like_multiple, like_single, like_escape
+        )
+        cha = fdsnws_to_sql_wildcards(
+            self.channel, like_multiple, like_single, like_escape
+        )
+        stream = self.stream._replace(
+            network=net, station=sta, location=loc, channel=cha
+        )
         return self._replace(stream=stream)
 
     def slice(self, num=2, default_endtime=datetime.datetime.utcnow()):
@@ -329,13 +362,17 @@ class StreamEpoch(namedtuple('StreamEpoch',
         t = Epochs.from_tuples([(self.starttime, end)])
 
         for n in range(1, num):
-            t.slice(self.starttime +
-                    datetime.timedelta(
-                        seconds=((end - self.starttime).total_seconds() / num *
-                                 n)))
+            t.slice(
+                self.starttime
+                + datetime.timedelta(
+                    seconds=((end - self.starttime).total_seconds() / num * n)
+                )
+            )
 
-        return [type(self)(stream=self.stream,
-                           starttime=i.begin, endtime=i.end) for i in t]
+        return [
+            type(self)(stream=self.stream, starttime=i.begin, endtime=i.end)
+            for i in t
+        ]
 
     def _asdict(self, short_keys=False):
         """
@@ -370,9 +407,11 @@ class StreamEpoch(namedtuple('StreamEpoch',
         """
         Allows comparing :py:class:`StreamEpoch` objects.
         """
-        return (self.stream == other.stream and
-                self.starttime == other.starttime and
-                self.endtime == other.endtime)
+        return (
+            self.stream == other.stream
+            and self.starttime == other.starttime
+            and self.endtime == other.endtime
+        )
 
     def __lt__(self, other):
         if self.stream == other.stream:
@@ -386,13 +425,18 @@ class StreamEpoch(namedtuple('StreamEpoch',
         return self.stream < other.stream
 
     def __repr__(self):
-        return ("<StreamEpoch(stream=%r, start=%r, end=%r)>" %
-                (self.stream, self.starttime, self.endtime))
+        return "<StreamEpoch(stream=%r, start=%r, end=%r)>" % (
+            self.stream,
+            self.starttime,
+            self.endtime,
+        )
 
     def __str__(self):
-        se_schema = eidaws.utils.schema.StreamEpochSchema()
+        from eidaws.utils.schema import StreamEpochSchema
+
+        se_schema = StreamEpochSchema()
         stream_epoch = se_schema.dump(self)
-        return ' '.join(str(v) for v in stream_epoch.values())
+        return " ".join(str(v) for v in stream_epoch.values())
 
 
 @functools.total_ordering
@@ -407,8 +451,9 @@ class StreamEpochs:
     .. note:: Intervals within the tree are automatically merged.
     """
 
-    def __init__(self, network='*', station='*', location='*', channel='*',
-                 epochs=[]):
+    def __init__(
+        self, network="*", station="*", location="*", channel="*", epochs=[]
+    ):
         """
         :param str network: Network code
         :param str station: Station code
@@ -419,10 +464,12 @@ class StreamEpochs:
             are merged within the constructor.
         """
 
-        self._stream = Stream(network=network,
-                              station=station,
-                              location=location,
-                              channel=channel)
+        self._stream = Stream(
+            network=network,
+            station=station,
+            location=location,
+            channel=channel,
+        )
 
         try:
             self.epochs = Epochs.from_tuples(epochs)
@@ -437,12 +484,13 @@ class StreamEpochs:
         """
         Creates a :py:class:`StreamEpochs` object from :py:class:`StreamEpoch`.
         """
-        return cls(network=stream_epoch.network,
-                   station=stream_epoch.station,
-                   location=stream_epoch.location,
-                   channel=stream_epoch.channel,
-                   epochs=[(stream_epoch.starttime,
-                            stream_epoch.endtime)])
+        return cls(
+            network=stream_epoch.network,
+            station=stream_epoch.station,
+            location=stream_epoch.location,
+            channel=stream_epoch.channel,
+            epochs=[(stream_epoch.starttime, stream_epoch.endtime)],
+        )
 
     @classmethod
     def from_stream(cls, stream, epochs=[]):
@@ -450,13 +498,15 @@ class StreamEpochs:
         Creates a :py:class:`StreamEpochs` object from :py:class:`Stream` and a
         list of :code:`epochs`.
         """
-        return cls(network=stream.network,
-                   station=stream.station,
-                   location=stream.location,
-                   channel=stream.channel,
-                   epochs=epochs)
+        return cls(
+            network=stream.network,
+            station=stream.station,
+            location=stream.location,
+            channel=stream.channel,
+            epochs=epochs,
+        )
 
-    def id(self, sep='.'):
+    def id(self, sep="."):
         """
         Returns the :py:class:`StreamEpoch`'s identifier.
 
@@ -477,8 +527,9 @@ class StreamEpochs:
         # intervals are merged even if they are only end-to-end adjacent
         self.epochs.merge_overlaps(strict=False)
 
-    def fdsnws_to_sql_wildcards(self, like_multiple='%', like_single='_',
-                                like_escape='/'):
+    def fdsnws_to_sql_wildcards(
+        self, like_multiple="%", like_single="_", like_escape="/"
+    ):
         """
         Replace the FDSNWS wildcard characters in *network*, *station*,
         *location* and *channel* with the corresponding SQL LIKE statement
@@ -490,17 +541,22 @@ class StreamEpochs:
             character
         :param str like_escape: Character used in the SQL ESCAPE clause.
         """
-        net = fdsnws_to_sql_wildcards(self.network, like_multiple, like_single,
-                                      like_escape)
-        sta = fdsnws_to_sql_wildcards(self.station, like_multiple, like_single,
-                                      like_escape)
-        loc = fdsnws_to_sql_wildcards(self.location, like_multiple,
-                                      like_single, like_escape)
-        cha = fdsnws_to_sql_wildcards(self.channel, like_multiple, like_single,
-                                      like_escape)
+        net = fdsnws_to_sql_wildcards(
+            self.network, like_multiple, like_single, like_escape
+        )
+        sta = fdsnws_to_sql_wildcards(
+            self.station, like_multiple, like_single, like_escape
+        )
+        loc = fdsnws_to_sql_wildcards(
+            self.location, like_multiple, like_single, like_escape
+        )
+        cha = fdsnws_to_sql_wildcards(
+            self.channel, like_multiple, like_single, like_escape
+        )
 
-        self._stream = self._stream._replace(network=net, station=sta,
-                                             location=loc, channel=cha)
+        self._stream = self._stream._replace(
+            network=net, station=sta, location=loc, channel=cha
+        )
 
     def modify_with_temporal_constraints(self, start=None, end=None):
         """
@@ -581,18 +637,20 @@ class StreamEpochs:
         The generator emerges :py:class:`StreamEpoch` objects.
         """
         for epoch in self.epochs:
-            yield StreamEpoch.from_sncl(network=self.network,
-                                        station=self.station,
-                                        location=self.location,
-                                        channel=self.channel,
-                                        starttime=epoch.begin,
-                                        endtime=epoch.end)
+            yield StreamEpoch.from_sncl(
+                network=self.network,
+                station=self.station,
+                location=self.location,
+                channel=self.channel,
+                starttime=epoch.begin,
+                endtime=epoch.end,
+            )
 
     def __eq__(self, other):
         """
         Allows comparing :py:class:`StreamEpochs` objects.
         """
-        return (self._stream == other._stream and self.epochs == other.epochs)
+        return self._stream == other._stream and self.epochs == other.epochs
 
     def __lt__(self, other):
         if self._stream == other._stream:
@@ -602,14 +660,20 @@ class StreamEpochs:
         return self._stream < other._stream
 
     def __repr__(self):
-        return ('<StreamEpochs(stream=%r, start=%r, end=%r)>' %
-                (self._stream, self.starttime, self.endtime))
+        return "<StreamEpochs(stream=%r, start=%r, end=%r)>" % (
+            self._stream,
+            self.starttime,
+            self.endtime,
+        )
 
     def __str__(self):
-        se_schema = eidaws.utils.schema.StreamEpochSchema(many=True)
+        from eidaws.utils.schema import StreamEpochSchema
+
+        se_schema = StreamEpochSchema(many=True)
         stream_epochs = se_schema.dump(list(self))
-        return '\n'.join([' '.join(stream_epoch.values())
-                         for stream_epoch in stream_epochs])
+        return "\n".join(
+            [" ".join(stream_epoch.values()) for stream_epoch in stream_epochs]
+        )
 
 
 class StreamEpochsHandler:
@@ -644,8 +708,8 @@ class StreamEpochsHandler:
         #    ---..----..----
         for stream_id, epochs in self.d.items():
             se = StreamEpochs.from_stream(
-                Stream(**self.__stream_id_to_dict(stream_id)),
-                epochs=epochs)
+                Stream(**self.__stream_id_to_dict(stream_id)), epochs=epochs
+            )
             se.modify_with_temporal_constraints(start, end)
 
             self.d[se.id()] = se.epochs
@@ -691,18 +755,16 @@ class StreamEpochsHandler:
         for stream_id, stream_epochs in self.d.items():
             yield StreamEpochs.from_stream(
                 Stream(**self.__stream_id_to_dict(stream_id)),
-                epochs=stream_epochs)
+                epochs=stream_epochs,
+            )
 
     def __repr__(self):
-        return '<StreamEpochsHandler(streams=%r)>' % list(self)
+        return "<StreamEpochsHandler(streams=%r)>" % list(self)
 
     def __str__(self):
-        return '\n'.join(str(stream_epochs) for stream_epochs in self)
+        return "\n".join(str(stream_epochs) for stream_epochs in self)
 
-    def __stream_id_to_dict(self, stream_id, sep='.'):
+    def __stream_id_to_dict(self, stream_id, sep="."):
         # TODO(damb): configure separator globally (i.e. in settings module)
         net, sta, loc, cha = stream_id.split(sep)
-        return dict(network=net,
-                    station=sta,
-                    location=loc,
-                    channel=cha)
+        return dict(network=net, station=sta, location=loc, channel=cha)
