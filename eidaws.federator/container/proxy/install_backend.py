@@ -21,9 +21,9 @@ def main():
     EIDAWS_CONFIG_YML_TEMPLATE = "eidaws_config.yml.template"
 
     template_map = {
-        r"\{\{CONNECTION_LIMIT\}\}": ("connection_limit", ""),
+        r"\{\{CONNECTION_LIMIT\}\}": ("connection_limit", 10),
         r"\{\{TIMEOUT_SOCK_CONNECT\}\}": ("timeout_sock_connect", 2),
-        r"\{\{TIMEOUT_SOCK_READ\}\}": ("timeout_sock_read", 30),
+        r"\{\{TIMEOUT_SOCK_READ\}\}": ("timeout_sock_read", 900),
     }
 
     backend_configs = json.load(sys.stdin)

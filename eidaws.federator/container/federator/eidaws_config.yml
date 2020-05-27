@@ -123,7 +123,7 @@ eidaws.federator:
     # Allowed values: int
     # Default: 10
     #
-    endpoint_connection_limit_per_host: 10
+    endpoint_connection_limit_per_host: 120
     #
     # ----
     # Total timeout for acquiring a connection from pool. The time consists
@@ -139,14 +139,14 @@ eidaws.federator:
     # Allowed values: None or float (seconds)
     # Default: 2
     #
-    # endpoint_timeout_sock_connect: 2
+    endpoint_timeout_sock_connect: 2
     #
     # ----
     # A timeout for reading a portion of data from a peer.
     # Allowed values: None or float (seconds)
     # Default: 30
     #
-    # endpoint_timeout_sock_read: 30
+    endpoint_timeout_sock_read: 910
     
     # ----
     # Retry-budget related configuration options
@@ -256,12 +256,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.station.text:
-    # ----
-    # A timeout for reading a portion of data from a peer.
-    # Allowed values: None or float (seconds)
-    # Default: 30
-    #
-    endpoint_timeout_sock_read: 5
     # -----
     # Frontend cache configuration
     cache_config:
@@ -274,12 +268,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.station.xml:
-    # ----
-    # A timeout for reading a portion of data from a peer.
-    # Allowed values: None or float (seconds)
-    # Default: 30
-    #
-    endpoint_timeout_sock_read: 15
     # -----
     # Frontend cache configuration
     cache_config:
@@ -292,12 +280,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   fdsnws.dataselect.miniseed:
-    # ----
-    # A timeout for reading a portion of data from a peer.
-    # Allowed values: None or float (seconds)
-    # Default: 30
-    #
-    endpoint_timeout_sock_read: 60
     # ----
     # Maximum per stream epoch duration in days before returning a HTTP 413
     # (Request too large) response.
@@ -344,12 +326,6 @@ eidaws.federator:
   # options. Parameters defined within configuration section override
   # parameters defined within the 'common' section.
   eidaws.wfcatalog.json:
-    # ----
-    # A timeout for reading a portion of data from a peer.
-    # Allowed values: None or float (seconds)
-    # Default: 30
-    #
-    endpoint_timeout_sock_read: 10
     # ----
     # Maximum total stream epoch duration in days before returning a HTTP 413
     # (Request too large) response.
