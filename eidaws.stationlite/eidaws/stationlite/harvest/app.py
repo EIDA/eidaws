@@ -66,9 +66,15 @@ from eidaws.utils.misc import realpath, real_file_path
 from eidaws.utils.settings import (
     FDSNWS_QUERY_METHOD_TOKEN,
     FDSNWS_QUERYAUTH_METHOD_TOKEN,
+    FDSNWS_EXTENT_METHOD_TOKEN,
+    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
     FDSNWS_STATION_PATH_QUERY,
     FDSNWS_DATASELECT_PATH_QUERY,
     FDSNWS_DATASELECT_PATH_QUERYAUTH,
+    FDSNWS_AVAILABILITY_PATH_QUERY,
+    FDSNWS_AVAILABILITY_PATH_QUERYAUTH,
+    FDSNWS_AVAILABILITY_PATH_EXTENT,
+    FDSNWS_AVAILABILITY_PATH_EXTENTAUTH,
     EIDAWS_WFCATALOG_PATH_QUERY,
 )
 from eidaws.utils.sncl import Stream, StreamEpoch
@@ -82,7 +88,14 @@ def _get_method_token(url):
     :returns: Method token
     :retval: str
     """
-    return urlparse(url).path.split("/")[-1]
+    token = urlparse(url).path.split("/")[-1]
+
+    try:
+        float(token)
+    except ValueError:
+        return None
+
+    return token
 
 
 # ----------------------------------------------------------------------------
@@ -195,7 +208,7 @@ class RoutingHarvester(Harvester):
     def harvest(self, session):
         """Harvest the routing configuration."""
 
-        def validate_cha_epoch(cha_epoch):
+        def validate_cha_epoch(cha_epoch, service_tag):
             if inspect(cha_epoch).deleted:
                 # In case a orm.ChannelEpoch object is marked
                 # as deleted but harvested within the same
@@ -203,41 +216,50 @@ class RoutingHarvester(Harvester):
                 # integrity issue within the FDSN station
                 # InventoryXML.
                 raise self.IntegrityError(
-                    "Inventory integrity issue for {0!r}".format(cha_epoch)
+                    f"Inventory integrity issue for {cha_epoch!r}"
                 )
 
             if (
-                "dataselect" == service_tag and not self._force_restricted
-            ) and (
-                (
-                    "open" == cha_epoch.restrictedstatus
-                    and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                    == _get_method_token(endpoint.url)
-                )
-                or (
-                    "closed" == cha_epoch.restrictedstatus
-                    and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                    == _get_method_token(endpoint.url)
-                )
-            ):
-                # invalid method token for channel epoch
-                # specified
-                raise self.IntegrityError(
-                    "Inventory integrity issue for {!r}: "
-                    "restricted_status and query method token "
-                    "do not match. Skipping.".format(cha_epoch)
-                )
-
-            if (
-                "dataselect" == service_tag
+                service_tag in ("dataselect", "availability")
                 and "partial" == cha_epoch.restrictedstatus
             ):
                 raise self.IntegrityError(
                     "Unable to handle 'partial' restrictedStatus for "
-                    "ChannelEpoch {!r}.".format(cha_epoch)
+                    f"ChannelEpoch {cha_epoch!r}."
                 )
 
-        route_tag = "{}route".format(self.NS_ROUTINGXML)
+        def autocorrect_url(url, service_tag, restricted_status):
+            if service_tag not in ("dataselect", "availability",):
+                return [url]
+
+            tokens = []
+            if "open" == restricted_status:
+                tokens.append(FDSNWS_QUERY_METHOD_TOKEN)
+                if service_tag == "availability":
+                    t = _get_method_token(url)
+                    if t is None:
+                        tokens.append(FDSNWS_EXTENT_METHOD_TOKEN)
+                    elif t == FDSNWS_EXTENT_METHOD_TOKEN:
+                        tokens = [FDSNWS_EXTENT_METHOD_TOKEN]
+
+            elif "closed" == restricted_status:
+                tokens.append(FDSNWS_QUERYAUTH_METHOD_TOKEN)
+                if service_tag == "availability":
+                    t = _get_method_token(url)
+                    if t is None:
+                        tokens.append(FDSNWS_EXTENTAUTH_METHOD_TOKEN)
+                    elif t in (
+                        FDSNWS_EXTENT_METHOD_TOKEN,
+                        FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+                    ):
+                        tokens = [FDSNWS_EXTENTAUTH_METHOD_TOKEN]
+
+            else:
+                ValueError(f"Invalid restricted status: {restricted_status!r}")
+
+            return [urljoin(url, t) for t in tokens]
+
+        route_tag = f"{self.NS_ROUTINGXML}route"
         _services = [
             "{}{}".format(self.NS_ROUTINGXML, s) for s in self._services
         ]
@@ -331,9 +353,8 @@ class RoutingHarvester(Harvester):
                     priority = service_element.get("priority")
                     if not priority or int(priority) != 1:
                         self.logger.info(
-                            "Skipping {} due to priority '{}'.".format(
-                                service_element, priority
-                            )
+                            f"Skipping {service_element} due to priority "
+                            f"{priority!r}."
                         )
                         continue
 
@@ -347,17 +368,11 @@ class RoutingHarvester(Harvester):
                             "Missing 'address' attrib."
                         )
 
-                    self._validate_url_path(endpoint_url, service_tag)
-
                     service = self._emerge_service(session, service_tag)
-                    endpoint = self._emerge_endpoint(
-                        session, endpoint_url, service
-                    )
-
                     self.logger.debug(
-                        "Processing routes for %r "
-                        "(service=%s, endpoint=%s)."
-                        % (stream, service_element.tag, endpoint.url)
+                        f"Processing routes for {stream!r}"
+                        f"(service={service_element.tag}, "
+                        f"endpoint={endpoint_url})."
                     )
 
                     try:
@@ -389,64 +404,46 @@ class RoutingHarvester(Harvester):
                                 .delete()
                             ):
                                 self.logger.warning(
-                                    "Removed {!r} due to integrity "
-                                    "error.".format(cha_epoch)
+                                    f"Removed {cha_epoch!r} due to integrity "
+                                    "error."
                                 )
                             continue
 
-                        _endpoint = endpoint
+                        endpoint_urls = [endpoint_url]
+                        if self._force_restricted:
+                            endpoint_urls = autocorrect_url(
+                                endpoint_url,
+                                service_tag,
+                                cha_epoch.restrictedstatus,
+                            )
 
-                        if (
-                            self._force_restricted
-                            and "dataselect" == service_tag
-                        ):
-
-                            if (
-                                "closed" == cha_epoch.restrictedstatus
-                                and FDSNWS_QUERY_METHOD_TOKEN
-                                == _get_method_token(_endpoint.url)
-                            ):
-
-                                fdsn_dataselect_url = urljoin(
-                                    _endpoint.url,
-                                    FDSNWS_QUERYAUTH_METHOD_TOKEN,
-                                )
-
-                            elif (
-                                "open" == cha_epoch.restrictedstatus
-                                and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                                == _get_method_token(_endpoint.url)
-                            ):
-
-                                fdsn_dataselect_url = urljoin(
-                                    _endpoint.url, FDSNWS_QUERY_METHOD_TOKEN,
-                                )
-
+                        endpoints = []
+                        for url in endpoint_urls:
                             try:
-                                _endpoint = self._emerge_endpoint(
-                                    session, fdsn_dataselect_url, service
+                                self._validate_url_path(url, service_tag)
+                            except self.IntegrityError as err:
+                                self.logger.warning(
+                                    f"Skipping {cha_epoch} due to: {err}"
                                 )
-                            except NameError:
-                                pass
-                            else:
-                                self.logger.debug(
-                                    "Forced query method token adjustment for "
-                                    "{!r}.".format(cha_epoch)
-                                )
-                                del fdsn_dataselect_url
+                                continue
 
-                        self.logger.debug(
-                            "Processing ChannelEpoch<->Endpoint relation "
-                            "{}<->{} ...".format(cha_epoch, endpoint)
-                        )
+                            endpoints.append(
+                                self._emerge_endpoint(session, url, service)
+                            )
 
-                        _ = self._emerge_routing(
-                            session,
-                            cha_epoch,
-                            _endpoint,
-                            routing_starttime,
-                            routing_endtime,
-                        )
+                        for endpoint in endpoints:
+                            self.logger.debug(
+                                "Processing ChannelEpoch<->Endpoint relation "
+                                f"{cha_epoch}<->{endpoint} ..."
+                            )
+
+                            _ = self._emerge_routing(
+                                session,
+                                cha_epoch,
+                                endpoint,
+                                routing_starttime,
+                                routing_endtime,
+                            )
 
         # TODO(damb): Show stats for updated/inserted elements
 
@@ -992,13 +989,14 @@ class RoutingHarvester(Harvester):
         ):
             epoch.restrictedstatus = restricted_status
 
-    @staticmethod
-    def _validate_url_path(url, service):
+    def _validate_url_path(self, url, service, restricted_status="open"):
         """
         Validate FDSN/EIDA service URLs.
 
         :param str url: URL to validate
         :param str service: Service identifier.
+        :param str restricted_status: Restricted status of the related channel
+            epoch.
         :raises Harvester.ValidationError: If the URL path does not match the
             the service specifications.
         """
@@ -1006,11 +1004,33 @@ class RoutingHarvester(Harvester):
 
         if "station" == service and p == FDSNWS_STATION_PATH_QUERY:
             return
-        elif "dataselect" == service and p in (
-            FDSNWS_DATASELECT_PATH_QUERY,
-            FDSNWS_DATASELECT_PATH_QUERYAUTH,
-        ):
-            return
+        elif "dataselect" == service:
+            if (
+                "open" == restricted_status
+                and p == FDSNWS_DATASELECT_PATH_QUERY
+            ) or (
+                "closed" == restricted_status
+                and p == FDSNWS_DATASELECT_PATH_QUERYAUTH
+            ):
+                return
+        elif "availability" == service:
+            if (
+                "open" == restricted_status
+                and p
+                in (
+                    FDSNWS_AVAILABILITY_PATH_QUERY,
+                    FDSNWS_AVAILABILITY_PATH_EXTENT,
+                )
+            ) or (
+                "closed" == restricted_status
+                and p
+                in (
+                    FDSNWS_AVAILABILITY_PATH_QUERYAUTH,
+                    FDSNWS_AVAILABILITY_PATH_EXTENTAUTH,
+                )
+            ):
+                return
+
         elif "wfcatalog" == service and p == EIDAWS_WFCATALOG_PATH_QUERY:
             return
 
