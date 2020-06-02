@@ -219,10 +219,10 @@ class RoutingHarvester(Harvester):
                     f"Inventory integrity issue for {cha_epoch!r}"
                 )
 
-            if (
-                service_tag in ("dataselect", "availability")
-                and cha_epoch.restrictedstatus not in ("open", "closed")
-            ):
+            if service_tag in (
+                "dataselect",
+                "availability",
+            ) and cha_epoch.restrictedstatus not in ("open", "closed"):
                 raise self.IntegrityError(
                     "Unable to handle restrictedStatus "
                     f"{cha_epoch.restrictedstatus!r} for "
