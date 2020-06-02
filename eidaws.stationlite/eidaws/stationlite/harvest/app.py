@@ -203,8 +203,6 @@ class RoutingHarvester(Harvester):
         self._services = kwargs.get("services", STL_HARVEST_DEFAULT_SERVICES)
         self._force_restricted = kwargs.get("force_restricted", True)
 
-    # __init__ ()
-
     def harvest(self, session):
         """Harvest the routing configuration."""
 
