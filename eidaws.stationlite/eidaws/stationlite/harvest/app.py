@@ -358,7 +358,7 @@ class RoutingHarvester(Harvester):
 
                     # remove xml namespace
                     service_tag = service_element.tag[
-                        len(self.NS_ROUTINGXML) :
+                        len(self.NS_ROUTINGXML) :  # noqa
                     ]
                     endpoint_url = service_element.get("address")
                     if not endpoint_url:
