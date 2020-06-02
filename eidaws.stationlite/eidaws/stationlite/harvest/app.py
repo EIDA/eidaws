@@ -221,10 +221,11 @@ class RoutingHarvester(Harvester):
 
             if (
                 service_tag in ("dataselect", "availability")
-                and "partial" == cha_epoch.restrictedstatus
+                and cha_epoch.restrictedstatus not in ("open", "closed")
             ):
                 raise self.IntegrityError(
-                    "Unable to handle 'partial' restrictedStatus for "
+                    "Unable to handle restrictedStatus "
+                    f"{cha_epoch.restrictedstatus!r} for "
                     f"ChannelEpoch {cha_epoch!r}."
                 )
 
