@@ -995,6 +995,8 @@ class RoutingHarvester(Harvester):
 
         if "station" == service and p == FDSNWS_STATION_PATH_QUERY:
             return
+        elif "wfcatalog" == service and p == EIDAWS_WFCATALOG_PATH_QUERY:
+            return
         elif "dataselect" == service:
             if (
                 "open" == restricted_status
@@ -1021,9 +1023,6 @@ class RoutingHarvester(Harvester):
                 )
             ):
                 return
-
-        elif "wfcatalog" == service and p == EIDAWS_WFCATALOG_PATH_QUERY:
-            return
 
         raise Harvester.ValidationError(f"Invalid path {p!r} for URL {url!r}.")
 
