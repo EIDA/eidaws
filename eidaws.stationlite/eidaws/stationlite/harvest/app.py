@@ -565,9 +565,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            self.DEFAULT_RESTRICTED_STATUS
-            if network.restricted_status is None
-            else network.restricted_status
+            network.restricted_status or self.DEFAULT_RESTRICTED_STATUS
         )
 
         # check if network already available - else create a new one
@@ -663,9 +661,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            base_node.restricted_status
-            if station.restricted_status is None
-            else station.restricted_status
+            station.restricted_status or base_node.restricted_status
         )
 
         # check if station already available - else create a new one
@@ -756,9 +752,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            base_node.restricted_status
-            if channel.restricted_status is None
-            else channel.restricted_status
+            channel.restricted_status or base_node.restricted_status
         )
 
         # check for available, overlapping channel_epoch (not identical)
