@@ -393,7 +393,7 @@ class RoutingHarvester(Harvester):
                     for cha_epoch in chas:
 
                         try:
-                            validate_cha_epoch(cha_epoch)
+                            validate_cha_epoch(cha_epoch, service_tag)
                         except self.IntegrityError as err:
                             warnings.warn(str(err))
                             self.logger.warning(err)
