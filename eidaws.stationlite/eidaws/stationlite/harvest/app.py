@@ -1565,7 +1565,7 @@ class StationLiteHarvestApp:
             help=(
                 "Whitespace-separated list of services to "
                 "be cached. (choices: {%(choices)s}) "
-                "(default: {%(default)s})"
+                "By default all services choicable are harvested."
             ),
         )
         parser.add_argument(
@@ -1576,9 +1576,9 @@ class StationLiteHarvestApp:
                 "Perform a strict validation of channel "
                 "epochs to use the correct "
                 "dataselect method token depending on "
-                "their restricted status. By default method "
-                "tokens are adjusted automatically. "
-                "(default: %(default)s)"
+                "their restricted status property. By "
+                "default method tokens are adjusted "
+                "automatically."
             ),
         )
         parser.add_argument(
@@ -1616,7 +1616,7 @@ class StationLiteHarvestApp:
             type=str,
             metavar="PATH",
             dest="path_pidfile",
-            help="Path to PID file. (default: {%(default)s})",
+            help="Path to PID file.",
         )
         parser.add_argument(
             "-c",
