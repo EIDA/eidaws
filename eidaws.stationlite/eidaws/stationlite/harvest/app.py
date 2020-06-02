@@ -1299,7 +1299,12 @@ class StationLiteHarvestApp:
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "enum": ["dataselect", "station", "wfcatalog"],
+                    "enum": [
+                        "availability",
+                        "dataselect",
+                        "station",
+                        "wfcatalog",
+                    ],
                 },
                 "uniqueItems": True,
             },
