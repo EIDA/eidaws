@@ -10,9 +10,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
-from eidaws.federator.utils.misc import (
-    make_context_logger,
-)
+from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.mixin import (
     CachingMixin,
     ClientRetryBudgetMixin,
