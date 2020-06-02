@@ -419,7 +419,11 @@ class RoutingHarvester(Harvester):
                         endpoints = []
                         for url in endpoint_urls:
                             try:
-                                self._validate_url_path(url, service_tag)
+                                self._validate_url_path(
+                                    url,
+                                    service_tag,
+                                    restricted_status=cha_epoch.restrictedstatus,
+                                )
                             except self.IntegrityError as err:
                                 self.logger.warning(
                                     f"Skipping {cha_epoch} due to: {err}"
