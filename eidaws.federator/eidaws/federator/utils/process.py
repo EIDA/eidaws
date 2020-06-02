@@ -277,16 +277,16 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             f"Number of (demuxed) routes received: {len(routes)}"
         )
 
-        response = await self._make_response(
-            routes,
-            req_method=self.config["endpoint_request_method"],
-            timeout=timeout,
-            proxy=self.proxy,
-        )
-
-        await asyncio.shield(self.finalize())
-
-        return response
+        try:
+            # XXX(damb): Handle exceptions within middleware.
+            return await self._make_response(
+                routes,
+                req_method=self.config["endpoint_request_method"],
+                timeout=timeout,
+                proxy=self.proxy,
+            )
+        finally:
+            await asyncio.shield(self.finalize())
 
     def make_stream_response(self, *args, **kwargs):
         """
