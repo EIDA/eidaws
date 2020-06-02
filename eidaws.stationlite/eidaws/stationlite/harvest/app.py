@@ -233,6 +233,8 @@ class RoutingHarvester(Harvester):
             if service_tag not in ("dataselect", "availability",):
                 return [url]
 
+            # NOTE (damb): Always add .*/query / .*/queryauth path (w.r.t.
+            # restricted_status)
             tokens = []
             if "open" == restricted_status:
                 tokens.append(FDSNWS_QUERY_METHOD_TOKEN)
