@@ -40,7 +40,7 @@ from eidaws.utils.settings import (
 
 @pytest.fixture
 def xml_schema(load_data):
-    xsd = load_data("fdsn-station-1.0.xsd")
+    xsd = load_data("fdsn-station.xsd")
     xmlschema_doc = etree.parse(io.BytesIO(xsd))
     return etree.XMLSchema(xmlschema_doc)
 
@@ -139,7 +139,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -218,7 +219,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN * * 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -274,7 +276,8 @@ class TestFDSNStationXMLServer(
             ),
             (
                 "POST",
-                b"level=channel\nformat=xml\nNL HGN * BHZ 2013-11-10 2013-11-11",
+                b"level=channel\nformat=xml\nNL HGN * "
+                b"BHZ 2013-11-10 2013-11-11",
             ),
         ],
     )
@@ -297,7 +300,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -353,7 +357,8 @@ class TestFDSNStationXMLServer(
             ),
             (
                 "POST",
-                b"level=response\nformat=xml\nNL HGN * BHZ 2013-11-10 2013-11-11",
+                b"level=response\nformat=xml\nNL HGN * "
+                b"BHZ 2013-11-10 2013-11-11",
             ),
         ],
     )
@@ -376,7 +381,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -459,8 +465,10 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL DBN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -657,7 +665,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/station/1/query\n"
-                            "CH  -- BHZ 2013-11-10T00:00:00 "
+                            "CH HASLI -- BHZ 2013-11-10T00:00:00 "
                             "2013-11-11T00:00:00\n"
                             "\n"
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
@@ -756,7 +764,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * 2013-11-10T00:00:00 "
+                            "2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
