@@ -39,6 +39,7 @@ eidaws.stationlite.harvest:
   #
   services:
     - dataselect
+    - station
     - wfcatalog
   # 
   # ----
