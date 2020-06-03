@@ -66,9 +66,15 @@ from eidaws.utils.misc import realpath, real_file_path
 from eidaws.utils.settings import (
     FDSNWS_QUERY_METHOD_TOKEN,
     FDSNWS_QUERYAUTH_METHOD_TOKEN,
+    FDSNWS_EXTENT_METHOD_TOKEN,
+    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
     FDSNWS_STATION_PATH_QUERY,
     FDSNWS_DATASELECT_PATH_QUERY,
     FDSNWS_DATASELECT_PATH_QUERYAUTH,
+    FDSNWS_AVAILABILITY_PATH_QUERY,
+    FDSNWS_AVAILABILITY_PATH_QUERYAUTH,
+    FDSNWS_AVAILABILITY_PATH_EXTENT,
+    FDSNWS_AVAILABILITY_PATH_EXTENTAUTH,
     EIDAWS_WFCATALOG_PATH_QUERY,
 )
 from eidaws.utils.sncl import Stream, StreamEpoch
@@ -82,7 +88,14 @@ def _get_method_token(url):
     :returns: Method token
     :retval: str
     """
-    return urlparse(url).path.split("/")[-1]
+    token = urlparse(url).path.split("/")[-1]
+
+    try:
+        float(token)
+    except ValueError:
+        return None
+
+    return token
 
 
 # ----------------------------------------------------------------------------
@@ -190,12 +203,10 @@ class RoutingHarvester(Harvester):
         self._services = kwargs.get("services", STL_HARVEST_DEFAULT_SERVICES)
         self._force_restricted = kwargs.get("force_restricted", True)
 
-    # __init__ ()
-
     def harvest(self, session):
         """Harvest the routing configuration."""
 
-        def validate_cha_epoch(cha_epoch):
+        def validate_cha_epoch(cha_epoch, service_tag):
             if inspect(cha_epoch).deleted:
                 # In case a orm.ChannelEpoch object is marked
                 # as deleted but harvested within the same
@@ -203,44 +214,54 @@ class RoutingHarvester(Harvester):
                 # integrity issue within the FDSN station
                 # InventoryXML.
                 raise self.IntegrityError(
-                    "Inventory integrity issue for {0!r}".format(cha_epoch)
+                    f"Inventory integrity issue for {cha_epoch!r}"
                 )
 
-            if (
-                "dataselect" == service_tag and not self._force_restricted
-            ) and (
-                (
-                    "open" == cha_epoch.restrictedstatus
-                    and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                    == _get_method_token(endpoint.url)
-                )
-                or (
-                    "closed" == cha_epoch.restrictedstatus
-                    and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                    == _get_method_token(endpoint.url)
-                )
-            ):
-                # invalid method token for channel epoch
-                # specified
+            if service_tag in (
+                "dataselect",
+                "availability",
+            ) and cha_epoch.restrictedstatus not in ("open", "closed"):
                 raise self.IntegrityError(
-                    "Inventory integrity issue for {!r}: "
-                    "restricted_status and query method token "
-                    "do not match. Skipping.".format(cha_epoch)
+                    "Unable to handle restrictedStatus "
+                    f"{cha_epoch.restrictedstatus!r} for "
+                    f"ChannelEpoch {cha_epoch!r}."
                 )
 
-            if (
-                "dataselect" == service_tag
-                and "partial" == cha_epoch.restrictedstatus
-            ):
-                raise self.IntegrityError(
-                    "Unable to handle 'partial' restrictedStatus for "
-                    "ChannelEpoch {!r}.".format(cha_epoch)
-                )
+        def autocorrect_url(url, service_tag, restricted_status):
+            if service_tag not in ("dataselect", "availability",):
+                return [url]
 
-        route_tag = "{}route".format(self.NS_ROUTINGXML)
-        _services = [
-            "{}{}".format(self.NS_ROUTINGXML, s) for s in self._services
-        ]
+            # NOTE (damb): Always add .*/query / .*/queryauth path (w.r.t.
+            # restricted_status)
+            tokens = []
+            if "open" == restricted_status:
+                tokens.append(FDSNWS_QUERY_METHOD_TOKEN)
+                if service_tag == "availability":
+                    t = _get_method_token(url)
+                    if t is None:
+                        tokens.append(FDSNWS_EXTENT_METHOD_TOKEN)
+                    elif t == FDSNWS_EXTENT_METHOD_TOKEN:
+                        tokens = [FDSNWS_EXTENT_METHOD_TOKEN]
+
+            elif "closed" == restricted_status:
+                tokens.append(FDSNWS_QUERYAUTH_METHOD_TOKEN)
+                if service_tag == "availability":
+                    t = _get_method_token(url)
+                    if t is None:
+                        tokens.append(FDSNWS_EXTENTAUTH_METHOD_TOKEN)
+                    elif t in (
+                        FDSNWS_EXTENT_METHOD_TOKEN,
+                        FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+                    ):
+                        tokens = [FDSNWS_EXTENTAUTH_METHOD_TOKEN]
+
+            else:
+                ValueError(f"Invalid restricted status: {restricted_status!r}")
+
+            return [urljoin(url, t) for t in tokens]
+
+        route_tag = f"{self.NS_ROUTINGXML}route"
+        _services = [f"{self.NS_ROUTINGXML}{s}" for s in self._services]
 
         self.logger.debug(f"Harvesting routes for: {self.url!r}")
         # event driven parsing
@@ -255,7 +276,7 @@ class RoutingHarvester(Harvester):
                 # create query parameters from stream attrs
                 query_params = "&".join(
                     [
-                        "{}={}".format(query_param, query_val)
+                        f"{query_param}={query_val}"
                         for query_param, query_val in attrs.items()
                     ]
                 )
@@ -265,7 +286,7 @@ class RoutingHarvester(Harvester):
                     [
                         e.get("address")
                         for e in route_element.iter(
-                            "{}{}".format(self.NS_ROUTINGXML, self.STATION_TAG)
+                            f"{self.NS_ROUTINGXML}{self.STATION_TAG}"
                         )
                         if int(e.get("priority", 0)) == 1
                     ]
@@ -292,12 +313,12 @@ class RoutingHarvester(Harvester):
                     raise self.IntegrityError(
                         (
                             "Missing <station></station> element for "
-                            "{} ({}).".format(route_element, urls)
+                            f"{route_element} ({urls})."
                         )
                     )
 
-                _url_fdsn_station = "{}?{}&level=channel".format(
-                    urls.pop(), query_params
+                _url_fdsn_station = (
+                    f"{urls.pop()}?{query_params}&level=channel"
                 )
 
                 self._validate_url_path(_url_fdsn_station, "station")
@@ -309,7 +330,7 @@ class RoutingHarvester(Harvester):
                 # endtime).
                 # ----
                 self.logger.debug(
-                    "Resolving routing: (Request: %r)." % _url_fdsn_station
+                    f"Resolving routing: (Request: {_url_fdsn_station!r})."
                 )
                 nets = []
                 stas = []
@@ -331,15 +352,14 @@ class RoutingHarvester(Harvester):
                     priority = service_element.get("priority")
                     if not priority or int(priority) != 1:
                         self.logger.info(
-                            "Skipping {} due to priority '{}'.".format(
-                                service_element, priority
-                            )
+                            f"Skipping {service_element} due to priority "
+                            f"{priority!r}."
                         )
                         continue
 
                     # remove xml namespace
                     service_tag = service_element.tag[
-                        len(self.NS_ROUTINGXML) :
+                        len(self.NS_ROUTINGXML) :  # noqa
                     ]
                     endpoint_url = service_element.get("address")
                     if not endpoint_url:
@@ -347,17 +367,11 @@ class RoutingHarvester(Harvester):
                             "Missing 'address' attrib."
                         )
 
-                    self._validate_url_path(endpoint_url, service_tag)
-
                     service = self._emerge_service(session, service_tag)
-                    endpoint = self._emerge_endpoint(
-                        session, endpoint_url, service
-                    )
-
                     self.logger.debug(
-                        "Processing routes for %r "
-                        "(service=%s, endpoint=%s)."
-                        % (stream, service_element.tag, endpoint.url)
+                        f"Processing routes for {stream!r}"
+                        f"(service={service_element.tag}, "
+                        f"endpoint={endpoint_url})."
                     )
 
                     try:
@@ -379,7 +393,7 @@ class RoutingHarvester(Harvester):
                     for cha_epoch in chas:
 
                         try:
-                            validate_cha_epoch(cha_epoch)
+                            validate_cha_epoch(cha_epoch, service_tag)
                         except self.IntegrityError as err:
                             warnings.warn(str(err))
                             self.logger.warning(err)
@@ -389,64 +403,50 @@ class RoutingHarvester(Harvester):
                                 .delete()
                             ):
                                 self.logger.warning(
-                                    "Removed {!r} due to integrity "
-                                    "error.".format(cha_epoch)
+                                    f"Removed {cha_epoch!r} due to integrity "
+                                    "error."
                                 )
                             continue
 
-                        _endpoint = endpoint
+                        endpoint_urls = [endpoint_url]
+                        if self._force_restricted:
+                            endpoint_urls = autocorrect_url(
+                                endpoint_url,
+                                service_tag,
+                                cha_epoch.restrictedstatus,
+                            )
 
-                        if (
-                            self._force_restricted
-                            and "dataselect" == service_tag
-                        ):
-
-                            if (
-                                "closed" == cha_epoch.restrictedstatus
-                                and FDSNWS_QUERY_METHOD_TOKEN
-                                == _get_method_token(_endpoint.url)
-                            ):
-
-                                fdsn_dataselect_url = urljoin(
-                                    _endpoint.url,
-                                    FDSNWS_QUERYAUTH_METHOD_TOKEN,
-                                )
-
-                            elif (
-                                "open" == cha_epoch.restrictedstatus
-                                and FDSNWS_QUERYAUTH_METHOD_TOKEN
-                                == _get_method_token(_endpoint.url)
-                            ):
-
-                                fdsn_dataselect_url = urljoin(
-                                    _endpoint.url, FDSNWS_QUERY_METHOD_TOKEN,
-                                )
-
+                        endpoints = []
+                        for url in endpoint_urls:
                             try:
-                                _endpoint = self._emerge_endpoint(
-                                    session, fdsn_dataselect_url, service
+                                self._validate_url_path(
+                                    url,
+                                    service_tag,
+                                    restricted_status=cha_epoch.restrictedstatus,
                                 )
-                            except NameError:
-                                pass
-                            else:
-                                self.logger.debug(
-                                    "Forced query method token adjustment for "
-                                    "{!r}.".format(cha_epoch)
+                            except self.IntegrityError as err:
+                                self.logger.warning(
+                                    f"Skipping {cha_epoch} due to: {err}"
                                 )
-                                del fdsn_dataselect_url
+                                continue
 
-                        self.logger.debug(
-                            "Processing ChannelEpoch<->Endpoint relation "
-                            "{}<->{} ...".format(cha_epoch, endpoint)
-                        )
+                            endpoints.append(
+                                self._emerge_endpoint(session, url, service)
+                            )
 
-                        _ = self._emerge_routing(
-                            session,
-                            cha_epoch,
-                            _endpoint,
-                            routing_starttime,
-                            routing_endtime,
-                        )
+                        for endpoint in endpoints:
+                            self.logger.debug(
+                                "Processing ChannelEpoch<->Endpoint relation "
+                                f"{cha_epoch}<->{endpoint} ..."
+                            )
+
+                            _ = self._emerge_routing(
+                                session,
+                                cha_epoch,
+                                endpoint,
+                                routing_starttime,
+                                routing_endtime,
+                            )
 
         # TODO(damb): Show stats for updated/inserted elements
 
@@ -470,23 +470,19 @@ class RoutingHarvester(Harvester):
         stas = []
         chas = []
         for inv_network in inventory.networks:
-            self.logger.debug("Processing network: {0!r}".format(inv_network))
+            self.logger.debug(f"Processing network: {inv_network!r}")
             net, base_node = self._emerge_network(session, inv_network)
             nets.append(net)
 
             for inv_station in inv_network.stations:
-                self.logger.debug(
-                    "Processing station: {0!r}".format(inv_station)
-                )
+                self.logger.debug(f"Processing station: {inv_station!r}")
                 sta, base_node = self._emerge_station(
                     session, inv_station, base_node
                 )
                 stas.append(sta)
 
                 for inv_channel in inv_station.channels:
-                    self.logger.debug(
-                        "Processing channel: {0!r}".format(inv_channel)
-                    )
+                    self.logger.debug(f"Processing channel: {inv_channel!r}")
                     cha_epoch = self._emerge_channelepoch(
                         session, inv_channel, net, sta, base_node
                     )
@@ -510,9 +506,7 @@ class RoutingHarvester(Harvester):
         if service is None:
             service = orm.Service(name=service_tag)
             session.add(service)
-            self.logger.debug(
-                "Created new service object '{}'".format(service)
-            )
+            self.logger.debug(f"Created new service object {service!r}")
 
         return service
 
@@ -533,9 +527,7 @@ class RoutingHarvester(Harvester):
         if endpoint is None:
             endpoint = orm.Endpoint(url=url, service=service)
             session.add(endpoint)
-            self.logger.debug(
-                "Created new endpoint object '{}'".format(endpoint)
-            )
+            self.logger.debug(f"Created new endpoint object {endpoint!r}")
 
         return endpoint
 
@@ -571,9 +563,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            self.DEFAULT_RESTRICTED_STATUS
-            if network.restricted_status is None
-            else network.restricted_status
+            network.restricted_status or self.DEFAULT_RESTRICTED_STATUS
         )
 
         # check if network already available - else create a new one
@@ -586,12 +576,12 @@ class RoutingHarvester(Harvester):
                 restrictedstatus=restricted_status,
             )
             net.network_epochs.append(net_epoch)
-            self.logger.debug("Created new network object '{}'".format(net))
+            self.logger.debug(f"Created new network object {net!r}")
 
             session.add(net)
 
         else:
-            self.logger.debug("Updating '{}'".format(net))
+            self.logger.debug(f"Updating {net!r} ...")
             # check for available network_epoch - else create a new one
             try:
                 net_epoch = (
@@ -623,7 +613,7 @@ class RoutingHarvester(Harvester):
                 )
                 net.network_epochs.append(net_epoch)
                 self.logger.debug(
-                    "Created new network_epoch object '{}'".format(net_epoch)
+                    f"Created new network_epoch object {net_epoch!r}"
                 )
             else:
                 # XXX(damb): silently update epoch parameters
@@ -669,9 +659,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            base_node.restricted_status
-            if station.restricted_status is None
-            else station.restricted_status
+            station.restricted_status or base_node.restricted_status
         )
 
         # check if station already available - else create a new one
@@ -686,12 +674,12 @@ class RoutingHarvester(Harvester):
                 restrictedstatus=station.restricted_status,
             )
             sta.station_epochs.append(station_epoch)
-            self.logger.debug("Created new station object '{}'".format(sta))
+            self.logger.debug(f"Created new station object {sta!r}")
 
             session.add(sta)
 
         else:
-            self.logger.debug("Updating '{}'".format(sta))
+            self.logger.debug(f"Updating {sta!r} ...")
             # check for available station_epoch - else create a new one
             try:
                 sta_epoch = (
@@ -723,9 +711,7 @@ class RoutingHarvester(Harvester):
                 )
                 sta.station_epochs.append(station_epoch)
                 self.logger.debug(
-                    "Created new station_epoch object '{}'".format(
-                        station_epoch
-                    )
+                    f"Created new station_epoch object {station_epoch!r}"
                 )
             else:
                 # XXX(damb): silently update inherited base node parameters
@@ -764,9 +750,7 @@ class RoutingHarvester(Harvester):
             end_date = end_date.datetime
 
         restricted_status = (
-            base_node.restricted_status
-            if channel.restricted_status is None
-            else channel.restricted_status
+            channel.restricted_status or base_node.restricted_status
         )
 
         # check for available, overlapping channel_epoch (not identical)
@@ -818,7 +802,7 @@ class RoutingHarvester(Harvester):
         if cha_epochs_to_update:
             self.logger.warning(
                 "Found overlapping orm.ChannelEpoch objects "
-                "{}".format(cha_epochs_to_update)
+                f"{cha_epochs_to_update!r}"
             )
 
         # check for ChannelEpochs with changed restricted status property
@@ -849,7 +833,7 @@ class RoutingHarvester(Harvester):
                 .filter(orm.ChannelEpoch.id == cha_epoch.id)
                 .delete()
             ):
-                self.logger.info("Removed referenced {0!r}.".format(cha_epoch))
+                self.logger.info(f"Removed referenced {cha_epoch!r}.")
 
         # check for an identical orm.ChannelEpoch
         try:
@@ -883,7 +867,7 @@ class RoutingHarvester(Harvester):
                 restrictedstatus=restricted_status,
             )
             self.logger.debug(
-                "Created new channel_epoch object '{}'".format(cha_epoch)
+                f"Created new channel_epoch object {cha_epoch!r}"
             )
             session.add(cha_epoch)
         else:
@@ -935,16 +919,14 @@ class RoutingHarvester(Harvester):
 
         if routings:
             self.logger.warning(
-                "Found overlapping orm.Routing objects " "{}".format(routings)
+                f"Found overlapping orm.Routing objects {routings}"
             )
 
         # delete overlapping orm.Routing entries
         for routing in routings:
             if session.delete(routing):
                 self.logger.info(
-                    "Removed {0!r} (matching query: {}).".format(
-                        routing, query
-                    )
+                    f"Removed {routing!r} (matching query: {query})."
                 )
 
         # check for an identical orm.Routing
@@ -967,7 +949,7 @@ class RoutingHarvester(Harvester):
                 starttime=start,
                 endtime=end,
             )
-            self.logger.debug("Created routing object {0!r}".format(routing))
+            self.logger.debug(f"Created routing object {routing!r}")
         else:
             self._update_lastseen(routing)
 
@@ -992,13 +974,14 @@ class RoutingHarvester(Harvester):
         ):
             epoch.restrictedstatus = restricted_status
 
-    @staticmethod
-    def _validate_url_path(url, service):
+    def _validate_url_path(self, url, service, restricted_status="open"):
         """
         Validate FDSN/EIDA service URLs.
 
         :param str url: URL to validate
         :param str service: Service identifier.
+        :param str restricted_status: Restricted status of the related channel
+            epoch.
         :raises Harvester.ValidationError: If the URL path does not match the
             the service specifications.
         """
@@ -1006,13 +989,34 @@ class RoutingHarvester(Harvester):
 
         if "station" == service and p == FDSNWS_STATION_PATH_QUERY:
             return
-        elif "dataselect" == service and p in (
-            FDSNWS_DATASELECT_PATH_QUERY,
-            FDSNWS_DATASELECT_PATH_QUERYAUTH,
-        ):
-            return
         elif "wfcatalog" == service and p == EIDAWS_WFCATALOG_PATH_QUERY:
             return
+        elif "dataselect" == service:
+            if (
+                "open" == restricted_status
+                and p == FDSNWS_DATASELECT_PATH_QUERY
+            ) or (
+                "closed" == restricted_status
+                and p == FDSNWS_DATASELECT_PATH_QUERYAUTH
+            ):
+                return
+        elif "availability" == service:
+            if (
+                "open" == restricted_status
+                and p
+                in (
+                    FDSNWS_AVAILABILITY_PATH_QUERY,
+                    FDSNWS_AVAILABILITY_PATH_EXTENT,
+                )
+            ) or (
+                "closed" == restricted_status
+                and p
+                in (
+                    FDSNWS_AVAILABILITY_PATH_QUERYAUTH,
+                    FDSNWS_AVAILABILITY_PATH_EXTENTAUTH,
+                )
+            ):
+                return
 
         raise Harvester.ValidationError(f"Invalid path {p!r} for URL {url!r}.")
 
@@ -1031,10 +1035,10 @@ class VNetHarvester(Harvester):
 
     def harvest(self, session):
 
-        vnet_tag = "{}vnetwork".format(self.NS_ROUTINGXML)
-        stream_tag = "{}stream".format(self.NS_ROUTINGXML)
+        vnet_tag = f"{self.NS_ROUTINGXML}vnetwork"
+        stream_tag = f"{self.NS_ROUTINGXML}stream"
 
-        self.logger.debug("Harvesting virtual networks for: {self.url!r}")
+        self.logger.debug(f"Harvesting virtual networks for: {self.url!r}")
 
         # event driven parsing
         for event, vnet_element in etree.iterparse(
@@ -1046,7 +1050,7 @@ class VNetHarvester(Harvester):
 
                 for stream_element in vnet_element.iter(tag=stream_tag):
                     self.logger.debug(
-                        "Processing stream element: {}".format(stream_element)
+                        f"Processing stream element: {stream_element}"
                     )
                     # convert attributes to dict
                     stream = Stream.from_route_attrs(
@@ -1073,9 +1077,7 @@ class VNetHarvester(Harvester):
                         endtime=stream_endtime,
                     )
 
-                    self.logger.debug(
-                        "Processing {0!r} ...".format(stream_epoch)
-                    )
+                    self.logger.debug(f"Processing {stream_epoch!r} ...")
 
                     sql_stream_epoch = stream_epoch.fdsnws_to_sql_wildcards()
 
@@ -1120,14 +1122,14 @@ class VNetHarvester(Harvester):
                     if not cha_epochs:
                         self.logger.warn(
                             "No ChannelEpoch matching stream epoch "
-                            "{0!r}".format(stream_epoch)
+                            f"{stream_epoch!r}"
                         )
                         continue
 
                     for cha_epoch in cha_epochs:
                         self.logger.debug(
                             "Processing virtual network configuration for "
-                            "ChannelEpoch object {0!r}.".format(cha_epoch)
+                            f"ChannelEpoch object {cha_epoch!r}."
                         )
                         self._emerge_streamepoch(
                             session, cha_epoch, stream_epoch, vnet
@@ -1155,15 +1157,11 @@ class VNetHarvester(Harvester):
         # check if network already available - else create a new one
         if vnet is None:
             vnet = orm.StreamEpochGroup(code=net_code)
-            self.logger.debug(
-                "Created new StreamEpochGroup object '{}'".format(vnet)
-            )
+            self.logger.debug(f"Created new StreamEpochGroup object {vnet!r}")
             session.add(vnet)
 
         else:
-            self.logger.debug(
-                "Updating orm.StreamEpochGroup object '{}'".format(vnet)
-            )
+            self.logger.debug(f"Updating orm.StreamEpochGroup object {vnet!r}")
 
         return vnet
 
@@ -1219,15 +1217,14 @@ class VNetHarvester(Harvester):
 
         if stream_epochs:
             self.logger.warning(
-                "Found overlapping orm.StreamEpoch objects "
-                "{}".format(stream_epochs)
+                "Found overlapping orm.StreamEpoch objects {stream_epochs}"
             )
 
         for se in stream_epochs:
             if session.delete(se):
                 self.logger.info(
-                    "Removed orm.StreamEpoch {0!r}"
-                    "(matching query: {}).".format(se, query)
+                    f"Removed orm.StreamEpoch {se!r}"
+                    f"(matching query: {query})."
                 )
 
         # check for an identical orm.StreamEpoch
@@ -1259,14 +1256,14 @@ class VNetHarvester(Harvester):
                 stream_epoch_group=vnet,
             )
             self.logger.debug(
-                "Created new StreamEpoch object instance {0!r}".format(se)
+                f"Created new StreamEpoch object instance {se!r}"
             )
             session.add(se)
 
         else:
             self._update_lastseen(se)
             self.logger.debug(
-                "Found existing StreamEpoch object instance {0!r}".format(se)
+                f"Found existing StreamEpoch object instance {se!r}"
             )
 
         return se
@@ -1300,7 +1297,12 @@ class StationLiteHarvestApp:
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "enum": ["dataselect", "station", "wfcatalog"],
+                    "enum": [
+                        "availability",
+                        "dataselect",
+                        "station",
+                        "wfcatalog",
+                    ],
                 },
                 "uniqueItems": True,
             },
@@ -1566,7 +1568,7 @@ class StationLiteHarvestApp:
             help=(
                 "Whitespace-separated list of services to "
                 "be cached. (choices: {%(choices)s}) "
-                "(default: {%(default)s})"
+                "By default all services choicable are harvested."
             ),
         )
         parser.add_argument(
@@ -1577,9 +1579,9 @@ class StationLiteHarvestApp:
                 "Perform a strict validation of channel "
                 "epochs to use the correct "
                 "dataselect method token depending on "
-                "their restricted status. By default method "
-                "tokens are adjusted automatically. "
-                "(default: %(default)s)"
+                "their restricted status property. By "
+                "default method tokens are adjusted "
+                "automatically."
             ),
         )
         parser.add_argument(
@@ -1617,7 +1619,7 @@ class StationLiteHarvestApp:
             type=str,
             metavar="PATH",
             dest="path_pidfile",
-            help="Path to PID file. (default: {%(default)s})",
+            help="Path to PID file.",
         )
         parser.add_argument(
             "-c",

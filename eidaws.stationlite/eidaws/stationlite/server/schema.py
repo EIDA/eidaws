@@ -33,7 +33,9 @@ class StationLiteSchema(Schema):
     )
     service = fields.Str(
         missing="dataselect",
-        validate=validate.OneOf(["dataselect", "station", "wfcatalog"]),
+        validate=validate.OneOf(
+            ["availability", "dataselect", "station", "wfcatalog"]
+        ),
     )
 
     nodata = NoData()
