@@ -333,7 +333,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
     STATIONXML_HEADER = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" '
-        'schemaVersion="1.0">'
+        'schemaVersion="1.1">'
         "<Source>{}</Source>"
         "<Created>{}</Created>"
     )
