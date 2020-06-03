@@ -329,12 +329,14 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 
-    STATIONXML_SOURCE = "EIDA"
+    STATIONXML_SOURCE = "EIDA-Federator"
+    STATIONXML_SENDER = "EIDA"
     STATIONXML_HEADER = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" '
         'schemaVersion="1.1">'
         "<Source>{}</Source>"
+        "<Sender>{}</Sender>"
         "<Created>{}</Created>"
     )
     STATIONXML_FOOTER = "</FDSNStationXML>"
@@ -356,7 +358,9 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
         await response.prepare(self.request)
 
         header = self.STATIONXML_HEADER.format(
-            self.STATIONXML_SOURCE, datetime.datetime.utcnow().isoformat()
+            self.STATIONXML_SOURCE,
+            self.STATIONXML_SENDER,
+            datetime.datetime.utcnow().isoformat(),
         )
         header = header.encode("utf-8")
         await response.write(header)
