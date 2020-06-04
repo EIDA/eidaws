@@ -44,7 +44,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             msg = (
                 f"Error while executing request: error={type(err)}, "
-                f"url={req_handler.url}, method={req_method}"
+                f"req_handler={req_handler!r}, method={req_method}"
             )
             await self._handle_error(msg=msg)
             resp_status = 503

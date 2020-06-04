@@ -225,7 +225,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
                 self.logger.warning(
                     f"Error while executing request: error={type(err)}, "
-                    f"url={req_handler.url}, method={req_method}"
+                    f"req_handler={req_handler!r}, method={req_method}"
                 )
 
                 await self.update_cretry_budget(req_handler.url, 503)
