@@ -136,7 +136,6 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
     def __init__(
         self,
         request,
-        queue,
         session,
         response,
         write_lock,
@@ -145,7 +144,6 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
     ):
         super().__init__(
             request,
-            queue,
             session,
             response,
             write_lock,
@@ -202,7 +200,6 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
     async def finalize(self):
         self._mseed_record_size = None
         self._chunk_size = self._CHUNK_SIZE
-        self._queue.task_done()
 
 
 class DataselectRequestProcessor(BaseRequestProcessor):
@@ -227,62 +224,12 @@ class DataselectRequestProcessor(BaseRequestProcessor):
         )
         await response.prepare(self.request)
 
-    async def _make_response(
-        self,
-        routes,
-        req_method="GET",
-        timeout=aiohttp.ClientTimeout(
-            connect=None, sock_connect=2, sock_read=30
-        ),
-        **kwargs,
-    ):
-        """
-        Return a federated response.
-        """
-
-        async def dispatch(queue, routes, **kwargs):
-            """
-            Dispatch jobs.
-            """
-
-            # granular request strategy
-            for route in routes:
-                self.logger.debug(f"Creating job for route: {route!r}")
-
-                job = (route, self.query_params)
-                await queue.put(job)
-
-        queue = asyncio.Queue()
-        response = self.make_stream_response()
-        lock = asyncio.Lock()
-
-        await dispatch(queue, routes)
-
-        async with aiohttp.ClientSession(
-            connector=self.request.config_dict["endpoint_http_conn_pool"],
-            timeout=timeout,
-            connector_owner=False,
-        ) as session:
-
-            for _ in range(self.pool_size):
-                worker = _DataselectAsyncWorker(
-                    self.request,
-                    queue,
-                    session,
-                    response,
-                    lock,
-                    endtime=self._default_endtime,
-                    prepare_callback=self._prepare_response,
-                )
-
-                task = self.request.loop.create_task(
-                    worker.run(req_method=req_method, **kwargs)
-                )
-                self._tasks.append(task)
-
-            await self._join_with_exception_handling(queue, response)
-
-            await response.write_eof()
-            self._response_sent = True
-
-            return response
+    def _emerge_worker(self, session, response, lock):
+        return _DataselectAsyncWorker(
+            self.request,
+            session,
+            response,
+            lock,
+            endtime=self._default_endtime,
+            prepare_callback=self._prepare_response,
+        )

@@ -71,7 +71,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
     def __init__(
         self,
         request,
-        queue,
         session,
         response,
         write_lock,
@@ -81,7 +80,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
     ):
         super().__init__(
             request,
-            queue,
             session,
             response,
             write_lock,
@@ -94,56 +92,54 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         self._network_elements = {}
 
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, req_method="GET", **kwargs):
+    async def run(
+        self, route, query_params, net, req_method="GET", **req_kwargs
+    ):
 
-        while True:
-            routes, query_params, net = await self._queue.get()
-            self.logger.debug(f"Fetching data for network: {net}")
+        self.logger.debug(f"Fetching data for network: {net}")
 
-            tasks = []
-            # granular request strategy
-            for route in routes:
-                tasks.append(
-                    self._fetch(
-                        route, query_params, req_method=req_method, **kwargs
+        # granular request strategy
+        tasks = [
+            self._fetch(
+                _route, query_params, req_method=req_method, **req_kwargs
+            )
+            for _route in route
+        ]
+
+        responses = await asyncio.gather(*tasks, return_exceptions=False)
+
+        for resp in responses:
+
+            station_xml = await self._parse_response(resp)
+
+            if station_xml is None:
+                continue
+
+            for net_element in station_xml.iter(STATIONXML_TAGS_NETWORK):
+                self._merge_net_element(net_element, level=self._level)
+
+        if self._network_elements:
+            async with self._lock:
+                if not self._response.prepared:
+
+                    if self._prepare_callback is not None:
+                        await self._prepare_callback(self._response)
+                    else:
+                        await self._response.prepare(self.request)
+
+                for (
+                    net_element,
+                    sta_elements,
+                ) in self._network_elements.values():
+                    data = self._serialize_net_element(
+                        net_element, sta_elements
                     )
-                )
+                    await self._response.write(data)
 
-            responses = await asyncio.gather(*tasks, return_exceptions=False)
-
-            for resp in responses:
-
-                station_xml = await self._parse_response(resp)
-
-                if station_xml is None:
-                    continue
-
-                for net_element in station_xml.iter(STATIONXML_TAGS_NETWORK):
-                    self._merge_net_element(net_element, level=self._level)
-
-            if self._network_elements:
-                async with self._lock:
-                    if not self._response.prepared:
-
-                        if self._prepare_callback is not None:
-                            await self._prepare_callback(self._response)
-                        else:
-                            await self._response.prepare(self.request)
-
-                    for (
-                        net_element,
-                        sta_elements,
-                    ) in self._network_elements.values():
-                        data = self._serialize_net_element(
-                            net_element, sta_elements
-                        )
-                        await self._response.write(data)
-
-            await self.finalize()
+        await self.finalize()
 
     async def finalize(self):
         self._network_elements = {}
-        self._queue.task_done()
 
     async def _parse_response(self, resp):
         if resp is None:
@@ -365,68 +361,34 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
         header = header.encode("utf-8")
         await response.write(header)
 
-    async def _make_response(
-        self,
-        routes,
-        req_method="GET",
-        timeout=aiohttp.ClientTimeout(
-            connect=None, sock_connect=2, sock_read=30
-        ),
-        **kwargs,
-    ):
+    def _emerge_worker(self, session, response, lock):
+        return _StationXMLAsyncWorker(
+            self.request,
+            session,
+            response,
+            lock,
+            prepare_callback=self._prepare_response,
+            level=self._level,
+        )
+
+    async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """
-        Return a federated response.
+        Dispatch jobs onto ``pool``.
         """
+        grouped_routes = group_routes_by(routes, key="network")
 
-        async def dispatch(queue, routes, **kwargs):
-            """
-            Dispatch jobs.
-            """
+        for net, _routes in grouped_routes.items():
+            self.logger.debug(
+                f"Creating job: Network={net}, route={_routes!r}"
+            )
+            await pool.submit(
+                _routes,
+                self.query_params,
+                net,
+                req_method=req_method,
+                **req_kwargs,
+            )
 
-            grouped_routes = group_routes_by(routes, key="network")
-
-            for net, _routes in grouped_routes.items():
-                self.logger.debug(
-                    f"Creating job: Network={net}, route={_routes!r}"
-                )
-
-                job = (_routes, self.query_params, net)
-                await queue.put(job)
-
-        queue = asyncio.Queue()
-        response = self.make_stream_response()
-        lock = asyncio.Lock()
-
-        await dispatch(queue, routes)
-
-        async with aiohttp.ClientSession(
-            connector=self.request.config_dict["endpoint_http_conn_pool"],
-            timeout=timeout,
-            connector_owner=False,
-        ) as session:
-
-            # create worker tasks
-            for _ in range(self.pool_size):
-                worker = _StationXMLAsyncWorker(
-                    self.request,
-                    queue,
-                    session,
-                    response,
-                    lock,
-                    prepare_callback=self._prepare_response,
-                    level=self._level,
-                )
-
-                task = self.request.loop.create_task(
-                    worker.run(req_method=req_method, **kwargs)
-                )
-                self._tasks.append(task)
-
-            await self._join_with_exception_handling(queue, response)
-
-            footer = self.STATIONXML_FOOTER.encode("utf-8")
-            await response.write(footer)
-            await response.write_eof()
-
-            self._response_sent = True
-            return response
+    async def _write_response_footer(self, response):
+        footer = self.STATIONXML_FOOTER.encode("utf-8")
+        await response.write(footer)

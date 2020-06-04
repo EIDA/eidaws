@@ -56,20 +56,6 @@ def with_exception_handling(ignore_runtime_exception=False):
                         )
                     )
                 )
-            except Exception as err:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.logger.critical(
-                    f"Local TaskWorker exception: {type(err)}"
-                )
-                self.logger.critical(
-                    "Traceback information: "
-                    + repr(
-                        traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
-                    )
-                )
-                await self.finalize()
 
         return wrapper
 
@@ -90,7 +76,6 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
     def __init__(
         self,
         request,
-        queue,
         session,
         response,
         write_lock,
@@ -98,7 +83,6 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         **kwargs,
     ):
         self.request = request
-        self._queue = queue
         self._session = session
         self._response = response
 
@@ -108,7 +92,7 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
 
-    async def run(self, req_method="GET", **kwargs):
+    async def run(self, route, query_params, req_method="GET", **req_kwargs):
         raise NotImplementedError
 
     async def _handle_error(self, error=None, **kwargs):
@@ -120,8 +104,9 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         raise WorkerError("HTTP code 413 handling not implemented.")
 
     async def finalize(self):
-        self._queue.task_done()
-
+        """
+        Template coro intented to be called when finializing a job.
+        """
 
 class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     """
@@ -136,7 +121,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     def __init__(
         self,
         request,
-        queue,
         session,
         response,
         write_lock,
@@ -146,7 +130,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     ):
         super().__init__(
             request,
-            queue,
             session,
             response,
             write_lock,
@@ -163,7 +146,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         assert self._query_format is not None, 'Undefined "query_format"'
 
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, req_method="GET", **kwargs):
+    async def run(self, route, query_params, req_method="GET", **req_kwargs):
         def route_with_single_stream(route):
             streams = set([])
 
@@ -173,54 +156,50 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             return len(streams) == 1
 
         with ThreadPoolExecutor(max_workers=1) as executor:
-            while True:
-                route, query_params = await self._queue.get()
+            assert route_with_single_stream(
+                route
+            ), "Cannot handle multiple streams within a single route."
 
-                assert route_with_single_stream(
-                    route
-                ), "Cannot handle multiple streams within a single route."
+            req_id = self.request[FED_BASE_ID + ".request_id"]
+            async with AioSpooledTemporaryFile(
+                max_size=self.config["buffer_rollover_size"],
+                prefix=str(req_id) + ".",
+                dir=self.config["tempdir"],
+                executor=executor,
+            ) as buf:
 
-                req_id = self.request[FED_BASE_ID + ".request_id"]
-                async with AioSpooledTemporaryFile(
-                    max_size=self.config["buffer_rollover_size"],
-                    prefix=str(req_id) + ".",
-                    dir=self.config["tempdir"],
-                    executor=executor,
-                ) as buf:
+                url = route.url
+                _sorted = sorted(route.stream_epochs)
+                self._stream_epochs = copy.deepcopy(_sorted)
 
-                    url = route.url
-                    _sorted = sorted(route.stream_epochs)
-                    self._stream_epochs = copy.deepcopy(_sorted)
+                await self._run(
+                    url,
+                    _sorted,
+                    query_params=query_params,
+                    req_method=req_method,
+                    buf=buf,
+                    splitting_factor=self.config["splitting_factor"],
+                    **req_kwargs,
+                )
 
-                    await self._run(
-                        url,
-                        _sorted,
-                        query_params=query_params,
-                        req_method=req_method,
-                        buf=buf,
-                        splitting_factor=self.config["splitting_factor"],
-                    )
+                if await buf.tell():
 
-                    if await buf.tell():
+                    async with self._lock:
+                        append = True
+                        if not self._response.prepared:
 
-                        async with self._lock:
-                            append = True
-                            if not self._response.prepared:
+                            if self._prepare_callback is not None:
+                                await self._prepare_callback(self._response)
+                            else:
+                                await self._response.prepare(self.request)
 
-                                if self._prepare_callback is not None:
-                                    await self._prepare_callback(
-                                        self._response
-                                    )
-                                else:
-                                    await self._response.prepare(self.request)
+                            append = False
 
-                                append = False
+                        await self._write_buffer_to_response(
+                            buf, self._response, append=append,
+                        )
 
-                            await self._write_buffer_to_response(
-                                buf, self._response, append=append,
-                            )
-
-                await self.finalize()
+            await self.finalize()
 
     async def _run(
         self,
@@ -230,7 +209,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         req_method,
         buf,
         splitting_factor,
-        **kwargs,
+        **req_kwargs,
     ):
         for se in stream_epochs:
 
@@ -241,7 +220,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
 
             req = getattr(req_handler, req_method.lower())(self._session)
             try:
-                resp = await req(**kwargs)
+                resp = await req(**req_kwargs)
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
                 self.logger.warning(
                     f"Error while executing request: error={type(err)}, "
@@ -267,6 +246,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                         splitting_factor=splitting_factor,
                         query_params=query_params,
                         req_method=req_method,
+                        req_kwargs=req_kwargs,
                         buf=buf,
                     )
                     continue
@@ -293,11 +273,13 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             "splitting_factor" in kwargs
             and "query_params" in kwargs
             and "req_method" in kwargs
+            and "req_kwargs" in kwargs
             and "buf" in kwargs
         ), "Missing kwarg."
 
         splitting_factor = kwargs["splitting_factor"]
         buf = kwargs["buf"]
+        req_kwargs = kwargs["req_kwargs"]
 
         splitted = sorted(
             _split_stream_epoch(
@@ -325,6 +307,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             req_method=kwargs["req_method"],
             buf=buf,
             splitting_factor=splitting_factor,
+            **req_kwargs,
         )
 
     async def _write_response_to_buffer(self, buf, resp):
