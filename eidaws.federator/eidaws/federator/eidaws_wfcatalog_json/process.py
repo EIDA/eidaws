@@ -203,5 +203,6 @@ class WFCatalogRequestProcessor(BaseRequestProcessor):
 
             await response.write(_JSON_ARRAY_END)
             await response.write_eof()
+            self._response_sent = True
 
             return response

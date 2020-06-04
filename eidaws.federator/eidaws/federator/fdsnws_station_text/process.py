@@ -208,4 +208,5 @@ class StationTextRequestProcessor(BaseRequestProcessor):
 
             await response.write_eof()
 
+            self._response_sent = True
             return response

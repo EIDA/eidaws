@@ -283,5 +283,6 @@ class DataselectRequestProcessor(BaseRequestProcessor):
             await self._join_with_exception_handling(queue, response)
 
             await response.write_eof()
+            self._response_sent = True
 
             return response

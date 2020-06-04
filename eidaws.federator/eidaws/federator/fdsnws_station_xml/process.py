@@ -428,4 +428,5 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
             await response.write(footer)
             await response.write_eof()
 
+            self._response_sent = True
             return response

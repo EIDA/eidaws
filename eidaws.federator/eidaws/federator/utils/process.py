@@ -34,14 +34,19 @@ def _duration_to_timedelta(*args, **kwargs):
         return None
 
 
-def cached(func):
+def cached(coro):
     """
     Method decorator providing caching facilities.
     """
     ENCODING = "gzip"
 
-    @functools.wraps(func)
+    @functools.wraps(coro)
     async def wrapper(self, *args, **kwargs):
+        async def set_cache(cache_key):
+            if self._response_sent:
+                self.logger.debug(f"Set cache (cache_key={cache_key!r}).")
+                await self.set_cache(cache_key)
+
         cache_key = self.make_cache_key(
             self.query_params, self.stream_epochs, key_prefix=type(self)
         )
@@ -69,9 +74,7 @@ def cached(func):
 
         cached, found = await self.get_cache(cache_key, decompress=decompress)
 
-        self._await_on_close.insert(
-            0, functools.partial(self.set_cache, cache_key)
-        )
+        self._await_on_close.insert(0, functools.partial(set_cache, cache_key))
 
         if found:
             resp = web.Response(
@@ -86,7 +89,7 @@ def cached(func):
 
             return resp
 
-        return await func(self, *args, **kwargs)
+        return await coro(self, *args, **kwargs)
 
     return wrapper
 
@@ -112,6 +115,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
         self._routed_urls = None
         self._tasks = []
+        self._response_sent = False
         self._await_on_close = [
             self._gc_response_code_stats,
             self._teardown_tasks,
