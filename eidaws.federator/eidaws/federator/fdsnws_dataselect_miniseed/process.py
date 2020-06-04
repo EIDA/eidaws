@@ -29,7 +29,7 @@ def _get_mseed_record_size(fd):
 
     .. note::
         Taken from `SeisComP3's fdsnws_fetch
-        <https://github.com/SeisComP3/seiscomp3/blob/master/src/trunk/apps/fdsnws/fdsnws_fetch.py>_.
+        <https://github.com/SeisComP3/seiscomp3/blob/master/src/trunk/apps/fdsnws/fdsnws_fetch.py>_`.
     """
 
     FIXED_DATA_HEADER_SIZE = 48
