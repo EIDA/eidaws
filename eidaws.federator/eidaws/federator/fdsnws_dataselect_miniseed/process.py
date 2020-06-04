@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import aiohttp
 import asyncio
 import datetime
 import errno

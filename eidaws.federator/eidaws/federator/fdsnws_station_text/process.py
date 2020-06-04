@@ -14,7 +14,6 @@ from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
 )
-from eidaws.federator.version import __version__
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 

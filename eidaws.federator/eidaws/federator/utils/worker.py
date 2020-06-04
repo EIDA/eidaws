@@ -108,6 +108,7 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         Template coro intented to be called when finializing a job.
         """
 
+
 class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     """
     Abstract base class for worker implementations providing splitting and

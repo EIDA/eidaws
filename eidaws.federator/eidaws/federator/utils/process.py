@@ -366,7 +366,6 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             self._response_sent = True
             return response
 
-
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """
         Dispatch jobs onto ``pool``.
