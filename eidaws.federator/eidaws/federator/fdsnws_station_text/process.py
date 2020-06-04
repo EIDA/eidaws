@@ -30,29 +30,26 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
     QUERY_FORMAT = FED_STATION_TEXT_FORMAT
 
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, req_method="GET", **kwargs):
+    async def run(self, route, query_params, req_method="GET", **req_kwargs):
+        req_handler = FdsnRequestHandler(
+            **route._asdict(), query_params=query_params
+        )
+        req_handler.format = self.QUERY_FORMAT
 
-        while True:
-            route, query_params = await self._queue.get()
+        req = getattr(req_handler, req_method.lower())(self._session)
 
-            req_handler = FdsnRequestHandler(
-                **route._asdict(), query_params=query_params
+        resp_status = None
+        try:
+            resp = await req(**req_kwargs)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            msg = (
+                f"Error while executing request: error={type(err)}, "
+                f"req_handler={req_handler!r}, method={req_method}"
             )
-            req_handler.format = self.QUERY_FORMAT
+            await self._handle_error(msg=msg)
+            resp_status = 503
 
-            req = getattr(req_handler, req_method.lower())(self._session)
-            try:
-                resp = await req(**kwargs)
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                msg = (
-                    f"Error while executing request: error={type(err)}, "
-                    f"url={req_handler.url}, method={req_method}"
-                )
-                await self._handle_error(msg=msg)
-
-                await self.update_cretry_budget(req_handler.url, 503)
-                await self.finalize()
-                continue
+        else:
 
             data = await self._parse_resp(resp)
 
@@ -67,8 +64,10 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
                     await self._response.write(data)
 
-            await self.update_cretry_budget(req_handler.url, resp.status)
-            await self.finalize()
+            resp_status = resp.status
+        finally:
+            if resp_status is not None:
+                await self.update_cretry_budget(req_handler.url, resp_status)
 
     async def _parse_resp(self, resp):
         msg = (
@@ -151,61 +150,11 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         header = self._HEADER_MAP[self._level]
         await response.write(header + b"\n")
 
-    async def _make_response(
-        self,
-        routes,
-        req_method="GET",
-        timeout=aiohttp.ClientTimeout(
-            connect=None, sock_connect=2, sock_read=30
-        ),
-        **kwargs,
-    ):
-        """
-        Return a federated response.
-        """
-
-        async def dispatch(queue, routes, **kwargs):
-            """
-            Dispatch jobs.
-            """
-
-            # granular request strategy
-            for route in routes:
-                self.logger.debug(f"Creating job for route: {route!r}")
-
-                job = (route, self.query_params)
-                await queue.put(job)
-
-        queue = asyncio.Queue()
-        response = self.make_stream_response()
-        lock = asyncio.Lock()
-
-        await dispatch(queue, routes)
-
-        async with aiohttp.ClientSession(
-            connector=self.request.config_dict["endpoint_http_conn_pool"],
-            timeout=timeout,
-            connector_owner=False,
-        ) as session:
-
-            # create worker tasks
-            for _ in range(self.pool_size):
-                worker = _StationTextAsyncWorker(
-                    self.request,
-                    queue,
-                    session,
-                    response,
-                    lock,
-                    prepare_callback=self._prepare_response,
-                )
-
-                task = self.request.loop.create_task(
-                    worker.run(req_method=req_method, **kwargs)
-                )
-                self._tasks.append(task)
-
-            await self._join_with_exception_handling(queue, response)
-
-            await response.write_eof()
-
-            return response
+    def _emerge_worker(self, session, response, lock):
+        return _StationTextAsyncWorker(
+            self.request,
+            session,
+            response,
+            lock,
+            prepare_callback=self._prepare_response,
+        )

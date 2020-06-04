@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import aiohttp
 import asyncio
 import datetime
 import errno
@@ -141,67 +140,20 @@ class WFCatalogRequestProcessor(BaseRequestProcessor):
             + datetime.datetime.utcnow().isoformat()
             + '.json"'
         )
-        await response.prepare(self.request)
 
+        await response.prepare(self.request)
         await response.write(_JSON_ARRAY_START)
 
-    async def _make_response(
-        self,
-        routes,
-        req_method="GET",
-        timeout=aiohttp.ClientTimeout(
-            connect=None, sock_connect=2, sock_read=30
-        ),
-        **kwargs,
-    ):
-        """
-        Return a federated response.
-        """
+    def _emerge_worker(self, session, response, lock):
+        return _WFCatalogAsyncWorker(
+            self.request,
+            session,
+            response,
+            lock,
+            endtime=self._default_endtime,
+            prepare_callback=self._prepare_response,
+            write_callback=self.dump_to_cache_buffer,
+        )
 
-        async def dispatch(queue, routes, **kwargs):
-            """
-            Dispatch jobs.
-            """
-
-            # granular request strategy
-            for route in routes:
-                self.logger.debug(f"Creating job for route: {route!r}")
-
-                job = (route, self.query_params)
-                await queue.put(job)
-
-        queue = asyncio.Queue()
-        response = self.make_stream_response()
-        lock = asyncio.Lock()
-
-        await dispatch(queue, routes)
-
-        async with aiohttp.ClientSession(
-            connector=self.request.config_dict["endpoint_http_conn_pool"],
-            timeout=timeout,
-            connector_owner=False,
-        ) as session:
-
-            for _ in range(self.pool_size):
-                worker = _WFCatalogAsyncWorker(
-                    self.request,
-                    queue,
-                    session,
-                    response,
-                    lock,
-                    endtime=self._default_endtime,
-                    prepare_callback=self._prepare_response,
-                    write_callback=self.dump_to_cache_buffer,
-                )
-
-                task = self.request.loop.create_task(
-                    worker.run(req_method=req_method, **kwargs)
-                )
-                self._tasks.append(task)
-
-            await self._join_with_exception_handling(queue, response)
-
-            await response.write(_JSON_ARRAY_END)
-            await response.write_eof()
-
-            return response
+    async def _write_response_footer(self, response):
+        await response.write(_JSON_ARRAY_END)

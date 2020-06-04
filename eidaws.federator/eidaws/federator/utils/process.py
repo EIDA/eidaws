@@ -16,6 +16,7 @@ from eidaws.federator.utils.mixin import (
     ClientRetryBudgetMixin,
     ConfigMixin,
 )
+from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
@@ -34,14 +35,19 @@ def _duration_to_timedelta(*args, **kwargs):
         return None
 
 
-def cached(func):
+def cached(coro):
     """
     Method decorator providing caching facilities.
     """
     ENCODING = "gzip"
 
-    @functools.wraps(func)
+    @functools.wraps(coro)
     async def wrapper(self, *args, **kwargs):
+        async def set_cache(cache_key):
+            if self._response_sent:
+                self.logger.debug(f"Set cache (cache_key={cache_key!r}).")
+                await self.set_cache(cache_key)
+
         cache_key = self.make_cache_key(
             self.query_params, self.stream_epochs, key_prefix=type(self)
         )
@@ -69,9 +75,7 @@ def cached(func):
 
         cached, found = await self.get_cache(cache_key, decompress=decompress)
 
-        self._await_on_close.insert(
-            0, functools.partial(self.set_cache, cache_key)
-        )
+        self._await_on_close.insert(0, functools.partial(set_cache, cache_key))
 
         if found:
             resp = web.Response(
@@ -86,7 +90,7 @@ def cached(func):
 
             return resp
 
-        return await func(self, *args, **kwargs)
+        return await coro(self, *args, **kwargs)
 
     return wrapper
 
@@ -111,10 +115,9 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         self._post = False
 
         self._routed_urls = None
-        self._tasks = []
+        self._response_sent = False
         self._await_on_close = [
             self._gc_response_code_stats,
-            self._teardown_tasks,
         ]
 
         self._logger = logging.getLogger(self.LOGGER)
@@ -310,13 +313,78 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         routes,
         req_method="GET",
         timeout=aiohttp.ClientTimeout(total=60),
-        **kwargs,
+        **req_kwargs,
     ):
         """
-        Template method to be implemented by concrete processor
-        implementations.
+        Return a federated response.
+        """
+        async with aiohttp.ClientSession(
+            connector=self.request.config_dict["endpoint_http_conn_pool"],
+            timeout=timeout,
+            connector_owner=False,
+        ) as session:
+
+            response = self.make_stream_response()
+            lock = asyncio.Lock()
+            worker = self._emerge_worker(session, response, lock)
+
+            try:
+
+                async with Pool(
+                    worker_coro=worker.run,
+                    max_workers=self.pool_size,
+                    timeout=self.config["streaming_timeout"],
+                ) as pool:
+
+                    await self._dispatch(
+                        pool, routes, req_method, **req_kwargs
+                    )
+
+            except asyncio.TimeoutError:
+                if not response.prepared:
+                    self.logger.warning(
+                        "No valid results to be federated within streaming "
+                        f"timeout: {self.config['streaming_timeout']}s"
+                    )
+                    raise FDSNHTTPError.create(
+                        413,
+                        self.request,
+                        request_submitted=self.request_submitted,
+                        service_version=__version__,
+                    )
+
+            if not response.prepared:
+                raise FDSNHTTPError.create(
+                    self.nodata,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+            await self._write_response_footer(response)
+            await response.write_eof()
+            self._response_sent = True
+            return response
+
+    async def _dispatch(self, pool, routes, req_method, **req_kwargs):
+        """
+        Dispatch jobs onto ``pool``.
+        """
+        for route in routes:
+            await pool.submit(
+                route, self.query_params, req_method=req_method, **req_kwargs,
+            )
+
+    async def _write_response_footer(self, response):
+        """
+        Template method to be implemented in case writing a response footer is
+        required.
         """
 
+    def _emerge_worker(self, session, response, lock):
+        """
+        Template method returning the processor's worker object.
+        """
         raise NotImplementedError
 
     async def finalize(self, **kwargs):
@@ -326,53 +394,6 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
         for coro in self._await_on_close:
             await coro(**kwargs)
-
-    async def _join_with_exception_handling(self, queue, response):
-        try:
-            await asyncio.wait_for(
-                queue.join(), self.config["streaming_timeout"]
-            )
-        except asyncio.TimeoutError:
-            if not response.prepared:
-                self.logger.warning(
-                    "No valid results to be federated within streaming "
-                    f"timeout: {self.config['streaming_timeout']}s"
-                )
-                raise FDSNHTTPError.create(
-                    413,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
-
-        if not response.prepared:
-            raise FDSNHTTPError.create(
-                self.nodata,
-                self.request,
-                request_submitted=self.request_submitted,
-                service_version=__version__,
-            )
-
-    async def _teardown_tasks(self, **kwargs):
-
-        self.logger.debug("Teardown worker tasks ...")
-        for task in self._tasks:
-            task.cancel()
-
-        results = await asyncio.gather(*self._tasks, return_exceptions=True)
-
-        for result in results:
-            if isinstance(result, asyncio.CancelledError):
-                continue
-
-            if isinstance(result, RuntimeError):
-                self.logger.debug(
-                    f"RuntimeError while tearing down tasks: {result}"
-                )
-            elif isinstance(result, Exception):
-                self.logger.error(
-                    f"Error while tearing down tasks: {type(result)}"
-                )
 
     async def _gc_response_code_stats(self):
 
