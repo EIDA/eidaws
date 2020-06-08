@@ -212,9 +212,9 @@ async def _on_prepare_static(request, response):
         response.headers["Content-Type"] = FED_CONTENT_TYPE_WADL
 
 
-def append_static_routes(app, routes, path, path_static):
+def append_static_routes(app, routes, path, path_static, **kwargs):
     app.on_response_prepare.append(_on_prepare_static)
-    routes.append(web.static(path, path_static))
+    routes.append(web.static(path, path_static, **kwargs))
 
 
 # ----------------------------------------------------------------------------
