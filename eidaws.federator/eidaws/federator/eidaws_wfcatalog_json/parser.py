@@ -28,7 +28,7 @@ from eidaws.utils.schema import (
 
 
 Quality = functools.partial(
-    fields.Str, validate=validate.OneOf(["D", "R", "Q", "M", "B"])
+    fields.Str, validate=validate.OneOf(["D", "R", "Q", "M"])
 )
 
 
