@@ -2,7 +2,6 @@
 
 import aiohttp
 import asyncio
-import collections
 import datetime
 import hashlib
 import io
@@ -16,7 +15,10 @@ from eidaws.federator.settings import (
     FED_STATION_XML_SERVICE_ID,
 )
 from eidaws.federator.utils.misc import _serialize_query_params
-from eidaws.federator.utils.process import BaseRequestProcessor
+from eidaws.federator.utils.process import (
+    group_routes_by,
+    BaseRequestProcessor,
+)
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
@@ -28,37 +30,6 @@ from eidaws.utils.settings import (
     STATIONXML_TAGS_STATION,
     STATIONXML_TAGS_CHANNEL,
 )
-
-
-def group_routes_by(routes, key="network"):
-    """
-    Group routes by a certain :py:class:`~eidaws.utils.sncl.Stream` keyword.
-    Combined keywords are also possible e.g. ``network.station``. When
-    combining keys the seperating character is ``.``.
-
-    :param dict routing_table: Routing table
-    :param str key: Key used for grouping.
-    """
-    SEP = "."
-
-    retval = collections.defaultdict(list)
-
-    for route in routes:
-        try:
-            _key = getattr(route.stream_epochs[0].stream, key)
-        except AttributeError:
-            if SEP in key:
-                # combined key
-                _key = SEP.join(
-                    getattr(route.stream_epochs[0].stream, k)
-                    for k in key.split(SEP)
-                )
-            else:
-                raise KeyError(f"Invalid separator. Must be {SEP!r}.")
-
-        retval[_key].append(route)
-
-    return retval
 
 
 class _StationXMLAsyncWorker(BaseAsyncWorker):
