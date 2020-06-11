@@ -27,6 +27,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 )
 from eidaws.utils.settings import FDSNWS_STATION_PATH_QUERY
 
@@ -45,10 +46,12 @@ class TestFDSNStationTextServer(
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 ):
 
-    FED_PATH_QUERY = FED_STATION_TEXT_PATH_QUERY
-    PATH_QUERY = FDSNWS_STATION_PATH_QUERY
+    FED_PATH_RESOURCE = FED_STATION_TEXT_PATH_QUERY
+    PATH_RESOURCE = FDSNWS_STATION_PATH_QUERY
+    SERVICE_ID = SERVICE_ID
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
@@ -66,10 +69,6 @@ class TestFDSNStationTextServer(
             config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
-
-    @staticmethod
-    def lookup_config(key, config_dict):
-        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -109,7 +108,8 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -120,7 +120,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -139,7 +139,7 @@ class TestFDSNStationTextServer(
             "result": "NL....2013-11-10.2013-11-11.network",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -164,7 +164,8 @@ class TestFDSNStationTextServer(
             ),
             (
                 "POST",
-                b"level=station\nformat=text\nNL HGN * * 2013-11-10 2013-11-11",
+                b"level=station\nformat=text\nNL HGN * * "
+                b"2013-11-10 2013-11-11",
             ),
         ],
     )
@@ -188,7 +189,8 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN * * "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -199,7 +201,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -218,7 +220,7 @@ class TestFDSNStationTextServer(
             "result": "NL.HGN...2013-11-10.2013-11-11.station",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -244,7 +246,8 @@ class TestFDSNStationTextServer(
             ),
             (
                 "POST",
-                b"level=channel\nformat=text\nNL HGN * BHZ 2013-11-10 2013-11-11",
+                b"level=channel\nformat=text\nNL HGN * BHZ "
+                b"2013-11-10 2013-11-11",
             ),
         ],
     )
@@ -268,7 +271,8 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -279,7 +283,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -298,7 +302,7 @@ class TestFDSNStationTextServer(
             "result": "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -351,8 +355,10 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL DBN -- BHZ "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN -- BHZ "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -366,7 +372,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -377,7 +383,7 @@ class TestFDSNStationTextServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -396,7 +402,7 @@ class TestFDSNStationTextServer(
             "result": "NL.DBN,HGN..BHZ.2013-11-10.2013-11-11.channel",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -449,10 +455,12 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/station/1/query\n"
-                            "CH HASLI -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "CH HASLI -- BHZ "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                             "\n"
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL DBN -- BHZ "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -466,7 +474,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -479,7 +487,7 @@ class TestFDSNStationTextServer(
             ],
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -498,7 +506,7 @@ class TestFDSNStationTextServer(
             "result": "CH,NL.HASLI,HGN..BHZ.2013-11-10.2013-11-11.channel",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -546,7 +554,8 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * "
+                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
                         ),
                     ),
                 )
@@ -557,7 +566,7 @@ class TestFDSNStationTextServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -576,7 +585,7 @@ class TestFDSNStationTextServer(
             "result": "NL....2013-11-10.2013-11-11.network",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),

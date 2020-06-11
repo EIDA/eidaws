@@ -27,6 +27,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 )
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
@@ -45,9 +46,11 @@ class TestFDSNDataselectServer(
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 ):
-    FED_PATH_QUERY = FED_DATASELECT_PATH_QUERY
-    PATH_QUERY = FDSNWS_DATASELECT_PATH_QUERY
+    FED_PATH_RESOURCE = FED_DATASELECT_PATH_QUERY
+    PATH_RESOURCE = FDSNWS_DATASELECT_PATH_QUERY
+    SERVICE_ID = SERVICE_ID
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
@@ -65,10 +68,6 @@ class TestFDSNDataselectServer(
             config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
-
-    @staticmethod
-    def lookup_config(key, config_dict):
-        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -107,7 +106,8 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                         ),
                     ),
                 )
@@ -118,7 +118,7 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -136,7 +136,7 @@ class TestFDSNDataselectServer(
             "result": "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -188,8 +188,10 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH DAVOX -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH DAVOX -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                         ),
                     ),
                 )
@@ -203,7 +205,7 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -213,7 +215,7 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -231,7 +233,7 @@ class TestFDSNDataselectServer(
             "result": "CH.DAVOX,HASLI..LHZ.2019-01-01.2019-01-05",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -283,10 +285,12 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.bgr.de/fdsnws/dataselect/1/query\n"
-                            "GR BFO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "GR BFO -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                             "\n"
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                         ),
                     ),
                 )
@@ -300,7 +304,7 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.bgr.de": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -310,7 +314,7 @@ class TestFDSNDataselectServer(
             ],
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -328,7 +332,7 @@ class TestFDSNDataselectServer(
             "result": "CH,GR.BFO,HASLI..LHZ.2019-01-01.2019-01-05",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -373,7 +377,8 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-10T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-10T00:00:00\n"
                         ),
                     ),
                 )
@@ -387,12 +392,12 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -402,7 +407,7 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -418,7 +423,7 @@ class TestFDSNDataselectServer(
             "result": "CH.HASLI..LHZ.2019-01-01.2019-01-10",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -463,7 +468,8 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-01T00:10:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-01T00:10:00\n"
                         ),
                     ),
                 )
@@ -477,12 +483,12 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -492,12 +498,13 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
                         body=load_data(
-                            "CH.HASLI..LHZ.2019-01-01T05:05:00.2019-01-00T00:10:00"
+                            "CH.HASLI..LHZ.2019-01-01T05:05:00."
+                            "2019-01-00T00:10:00"
                         ),
                     ),
                 ),
@@ -510,7 +517,7 @@ class TestFDSNDataselectServer(
             "result": "CH.HASLI..LHZ.2019-01-01.2019-01-01T00:10:00",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -556,7 +563,8 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-20T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-20T00:00:00\n"
                         ),
                     ),
                 )
@@ -570,17 +578,17 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -590,7 +598,7 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -598,12 +606,12 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -611,7 +619,7 @@ class TestFDSNDataselectServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -627,7 +635,7 @@ class TestFDSNDataselectServer(
             "result": "CH.HASLI..LHZ.2019-01-01.2019-01-20",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -674,7 +682,8 @@ class TestFDSNDataselectServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/dataselect/1/query\n"
-                            "CH HASLI -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "CH HASLI -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                         ),
                     ),
                 )
@@ -685,7 +694,7 @@ class TestFDSNDataselectServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -703,7 +712,7 @@ class TestFDSNDataselectServer(
             "result": "CH.HASLI..LHZ.2019-01-01.2019-01-05T00:05:45",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),

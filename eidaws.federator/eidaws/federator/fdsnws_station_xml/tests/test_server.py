@@ -29,6 +29,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 )
 from eidaws.utils.settings import (
     FDSNWS_STATION_PATH_QUERY,
@@ -76,9 +77,11 @@ class TestFDSNStationXMLServer(
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 ):
-    FED_PATH_QUERY = FED_STATION_XML_PATH_QUERY
-    PATH_QUERY = FDSNWS_STATION_PATH_QUERY
+    FED_PATH_RESOURCE = FED_STATION_XML_PATH_QUERY
+    PATH_RESOURCE = FDSNWS_STATION_PATH_QUERY
+    SERVICE_ID = SERVICE_ID
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
@@ -96,10 +99,6 @@ class TestFDSNStationXMLServer(
             config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
-
-    @staticmethod
-    def lookup_config(key, config_dict):
-        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -151,7 +150,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -170,7 +169,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -231,7 +230,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -250,7 +249,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 0)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -312,7 +311,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -331,7 +330,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 1)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -393,7 +392,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -412,7 +411,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 1)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -482,7 +481,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -493,7 +492,7 @@ class TestFDSNStationXMLServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -512,7 +511,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 1), (1, 1)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -582,7 +581,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -593,7 +592,7 @@ class TestFDSNStationXMLServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -612,7 +611,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 2)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -684,7 +683,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -697,7 +696,7 @@ class TestFDSNStationXMLServer(
             ],
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -716,7 +715,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [(1, 1)]), (1, [(1, 1)])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -776,7 +775,7 @@ class TestFDSNStationXMLServer(
         mocked_endpoints = {
             "www.orfeus-eu.org": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -795,7 +794,7 @@ class TestFDSNStationXMLServer(
             "result": [(1, [])],
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),

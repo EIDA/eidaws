@@ -5,10 +5,22 @@ import pytest
 from aiohttp import web
 
 
+class _TestServerBase:
+
+    # override within implementation
+    FED_PATH_RESOURCE = None
+    PATH_RESOURCE = None
+    SERVICE_ID = None
+
+    @classmethod
+    def lookup_config(cls, key, config_dict):
+        return config_dict["config"][cls.SERVICE_ID][key]
+
+
 class _TestRoutingMixin:
     """
     Routing specific tests for test classes providing both the properties
-    ``FED_PATH_QUERY`` and ``PATH_QUERY`` and a ``create_app`` method.
+    ``FED_PATH_RESOURCE`` and ``PATH_RESOURCE`` and a ``create_app`` method.
     """
 
     @pytest.mark.parametrize(
@@ -46,7 +58,7 @@ class _TestRoutingMixin:
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
 
         assert resp.status == 204
 
@@ -84,8 +96,9 @@ class _TestRoutingMixin:
                     web.Response(
                         status=200,
                         text=(
-                            "http://eida.ethz.ch" + self.PATH_QUERY + "\n"
-                            "CH FOO -- LHZ 2019-01-01T00:00:00 2019-01-05T00:00:00\n"
+                            "http://eida.ethz.ch" + self.PATH_RESOURCE + "\n"
+                            "CH FOO -- LHZ "
+                            "2019-01-01T00:00:00 2019-01-05T00:00:00\n"
                         ),
                     ),
                 )
@@ -94,7 +107,7 @@ class _TestRoutingMixin:
 
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
             ]
         }
 
@@ -106,7 +119,7 @@ class _TestRoutingMixin:
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
 
         assert resp.status == 204
 
@@ -162,7 +175,7 @@ class _TestRoutingMixin:
         client, _, _ = await make_federated_eida(
             self.create_app(config_dict=config_dict)
         )
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
 
         await tester(resp)
 
@@ -174,7 +187,7 @@ class _TestRoutingMixin:
         client, faked_routing, faked_endpoints = await make_federated_eida(
             self.create_app(), mocked_routing_config=mocked_routing,
         )
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
 
         await tester(resp)
 
@@ -184,7 +197,7 @@ class _TestRoutingMixin:
 class _TestKeywordParserMixin:
     """
     Keyword parser specific tests for test classes providing both the property
-    ``FED_PATH_QUERY`` and a ``create_app`` method.
+    ``FED_PATH_RESOURCE`` and a ``create_app`` method.
     """
 
     @pytest.mark.parametrize(
@@ -205,7 +218,7 @@ class _TestKeywordParserMixin:
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
 
         assert resp.status == 400
         assert (
@@ -223,7 +236,7 @@ class _TestKeywordParserMixin:
         client, _, _ = await make_federated_eida(self.create_app())
 
         data = b""
-        resp = await client.post(self.FED_PATH_QUERY, data=data)
+        resp = await client.post(self.FED_PATH_RESOURCE, data=data)
 
         assert resp.status == 400
         assert (
@@ -237,7 +250,7 @@ class _TestKeywordParserMixin:
         client, _, _ = await make_federated_eida(self.create_app())
 
         data = b"="
-        resp = await client.post(self.FED_PATH_QUERY, data=data)
+        resp = await client.post(self.FED_PATH_RESOURCE, data=data)
 
         assert resp.status == 400
         assert "ValidationError: RTFM :)." in await resp.text()
@@ -250,7 +263,7 @@ class _TestKeywordParserMixin:
 class _TestCORSMixin:
     """
     CORS related tests for test classes providing both the property
-    ``FED_PATH_QUERY`` and a ``create_app`` method.
+    ``FED_PATH_RESOURCE`` and a ``create_app`` method.
     """
 
     @pytest.mark.parametrize(
@@ -270,7 +283,7 @@ class _TestCORSMixin:
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
         resp = await getattr(client, method)(
-            self.FED_PATH_QUERY, headers={"Origin": origin}, **kwargs
+            self.FED_PATH_RESOURCE, headers={"Origin": origin}, **kwargs
         )
 
         assert resp.status == 400
@@ -290,7 +303,7 @@ class _TestCORSMixin:
         origin = "http://foo.example.com"
         headers = {"Origin": origin, "Access-Control-Request-Method": method}
 
-        resp = await client.options(self.FED_PATH_QUERY, headers=headers)
+        resp = await client.options(self.FED_PATH_RESOURCE, headers=headers)
 
         assert resp.status == 200
         assert (
@@ -309,12 +322,12 @@ class _TestCORSMixin:
         origin = "http://foo.example.com"
 
         resp = await client.options(
-            self.FED_PATH_QUERY, headers={"Origin": origin}
+            self.FED_PATH_RESOURCE, headers={"Origin": origin}
         )
         assert resp.status == 403
 
         resp = await client.options(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             headers={"Access-Control-Request-Method": method},
         )
         assert resp.status == 403
@@ -323,7 +336,7 @@ class _TestCORSMixin:
 class _TestCommonServerConfig:
     """
     Server configuration tests for test classes providing the properties
-    ``FED_PATH_QUERY`` and ``PATH_QUERY`` and both a ``create_app`` and a
+    ``FED_PATH_RESOURCE`` and ``PATH_RESOURCE`` and both a ``create_app`` and a
     ``get_config`` method.
     """
 
@@ -343,7 +356,7 @@ class _TestCommonServerConfig:
 
         assert client_max_size < len(data)
 
-        resp = await client.post(self.FED_PATH_QUERY, data=data)
+        resp = await client.post(self.FED_PATH_RESOURCE, data=data)
 
         assert resp.status == 413
 
@@ -388,8 +401,9 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHA 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHA "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:00\n"
                         ),
                     ),
                 )
@@ -397,7 +411,7 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
             ]
         }
 
@@ -409,7 +423,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 204
 
         faked_routing.assert_no_unused_routes()
@@ -456,8 +470,9 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHA 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHA "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:01\n"
                         ),
                     ),
                 )
@@ -471,7 +486,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 413
 
         faked_routing.assert_no_unused_routes()
@@ -517,10 +532,13 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHAE 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
-                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
-                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHAE "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "NET STA LOC CHAN "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:00\n"
+                            "NET STA LOC CHAZ "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:00\n"
                         ),
                     ),
                 )
@@ -528,9 +546,9 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
             ]
         }
 
@@ -542,7 +560,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 204
 
         faked_routing.assert_no_unused_routes()
@@ -589,10 +607,13 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHAE 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
-                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
-                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHAE "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "NET STA LOC CHAN "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:01\n"
+                            "NET STA LOC CHAZ "
+                            "2020-01-01T00:00:00 2020-01-02T00:00:01\n"
                         ),
                     ),
                 )
@@ -606,7 +627,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 413
 
         faked_routing.assert_no_unused_routes()
@@ -655,8 +676,9 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHAZ "
+                            "2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                         ),
                     ),
                 )
@@ -664,7 +686,7 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_QUERY, "GET", web.Response(status=204,),),
+                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
             ]
         }
 
@@ -676,7 +698,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 204
 
         faked_routing.assert_no_unused_routes()
@@ -731,9 +753,11 @@ class _TestCommonServerConfig:
                     web.Response(
                         status=200,
                         text=(
-                            "http://example.com" + self.PATH_QUERY + "\n"
-                            "NET STA LOC CHAN 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
-                            "NET STA LOC CHAZ 2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                            "http://example.com" + self.PATH_RESOURCE + "\n"
+                            "NET STA LOC CHAN "
+                            "2020-01-01T00:00:00 2020-01-03T00:00:00\n"
+                            "NET STA LOC CHAZ "
+                            "2020-01-01T00:00:00 2020-01-03T00:00:00\n"
                         ),
                     ),
                 )
@@ -747,7 +771,7 @@ class _TestCommonServerConfig:
 
         _method = method.lower()
         kwargs = {"params" if _method == "get" else "data": params_or_data}
-        resp = await getattr(client, _method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
         assert resp.status == 413
 
         faked_routing.assert_no_unused_routes()

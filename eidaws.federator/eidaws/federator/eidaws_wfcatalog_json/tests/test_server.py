@@ -29,6 +29,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 )
 from eidaws.utils.settings import EIDAWS_WFCATALOG_PATH_QUERY
 
@@ -52,9 +53,11 @@ class TestEIDAWFCatalogServer(
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
+    _TestServerBase,
 ):
-    FED_PATH_QUERY = FED_WFCATALOG_PATH_QUERY
-    PATH_QUERY = EIDAWS_WFCATALOG_PATH_QUERY
+    FED_PATH_RESOURCE = FED_WFCATALOG_PATH_QUERY
+    PATH_RESOURCE = EIDAWS_WFCATALOG_PATH_QUERY
+    SERVICE_ID = SERVICE_ID
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
@@ -72,10 +75,6 @@ class TestEIDAWFCatalogServer(
             config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
 
         return functools.partial(create_app, config_dict)
-
-    @staticmethod
-    def lookup_config(key, config_dict):
-        return config_dict["config"][SERVICE_ID][key]
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -125,7 +124,7 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -141,7 +140,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-03",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -208,7 +207,7 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -216,7 +215,7 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -232,7 +231,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHN,BHZ.2020-01-01.2020-01-03",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -301,7 +300,7 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.bgr.de": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -311,7 +310,7 @@ class TestEIDAWFCatalogServer(
             ],
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -327,7 +326,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH,GR.BFO,HASLI..BHZ.2020-01-01.2020-01-03",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -386,12 +385,12 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -399,7 +398,7 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -415,7 +414,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -474,12 +473,12 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -487,7 +486,7 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -503,7 +502,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-10",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -562,17 +561,17 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -580,7 +579,7 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -588,12 +587,12 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(status=413),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -601,7 +600,7 @@ class TestEIDAWFCatalogServer(
                     ),
                 ),
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     endpoint_request_method,
                     web.Response(
                         status=200,
@@ -617,7 +616,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-09",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -675,7 +674,7 @@ class TestEIDAWFCatalogServer(
         mocked_endpoints = {
             "eida.ethz.ch": [
                 (
-                    self.PATH_QUERY,
+                    self.PATH_RESOURCE,
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
@@ -691,7 +690,7 @@ class TestEIDAWFCatalogServer(
             "result": "CH.HASLI..BHZ.2020-01-01.2020-01-03",
         }
         await tester(
-            self.FED_PATH_QUERY,
+            self.FED_PATH_RESOURCE,
             method,
             params_or_data,
             self.create_app(config_dict=config_dict),
@@ -770,7 +769,7 @@ class TestEIDAWFCatalogServer(
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
 
         assert resp.status == 400
         assert (
