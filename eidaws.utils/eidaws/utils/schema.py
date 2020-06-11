@@ -68,14 +68,13 @@ class JSONBool(fields.Bool):
     Custom field serialializing to a JSON boolean.
     """
 
-    #: Values that will (de)serialize to `True`. If an empty set, any non-falsy
-    #  value will deserialize to `true`.
+    # Values that will (de)serialize to `True`. If an empty set, any non-falsy
+    # value will deserialize to `true`.
     truthy = set(("true", True))
-    #: Values that will (de)serialize to `False`.
+    # Values that will (de)serialize to `False`.
     falsy = set(("false", False))
 
-    def _serialize(self, value, attr, obj):
-
+    def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
             return None
         elif value in self.truthy:
@@ -85,6 +84,8 @@ class JSONBool(fields.Bool):
 
         return bool(value)
 
+    def _deserialize(self, value, attr, data, **kwargs):
+        return super()._deserialize(value.lower(), attr, data, **kwargs)
 
 FDSNWSBool = JSONBool
 
