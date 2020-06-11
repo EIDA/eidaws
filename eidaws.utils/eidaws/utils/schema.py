@@ -70,9 +70,9 @@ class JSONBool(fields.Bool):
 
     # Values that will (de)serialize to `True`. If an empty set, any non-falsy
     # value will deserialize to `true`.
-    truthy = set(("true", True))
+    truthy = {"true", True}
     # Values that will (de)serialize to `False`.
-    falsy = set(("false", False))
+    falsy = {"false", False}
 
     def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
@@ -86,6 +86,7 @@ class JSONBool(fields.Bool):
 
     def _deserialize(self, value, attr, data, **kwargs):
         return super()._deserialize(value.lower(), attr, data, **kwargs)
+
 
 FDSNWSBool = JSONBool
 
