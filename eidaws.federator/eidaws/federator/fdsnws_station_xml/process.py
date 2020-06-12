@@ -296,9 +296,7 @@ class StationXMLRequestProcessor(UnsortedResponse):
         return "application/xml"
 
     async def _prepare_response(self, response):
-        response.content_type = self.content_type
-        response.charset = self.charset
-        await response.prepare(self.request)
+        await super()._prepare_response(response)
 
         header = self.STATIONXML_HEADER.format(
             self.STATIONXML_SOURCE,

@@ -367,6 +367,14 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 route, qp, req_method=req_method, **req_kwargs,
             )
 
+    async def _prepare_response(self, response):
+        """
+        Template method preparing the response.
+        """
+        response.content_type = self.content_type
+        response.charset = self.charset
+        await response.prepare(self.request)
+
     async def _write_response_footer(self, response):
         """
         Template method to be implemented in case writing a response footer is
@@ -499,9 +507,7 @@ class UnsortedResponse(BaseRequestProcessor):
 
         def make_worker(response, session, lock):
             drain = self._create_worker_drain(
-                self.request,
-                response,
-                getattr(self, "_prepare_response", None),
+                self.request, response, self._prepare_response,
             )
             return self._create_worker(self.request, session, drain, lock=lock)
 

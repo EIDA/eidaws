@@ -138,9 +138,7 @@ class StationTextRequestProcessor(UnsortedResponse):
         return "utf-8"
 
     async def _prepare_response(self, response):
-        response.content_type = self.content_type
-        response.charset = self.charset
-        await response.prepare(self.request)
+        await super()._prepare_response(response)
 
         header = self._HEADER_MAP[self._level]
         await response.write(header + b"\n")
