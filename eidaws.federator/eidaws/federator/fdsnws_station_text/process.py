@@ -10,7 +10,7 @@ from eidaws.federator.settings import (
     FED_STATION_TEXT_SERVICE_ID,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
-from eidaws.federator.utils.process import BaseRequestProcessor
+from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
@@ -56,14 +56,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
             if data is not None:
                 async with self._lock:
-                    if not self._response.prepared:
-
-                        if self._prepare_callback is not None:
-                            await self._prepare_callback(self._response)
-                        else:
-                            await self._response.prepare(self.request)
-
-                    await self._response.write(data)
+                    await self._drain.drain(data)
 
             resp_status = resp.status
         finally:
@@ -108,7 +101,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
             return text[(text.find(b"\n") + 1) :]
 
 
-class StationTextRequestProcessor(BaseRequestProcessor):
+class StationTextRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
@@ -152,11 +145,7 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         header = self._HEADER_MAP[self._level]
         await response.write(header + b"\n")
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _StationTextAsyncWorker(
-            self.request,
-            session,
-            response,
-            lock,
-            prepare_callback=self._prepare_response,
+            request, session, drain, lock=lock, **kwargs
         )

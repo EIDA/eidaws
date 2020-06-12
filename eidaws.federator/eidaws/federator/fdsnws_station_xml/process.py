@@ -17,7 +17,7 @@ from eidaws.federator.settings import (
 from eidaws.federator.utils.misc import _serialize_query_params
 from eidaws.federator.utils.process import (
     group_routes_by,
-    BaseRequestProcessor,
+    UnsortedResponse,
 )
 from eidaws.federator.utils.worker import (
     with_exception_handling,
@@ -42,22 +42,10 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
     QUERY_FORMAT = FED_STATION_XML_FORMAT
 
     def __init__(
-        self,
-        request,
-        session,
-        response,
-        write_lock,
-        prepare_callback=None,
-        level="station",
-        **kwargs,
+        self, request, session, consumer, level="station", **kwargs,
     ):
         super().__init__(
-            request,
-            session,
-            response,
-            write_lock,
-            prepare_callback=prepare_callback,
-            **kwargs,
+            request, session, consumer, **kwargs,
         )
 
         self._level = level
@@ -92,22 +80,14 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                 self._merge_net_element(net_element, level=self._level)
 
         if self._network_elements:
-            async with self._lock:
-                if not self._response.prepared:
-
-                    if self._prepare_callback is not None:
-                        await self._prepare_callback(self._response)
-                    else:
-                        await self._response.prepare(self.request)
-
-                for (
-                    net_element,
-                    sta_elements,
-                ) in self._network_elements.values():
-                    data = self._serialize_net_element(
-                        net_element, sta_elements
-                    )
-                    await self._response.write(data)
+            for (
+                net_element,
+                sta_elements,
+            ) in self._network_elements.values():
+                serialized = self._serialize_net_element(
+                    net_element, sta_elements
+                )
+                await self._drain.drain(serialized)
 
         await self.finalize()
 
@@ -292,7 +272,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
         return hash_method(str(key_args).encode("utf-8")).digest()
 
 
-class StationXMLRequestProcessor(BaseRequestProcessor):
+class StationXMLRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
@@ -311,13 +291,6 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
     )
     STATIONXML_FOOTER = "</FDSNStationXML>"
 
-    def __init__(self, request, **kwargs):
-        super().__init__(
-            request, **kwargs,
-        )
-
-        self._level = self.query_params.get("level", "station")
-
     @property
     def content_type(self):
         return "application/xml"
@@ -335,14 +308,14 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
         header = header.encode("utf-8")
         await response.write(header)
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _StationXMLAsyncWorker(
-            self.request,
+            request,
             session,
-            response,
-            lock,
-            prepare_callback=self._prepare_response,
-            level=self._level,
+            drain,
+            lock=lock,
+            level=self.query_params.get("level", "station"),
+            *kwargs,
         )
 
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):

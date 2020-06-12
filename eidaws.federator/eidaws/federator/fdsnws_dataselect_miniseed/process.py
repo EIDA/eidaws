@@ -9,10 +9,9 @@ import struct
 from eidaws.federator.fdsnws_dataselect_miniseed.parser import DataselectSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
-    FED_DATASELECT_MINISEED_FORMAT,
     FED_DATASELECT_MINISEED_SERVICE_ID,
 )
-from eidaws.federator.utils.process import BaseRequestProcessor
+from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
     BaseSplitAlignAsyncWorker,
     WorkerError,
@@ -127,28 +126,15 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    QUERY_FORMAT = FED_DATASELECT_MINISEED_FORMAT
-
     # minimum chunk size; the chunk size must be aligned with the mseed
     # record_size
     _CHUNK_SIZE = 4096
 
     def __init__(
-        self,
-        request,
-        session,
-        response,
-        write_lock,
-        prepare_callback=None,
-        **kwargs,
+        self, request, session, drain, lock=None, **kwargs,
     ):
         super().__init__(
-            request,
-            session,
-            response,
-            write_lock,
-            prepare_callback=prepare_callback,
-            **kwargs,
+            request, session, drain, lock=lock, **kwargs,
         )
 
         self._mseed_record_size = None
@@ -202,7 +188,7 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
         self._chunk_size = self._CHUNK_SIZE
 
 
-class DataselectRequestProcessor(BaseRequestProcessor):
+class DataselectRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
     ACCESS = "open"
@@ -225,12 +211,12 @@ class DataselectRequestProcessor(BaseRequestProcessor):
         )
         await response.prepare(self.request)
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _DataselectAsyncWorker(
             self.request,
             session,
-            response,
-            lock,
+            drain,
+            lock=lock,
             endtime=self._default_endtime,
-            prepare_callback=self._prepare_response,
+            **kwargs,
         )

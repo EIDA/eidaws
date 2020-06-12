@@ -62,6 +62,44 @@ def with_exception_handling(ignore_runtime_exception=False):
     return decorator
 
 
+class Drain:
+    """
+    Abstract base class for consumer implementations.
+    """
+
+    async def drain(self, chunk):
+        raise NotImplementedError
+
+
+class ReponseDrain(Drain):
+    def __init__(self, request, response, prepare_callback=None):
+        self.request = request
+        self._response = response
+        self._prepare_callback = _callable_or_raise(prepare_callback)
+
+    @property
+    def response(self):
+        return self._response
+
+    async def drain(self, chunk):
+        if not self._response.prepared:
+
+            if self._prepare_callback is not None:
+                await self._prepare_callback(self._response)
+            else:
+                await self._response.prepare(self.request)
+
+        await self._response.write(chunk)
+
+
+class QueueDrain(Drain):
+    def __init__(self, queue):
+        self._queue = queue
+
+    async def drain(self, chunk):
+        await self._queue.put(chunk)
+
+
 class WorkerError(ErrorWithTraceback):
     """Base Worker error ({})."""
 
@@ -74,23 +112,19 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
     LOGGER = FED_BASE_ID + ".worker"
 
     def __init__(
-        self,
-        request,
-        session,
-        response,
-        write_lock,
-        prepare_callback=None,
-        **kwargs,
+        self, request, session, drain, lock=None, **kwargs,
     ):
         self.request = request
         self._session = session
-        self._response = response
-
-        self._lock = write_lock
-        self._prepare_callback = _callable_or_raise(prepare_callback)
+        self._drain = drain
+        self._lock = lock
 
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
+
+    @property
+    def query_params(self):
+        return self.request[FED_BASE_ID + ".query_params"]
 
     async def run(self, route, query_params, req_method="GET", **req_kwargs):
         raise NotImplementedError
@@ -115,36 +149,21 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     aligning facilities.
     """
 
-    QUERY_FORMAT = None
-
     _CHUNK_SIZE = 4096
 
     def __init__(
-        self,
-        request,
-        session,
-        response,
-        write_lock,
-        query_format=None,
-        prepare_callback=None,
-        **kwargs,
+        self, request, session, drain, lock=None, **kwargs,
     ):
         super().__init__(
-            request,
-            session,
-            response,
-            write_lock,
-            prepare_callback=prepare_callback,
-            **kwargs,
+            request, session, drain, lock=lock, **kwargs,
         )
 
-        self._query_format = query_format or self.QUERY_FORMAT
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
         self._chunk_size = self._CHUNK_SIZE
         self._stream_epochs = []
 
-        assert self._query_format is not None, 'Undefined "query_format"'
+        assert self._lock is not None, "Lock not assigned"
 
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, query_params, req_method="GET", **req_kwargs):
@@ -184,20 +203,12 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                 )
 
                 if await buf.tell():
-
                     async with self._lock:
-                        append = True
-                        if not self._response.prepared:
-
-                            if self._prepare_callback is not None:
-                                await self._prepare_callback(self._response)
-                            else:
-                                await self._response.prepare(self.request)
-
-                            append = False
-
-                        await self._write_buffer_to_response(
-                            buf, self._response, append=append,
+                        append = (
+                            True if self._drain.response.prepared else False
+                        )
+                        await self._write_buffer_to_drain(
+                            buf, self._drain, append=append,
                         )
 
             await self.finalize()
@@ -217,7 +228,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             req_handler = FdsnRequestHandler(
                 url=url, stream_epochs=[se], query_params=query_params
             )
-            req_handler.format = self._query_format
+            req_handler.format = self.query_params["format"]
 
             req = getattr(req_handler, req_method.lower())(self._session)
             try:
@@ -317,7 +328,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         """
         raise NotImplementedError
 
-    async def _write_buffer_to_response(self, buf, resp, append=True):
+    async def _write_buffer_to_drain(self, buf, drain, append=True):
         await buf.seek(0)
 
         while True:
@@ -326,4 +337,4 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
             if not chunk:
                 break
 
-            await resp.write(chunk)
+            await drain.drain(chunk)

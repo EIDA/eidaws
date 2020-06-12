@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import aiohttp
 import asyncio
 import collections
@@ -22,6 +20,7 @@ from eidaws.federator.utils.mixin import (
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import RoutingRequestHandler
+from eidaws.federator.utils.worker import ReponseDrain, QueueDrain
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.misc import Route
@@ -354,53 +353,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         """
         Return a federated response.
         """
-        async with aiohttp.ClientSession(
-            connector=self.request.config_dict["endpoint_http_conn_pool"],
-            timeout=timeout,
-            connector_owner=False,
-        ) as session:
-
-            response = self.make_stream_response()
-            lock = asyncio.Lock()
-            worker = self._emerge_worker(session, response, lock)
-
-            try:
-
-                async with Pool(
-                    worker_coro=worker.run,
-                    max_workers=self.pool_size,
-                    timeout=self.config["streaming_timeout"],
-                ) as pool:
-
-                    await self._dispatch(
-                        pool, routes, req_method, **req_kwargs
-                    )
-
-            except asyncio.TimeoutError:
-                if not response.prepared:
-                    self.logger.warning(
-                        "No valid results to be federated within streaming "
-                        f"timeout: {self.config['streaming_timeout']}s"
-                    )
-                    raise FDSNHTTPError.create(
-                        413,
-                        self.request,
-                        request_submitted=self.request_submitted,
-                        service_version=__version__,
-                    )
-
-            if not response.prepared:
-                raise FDSNHTTPError.create(
-                    self.nodata,
-                    self.request,
-                    request_submitted=self.request_submitted,
-                    service_version=__version__,
-                )
-
-            await self._write_response_footer(response)
-            await response.write_eof()
-            self._response_sent = True
-            return response
+        raise NotImplementedError
 
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """
@@ -420,7 +373,13 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         required.
         """
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker_drain(self, *args, **kwargs):
+        """
+        Template method returning an instance of a worker drain.
+        """
+        raise NotImplementedError
+
+    def _create_worker(self, session, drain, **kwargs):
         """
         Template method returning the processor's worker object.
         """
@@ -521,3 +480,170 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 routes.append(Route(url=url, stream_epochs=[se]))
 
         return urls, routes
+
+
+class UnsortedResponse(BaseRequestProcessor):
+    def _create_worker_drain(self, *args, **kwargs):
+        return ReponseDrain(*args, **kwargs)
+
+    async def _make_response(
+        self,
+        routes,
+        req_method="GET",
+        timeout=aiohttp.ClientTimeout(total=60),
+        **req_kwargs,
+    ):
+        """
+        Return a federated response.
+        """
+
+        def make_worker(response, session, lock):
+            drain = self._create_worker_drain(
+                self.request,
+                response,
+                getattr(self, "_prepare_response", None),
+            )
+            return self._create_worker(self.request, session, drain, lock=lock)
+
+        async with aiohttp.ClientSession(
+            connector=self.request.config_dict["endpoint_http_conn_pool"],
+            timeout=timeout,
+            connector_owner=False,
+        ) as session:
+
+            response = self.make_stream_response()
+            lock = asyncio.Lock()
+            worker = make_worker(response, session, lock)
+
+            try:
+
+                async with Pool(
+                    worker_coro=worker.run,
+                    max_workers=self.pool_size,
+                    timeout=self.config["streaming_timeout"],
+                ) as pool:
+
+                    await self._dispatch(
+                        pool, routes, req_method, **req_kwargs
+                    )
+
+            except asyncio.TimeoutError:
+                if not response.prepared:
+                    self.logger.warning(
+                        "No valid results to be federated within streaming "
+                        f"timeout: {self.config['streaming_timeout']}s"
+                    )
+                    raise FDSNHTTPError.create(
+                        413,
+                        self.request,
+                        request_submitted=self.request_submitted,
+                        service_version=__version__,
+                    )
+
+            if not response.prepared:
+                raise FDSNHTTPError.create(
+                    self.nodata,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+            await self._write_response_footer(response)
+            await response.write_eof()
+            self._response_sent = True
+            return response
+
+
+class SortedResponse(BaseRequestProcessor):
+    def _create_worker_drain(self, *args, **kwargs):
+        return QueueDrain(*args, **kwargs)
+
+    async def _make_response(
+        self,
+        routes,
+        req_method="GET",
+        timeout=aiohttp.ClientTimeout(total=60),
+        **req_kwargs,
+    ):
+        """
+        Return a federated response.
+        """
+
+        def create_response_writer(*args, **kwargs):
+            t = asyncio.create_task(self._response_writer(*args, **kwargs))
+            self._await_on_close.append(self._teardown_tasks(t))
+            return t
+
+        async with aiohttp.ClientSession(
+            connector=self.request.config_dict["endpoint_http_conn_pool"],
+            timeout=timeout,
+            connector_owner=False,
+        ) as session:
+
+            queue = asyncio.Queue()
+            response = self.make_stream_response()
+            drain = self._create_worker_drain(self.request, queue)
+            worker = self._create_worker(session, drain)
+
+            # TODO(damb): Configure timeout for dropping an expected result
+            _ = create_response_writer(queue, response)
+
+            try:
+
+                async with Pool(
+                    worker_coro=worker.run,
+                    max_workers=self.pool_size,
+                    timeout=self.config["streaming_timeout"],
+                ) as pool:
+
+                    await self._dispatch(
+                        pool, routes, req_method, **req_kwargs
+                    )
+
+            except asyncio.TimeoutError:
+                if not response.prepared:
+                    self.logger.warning(
+                        "No valid results to be federated within streaming "
+                        f"timeout: {self.config['streaming_timeout']}s"
+                    )
+                    raise FDSNHTTPError.create(
+                        413,
+                        self.request,
+                        request_submitted=self.request_submitted,
+                        service_version=__version__,
+                    )
+
+            # TODO TODO TODO
+            if not response.prepared:
+                raise FDSNHTTPError.create(
+                    self.nodata,
+                    self.request,
+                    request_submitted=self.request_submitted,
+                    service_version=__version__,
+                )
+
+            await self._write_response_footer(response)
+            await response.write_eof()
+            self._response_sent = True
+            return response
+
+        async def _response_writer(self, queue, response, timeout=30):
+            # should consider merging order etc
+            raise NotImplementedError
+
+        async def teardown_tasks(self, *tasks):
+            for t in tasks:
+                t.cancel()
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, asyncio.CancelledError):
+                    continue
+                if isinstance(result, RuntimeError):
+                    self.logger.debug(
+                        f"RuntimeError while tearing down tasks: {result}"
+                    )
+                elif isinstance(result, Exception):
+                    self.logger.error(
+                        f"Error while tearing down tasks: {type(result)}"
+                    )
