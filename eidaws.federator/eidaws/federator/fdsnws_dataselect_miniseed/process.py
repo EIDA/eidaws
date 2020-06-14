@@ -123,6 +123,7 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
     """
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = DataselectSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
@@ -192,7 +193,6 @@ class DataselectRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
     ACCESS = "open"
-    QUERY_PARAM_SERIALIZER = DataselectSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 

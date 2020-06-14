@@ -11,10 +11,8 @@ from lxml import etree
 from eidaws.federator.fdsnws_station_xml.parser import StationXMLSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
-    FED_STATION_XML_FORMAT,
     FED_STATION_XML_SERVICE_ID,
 )
-from eidaws.federator.utils.misc import _serialize_query_params
 from eidaws.federator.utils.process import (
     group_routes_by,
     UnsortedResponse,
@@ -39,31 +37,32 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
     element granularity.
     """
 
-    QUERY_FORMAT = FED_STATION_XML_FORMAT
+    SERVICE_ID = FED_STATION_XML_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = StationXMLSchema
+
+    LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
     def __init__(
-        self, request, session, consumer, level="station", **kwargs,
+        self, request, session, drain, lock=None, **kwargs,
     ):
         super().__init__(
-            request, session, consumer, **kwargs,
+            request, session, drain, lock=lock, **kwargs,
         )
-
-        self._level = level
 
         self._network_elements = {}
 
+    @property
+    def level(self):
+        return self.query_params["level"]
+
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(
-        self, route, query_params, net, req_method="GET", **req_kwargs
-    ):
+    async def run(self, route, net, req_method="GET", **req_kwargs):
 
         self.logger.debug(f"Fetching data for network: {net}")
 
         # granular request strategy
         tasks = [
-            self._fetch(
-                _route, query_params, req_method=req_method, **req_kwargs
-            )
+            self._fetch(_route, req_method=req_method, **req_kwargs)
             for _route in route
         ]
 
@@ -77,7 +76,7 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
                 continue
 
             for net_element in station_xml.iter(STATIONXML_TAGS_NETWORK):
-                self._merge_net_element(net_element, level=self._level)
+                self._merge_net_element(net_element, level=self.level)
 
         if self._network_elements:
             for (
@@ -215,11 +214,11 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
 
         return etree.tostring(net_element)
 
-    async def _fetch(self, route, query_params, req_method="GET", **kwargs):
+    async def _fetch(self, route, req_method="GET", **kwargs):
         req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=query_params
+            **route._asdict(), query_params=self.query_params
         )
-        req_handler.format = self.QUERY_FORMAT
+        req_handler.format = self.format
 
         req = getattr(req_handler, req_method.lower())(self._session)
         try:
@@ -277,7 +276,6 @@ class StationXMLRequestProcessor(UnsortedResponse):
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
-    QUERY_PARAM_SERIALIZER = StationXMLSchema
 
     STATIONXML_SOURCE = "EIDA-Federator"
     STATIONXML_SENDER = "EIDA"
@@ -308,29 +306,20 @@ class StationXMLRequestProcessor(UnsortedResponse):
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _StationXMLAsyncWorker(
-            request,
-            session,
-            drain,
-            lock=lock,
-            level=self.query_params.get("level", "station"),
-            *kwargs,
+            request, session, drain, lock=lock, *kwargs,
         )
 
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """
         Dispatch jobs onto ``pool``.
         """
-        qp = _serialize_query_params(
-            self.query_params, self.QUERY_PARAM_SERIALIZER
-        )
-
         grouped_routes = group_routes_by(routes, key="network")
         for net, _routes in grouped_routes.items():
             self.logger.debug(
                 f"Creating job: Network={net}, route={_routes!r}"
             )
             await pool.submit(
-                _routes, qp, net, req_method=req_method, **req_kwargs,
+                _routes, net, req_method=req_method, **req_kwargs,
             )
 
     async def _write_response_footer(self, response):

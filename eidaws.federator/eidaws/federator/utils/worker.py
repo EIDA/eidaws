@@ -10,10 +10,14 @@ import sys
 import traceback
 
 from concurrent.futures import ThreadPoolExecutor
+from functools import cached_property
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
-from eidaws.federator.utils.misc import make_context_logger
+from eidaws.federator.utils.misc import (
+    _serialize_query_params,
+    make_context_logger,
+)
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.utils.error import ErrorWithTraceback
@@ -109,6 +113,7 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
     Abstract base class for worker implementations.
     """
 
+    QUERY_PARAM_SERIALIZER = None
     LOGGER = FED_BASE_ID + ".worker"
 
     def __init__(
@@ -122,11 +127,21 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         self._logger = logging.getLogger(self.LOGGER)
         self.logger = make_context_logger(self._logger, self.request)
 
-    @property
+    @cached_property
     def query_params(self):
-        return self.request[FED_BASE_ID + ".query_params"]
+        """
+        Return serialized query parameters.
+        """
+        return _serialize_query_params(
+            self.request[FED_BASE_ID + ".query_params"],
+            self.QUERY_PARAM_SERIALIZER,
+        )
 
-    async def run(self, route, query_params, req_method="GET", **req_kwargs):
+    @property
+    def format(self):
+        return self.query_params["format"]
+
+    async def run(self, route, req_method="GET", **req_kwargs):
         raise NotImplementedError
 
     async def _handle_error(self, error=None, **kwargs):
@@ -166,7 +181,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         assert self._lock is not None, "Lock not assigned"
 
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, query_params, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", **req_kwargs):
         def route_with_single_stream(route):
             streams = set([])
 
@@ -195,7 +210,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                 await self._run(
                     url,
                     _sorted,
-                    query_params=query_params,
                     req_method=req_method,
                     buf=buf,
                     splitting_factor=self.config["splitting_factor"],
@@ -217,7 +231,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         self,
         url,
         stream_epochs,
-        query_params,
         req_method,
         buf,
         splitting_factor,
@@ -226,9 +239,9 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         for se in stream_epochs:
 
             req_handler = FdsnRequestHandler(
-                url=url, stream_epochs=[se], query_params=query_params
+                url=url, stream_epochs=[se], query_params=self.query_params
             )
-            req_handler.format = self.query_params["format"]
+            req_handler.format = self.format
 
             req = getattr(req_handler, req_method.lower())(self._session)
             try:
@@ -256,7 +269,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                         url,
                         se,
                         splitting_factor=splitting_factor,
-                        query_params=query_params,
                         req_method=req_method,
                         req_kwargs=req_kwargs,
                         buf=buf,
@@ -283,7 +295,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
 
         assert (
             "splitting_factor" in kwargs
-            and "query_params" in kwargs
             and "req_method" in kwargs
             and "req_kwargs" in kwargs
             and "buf" in kwargs
@@ -315,7 +326,6 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
         await self._run(
             url,
             splitted,
-            query_params=kwargs["query_params"],
             req_method=kwargs["req_method"],
             buf=buf,
             splitting_factor=splitting_factor,

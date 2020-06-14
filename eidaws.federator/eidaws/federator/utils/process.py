@@ -9,10 +9,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
-from eidaws.federator.utils.misc import (
-    _serialize_query_params,
-    make_context_logger,
-)
+from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.mixin import (
     CachingMixin,
     ClientRetryBudgetMixin,
@@ -141,7 +138,6 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     LOGGER = FED_BASE_ID + ".process"
 
     ACCESS = "any"
-    QUERY_PARAM_SERIALIZER = None
 
     def __init__(self, request, **kwargs):
         self.request = request
@@ -359,13 +355,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         """
         Dispatch jobs onto ``pool``.
         """
-        qp = _serialize_query_params(
-            self.query_params, self.QUERY_PARAM_SERIALIZER
-        )
-        for route in routes:
-            await pool.submit(
-                route, qp, req_method=req_method, **req_kwargs,
-            )
+        raise NotImplementedError
 
     async def _prepare_response(self, response):
         """
@@ -493,6 +483,15 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 class UnsortedResponse(BaseRequestProcessor):
     def _create_worker_drain(self, *args, **kwargs):
         return ReponseDrain(*args, **kwargs)
+
+    async def _dispatch(self, pool, routes, req_method, **req_kwargs):
+        """
+        Dispatch jobs onto ``pool``.
+        """
+        for route in routes:
+            await pool.submit(
+                route, req_method=req_method, **req_kwargs,
+            )
 
     async def _make_response(
         self,

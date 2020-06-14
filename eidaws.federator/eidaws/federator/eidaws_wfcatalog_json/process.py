@@ -30,6 +30,7 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
     """
 
     SERVICE_ID = FED_WFCATALOG_JSON_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = WFCatalogSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
@@ -124,7 +125,6 @@ class WFCatalogRequestProcessor(UnsortedResponse):
     SERVICE_ID = FED_WFCATALOG_JSON_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
-    QUERY_PARAM_SERIALIZER = WFCatalogSchema
 
     @property
     def content_type(self):

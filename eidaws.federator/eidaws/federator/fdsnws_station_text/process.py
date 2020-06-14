@@ -6,7 +6,6 @@ import aiohttp
 from eidaws.federator.fdsnws_station_text.parser import StationTextSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
-    FED_STATION_TEXT_FORMAT,
     FED_STATION_TEXT_SERVICE_ID,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -25,17 +24,16 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
     """
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = StationTextSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    QUERY_FORMAT = FED_STATION_TEXT_FORMAT
-
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, query_params, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", **req_kwargs):
         req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=query_params
+            **route._asdict(), query_params=self.query_params
         )
-        req_handler.format = self.QUERY_FORMAT
+        req_handler.format = self.format
 
         req = getattr(req_handler, req_method.lower())(self._session)
 
@@ -106,7 +104,6 @@ class StationTextRequestProcessor(UnsortedResponse):
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
-    QUERY_PARAM_SERIALIZER = StationTextSchema
 
     _HEADER_MAP = {
         "network": b"#Network|Description|StartTime|EndTime|TotalStations",
@@ -122,13 +119,6 @@ class StationTextRequestProcessor(UnsortedResponse):
         ),
     }
 
-    def __init__(self, request, **kwargs):
-        super().__init__(
-            request, **kwargs,
-        )
-
-        self._level = self.query_params.get("level", "station")
-
     @property
     def content_type(self):
         return "text/plain"
@@ -139,8 +129,7 @@ class StationTextRequestProcessor(UnsortedResponse):
 
     async def _prepare_response(self, response):
         await super()._prepare_response(response)
-
-        header = self._HEADER_MAP[self._level]
+        header = self._HEADER_MAP[self.query_params["level"]]
         await response.write(header + b"\n")
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
