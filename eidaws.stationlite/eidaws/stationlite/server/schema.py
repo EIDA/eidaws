@@ -105,7 +105,10 @@ class StationLiteSchema(Schema):
 
     @validates_schema
     def validate_access(self, data, **kwargs):
-        if data["access"] != "any" and data["service"] != "dataselect":
+        if data["access"] != "any" and data["service"] not in (
+            "dataselect",
+            "availability",
+        ):
             raise ValidationError(
                 "Bad Request: Invalid 'access' value {!r} for service "
                 "{!r}".format(data["access"], data["service"])
