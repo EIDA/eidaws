@@ -120,8 +120,8 @@ class StationLiteSchema(Schema):
     def validate_level(self, data, **kwargs):
         if data["level"] != "channel" and data["service"] != "station":
             raise ValidationError(
-                "Bad Request: Invalid 'level' value {!r} for service "
-                "{!r}.".format(data["level"], data["service"])
+                f"Bad Request: Invalid 'level' value {data['level']!r} "
+                f"for service {data['service']!r}."
             )
 
     @validates_schema
@@ -131,8 +131,8 @@ class StationLiteSchema(Schema):
             "availability",
         ):
             raise ValidationError(
-                "Bad Request: Invalid 'access' value {!r} for service "
-                "{!r}".format(data["access"], data["service"])
+                f"Bad Request: Invalid 'access' value {data['access']!r} "
+                f"for service {data['service']!r}"
             )
 
     class Meta:
