@@ -137,6 +137,7 @@ class StationLiteQueryResource(Resource):
                 args["service"],
                 level=args["level"],
                 access=args["access"],
+                method=args["method"],
                 minlat=args["minlatitude"],
                 maxlat=args["maxlatitude"],
                 minlon=args["minlongitude"],

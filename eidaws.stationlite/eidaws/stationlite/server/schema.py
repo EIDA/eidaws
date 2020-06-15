@@ -11,7 +11,14 @@ from marshmallow import (
     pre_load,
     ValidationError,
 )
+from webargs.fields import DelimitedList
 
+from eidaws.utils.settings import (
+    FDSNWS_QUERY_METHOD_TOKEN,
+    FDSNWS_QUERYAUTH_METHOD_TOKEN,
+    FDSNWS_EXTENT_METHOD_TOKEN,
+    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+)
 from eidaws.utils.schema import FDSNWSBool, Latitude, Longitude, NoData
 
 
@@ -46,6 +53,20 @@ class StationLiteSchema(Schema):
     level = fields.Str(
         missing="channel",
         validate=validate.OneOf(["network", "station", "channel", "response"]),
+    )
+    method = DelimitedList(
+        fields.Str(
+            validate=validate.OneOf(
+                [
+                    FDSNWS_QUERY_METHOD_TOKEN,
+                    FDSNWS_QUERYAUTH_METHOD_TOKEN,
+                    FDSNWS_EXTENT_METHOD_TOKEN,
+                    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+                ]
+            ),
+        ),
+        missing=None,
+        allow_none=True,
     )
     # geographic (rectangular spatial) options
     # XXX(damb): Default values are defined and assigned within merge_keys ()
