@@ -3,20 +3,31 @@
 Federator schema definitions for ``fdsnws-availability``.
 """
 
+import functools
+
 from marshmallow import validate, fields
 from webargs.fields import DelimitedList
 
 from eidaws.federator.utils.parser import ServiceSchema
-from eidaws.utils.schema import FDSNWSBool, NoData, NotEmptyFloat, Quality
+from eidaws.utils.schema import FDSNWSBool, NoData, NotEmptyFloat
 from eidaws.utils.settings import FDSNWS_QUERY_LIST_SEPARATOR_CHAR
 
 
-def MergeField(valid_values, **kwargs):
+Quality = functools.partial(
+    fields.Str, validate=validate.OneOf(["D", "R", "Q", "M", "*"])
+)
+
+
+def Merge(*valid_values, **kwargs):
     return DelimitedList(
         fields.Str(validate=validate.OneOf(valid_values)),
         delimiter=FDSNWS_QUERY_LIST_SEPARATOR_CHAR,
         **kwargs
     )
+
+
+def OrderBy(*valid_values, **kwargs):
+    return fields.Str(validate=validate.OneOf(valid_values), **kwargs)
 
 
 class _AvailabilitySchema(ServiceSchema):
@@ -33,21 +44,9 @@ class _AvailabilitySchema(ServiceSchema):
         missing="text",
         validate=validate.OneOf(["text", "geocsv", "json", "request"]),
     )
-    quality = Quality()
+    quality = Quality(missing="*")
     limit = fields.Int(validate=validate.Range(min=1))
     includerestricted = FDSNWSBool(missing="false")
-    orderby = fields.Str(
-        missing="nslc_time_quality_samplerate",
-        validate=validate.OneOf(
-            [
-                "nslc_time_quality_samplerate",
-                "latestupdate",
-                "latestupdate_desc",
-                "timespancount",
-                "timespancount_desc",
-            ]
-        ),
-    )
 
     class Meta:
         service = "availability"
@@ -56,14 +55,22 @@ class _AvailabilitySchema(ServiceSchema):
 
 
 class AvailabilityQuerySchema(_AvailabilitySchema):
-    merge = MergeField(["samplerate", "quality", "overlap"])
+    merge = Merge("samplerate", "quality", "overlap")
     mergegaps = NotEmptyFloat(validate=validate.Range(min=0))
-    show = fields.Str(
-        missing=None,
-        allow_none=True,
-        validate=validate.OneOf(["latestupdate"]),
+    orderby = OrderBy(
+        "nslc_time_quality_samplerate",
+        "latestupdate",
+        "latestupdate_desc",
+        missing="nslc_time_quality_samplerate",
     )
+    show = fields.Str(validate=validate.OneOf(["latestupdate"]),)
 
 
 class AvailabilityExtentSchema(_AvailabilitySchema):
-    merge = MergeField(["samplerate", "quality"])
+    merge = Merge("samplerate", "quality")
+    orderby = OrderBy(
+        "nslc_time_quality_samplerate",
+        "timespancount",
+        "timespancount_desc",
+        missing="nslc_time_quality_samplerate",
+    )
