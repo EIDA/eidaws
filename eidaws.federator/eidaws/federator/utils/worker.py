@@ -183,7 +183,7 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, req_method="GET", **req_kwargs):
         def route_with_single_stream(route):
-            streams = set([])
+            streams = set()
 
             for se in route.stream_epochs:
                 streams.add(se.id())
