@@ -139,7 +139,8 @@ and perform an inital harvesting run
 .. code::
 
   $ docker exec eidaws-stationlite \
-    /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest
+    /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest \
+     --config /etc/eidaws-stationlite/harvest_config.yml
 
 When the containers are running the service is available under
 ``http://localhost:8080`` (the internally used ``eidaws-stationlite`` routing
