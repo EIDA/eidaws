@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import logging
+import sys
+import traceback
 
 from collections import deque
 
+from eidaws.federator.settings import FED_BASE_ID
 from eidaws.utils.error import ErrorWithTraceback
 
 
 # NOTE(damb): Based on https://github.com/CaliDog/asyncpool with some minor
 # modifications.
+
+logger = logging.getLogger(FED_BASE_ID + ".pool")
 
 
 def _coroutine_or_raise(obj):
@@ -18,6 +24,7 @@ def _coroutine_or_raise(obj):
     if obj and not any(
         [asyncio.iscoroutine(obj), asyncio.iscoroutinefunction(obj)]
     ):
+
         raise ValueError(f"{obj!r} is not a coroutine.")
     return obj
 
@@ -31,6 +38,8 @@ class Pool:
     DEFAULT_NUM_WORKERS = 32
 
     QUEUE_CLS = asyncio.Queue
+
+    LOGGER = FED_BASE_ID + ".pool"
 
     def __init__(
         self, worker_coro=None, max_workers=None, timeout=None,
@@ -134,6 +143,15 @@ class Pool:
                     fut.set_exception(err)
                 self._exception = True
 
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                logger.critical(
+                    f"PoolWorker Exception: {type(err)}; Traceback information: "
+                    + repr(
+                        traceback.format_exception(
+                            exc_type, exc_value, exc_traceback
+                        )
+                    )
+                )
                 raise PoolError(err)
 
             finally:
