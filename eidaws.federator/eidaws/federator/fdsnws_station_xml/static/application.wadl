@@ -50,7 +50,6 @@
 			<method name="POST">
 				<response status="200">
 					<representation mediaType="application/xml"/>
-					<representation mediaType="text/plain"/>
 				</response>
 				<response status="204 400 401 403 404 413 414 500 503">
 					<representation mediaType="text/plain"/>
