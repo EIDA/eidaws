@@ -327,6 +327,14 @@ eidaws.federator:
   # parameters defined within the 'common' section.
   eidaws.wfcatalog.json:
     # ----
+    # Endpoint specific configuration options
+    # ----
+    # Request method used when performing endpoint requests.
+    # Allowed values: 'GET' or 'POST'
+    # Default: 'GET'
+    #
+    endpoint_request_method: 'POST'
+    # ----
     # Maximum total stream epoch duration in days before returning a HTTP 413
     # (Request too large) response.
     # Allowed values: None or int (days)
