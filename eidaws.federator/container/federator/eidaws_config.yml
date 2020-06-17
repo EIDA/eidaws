@@ -178,7 +178,7 @@ eidaws.federator:
     # Threshold in percent before endpoint requests are being dropped.
     # Default: 1.0
     #
-    client_retry_budget_threshold: 0.5
+    client_retry_budget_threshold: 2
     #
     # ----
     # TTL in seconds for response codes when performing statistics. If 0, the
