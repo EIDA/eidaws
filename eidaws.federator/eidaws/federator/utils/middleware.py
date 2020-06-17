@@ -10,6 +10,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
+from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.version import __version__
 
 
@@ -46,8 +47,9 @@ async def exception_handling_middleware(request, handler):
         )
     except Exception as err:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.critical(f"Local Exception: {type(err)}")
-        logger.critical(
+        _logger = make_context_logger(logger, request)
+        _logger.critical(f"Local Exception: {type(err)}")
+        _logger.critical(
             "Traceback information: "
             + repr(
                 traceback.format_exception(exc_type, exc_value, exc_traceback)
