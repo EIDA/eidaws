@@ -40,12 +40,9 @@ class _AvailabilitySchema(ServiceSchema):
 
     nodata = NoData()
 
-    format = fields.Str(
-        missing="text",
-        validate=validate.OneOf(["text", "geocsv", "json", "request"]),
-    )
     quality = Quality(missing="*")
-    limit = fields.Int(validate=validate.Range(min=1))
+    # TODO(damb): To be implemented.
+    # limit = fields.Int(validate=validate.Range(min=1))
     includerestricted = FDSNWSBool(missing="false")
 
     class Meta:
@@ -54,23 +51,29 @@ class _AvailabilitySchema(ServiceSchema):
         ordered = True
 
 
-class AvailabilityQuerySchema(_AvailabilitySchema):
-    merge = Merge("samplerate", "quality", "overlap")
-    mergegaps = NotEmptyFloat(validate=validate.Range(min=0))
-    orderby = OrderBy(
-        "nslc_time_quality_samplerate",
-        "latestupdate",
-        "latestupdate_desc",
-        missing="nslc_time_quality_samplerate",
-    )
-    show = fields.Str(validate=validate.OneOf(["latestupdate"]),)
+def AvailabilityQuerySchema(base_cls=_AvailabilitySchema):
+    class _AvailabilityQuerySchema(base_cls):
+        merge = Merge("samplerate", "quality", "overlap", as_string=True)
+        mergegaps = NotEmptyFloat(validate=validate.Range(min=0))
+        orderby = OrderBy(
+            "nslc_time_quality_samplerate",
+            "latestupdate",
+            "latestupdate_desc",
+            missing="nslc_time_quality_samplerate",
+        )
+        show = fields.Str(validate=validate.OneOf(["latestupdate"]),)
+
+    return _AvailabilityQuerySchema
 
 
-class AvailabilityExtentSchema(_AvailabilitySchema):
-    merge = Merge("samplerate", "quality")
-    orderby = OrderBy(
-        "nslc_time_quality_samplerate",
-        "timespancount",
-        "timespancount_desc",
-        missing="nslc_time_quality_samplerate",
-    )
+def AvailabilityExtentSchema(base_cls=_AvailabilitySchema):
+    class _AvailabilityExtentSchema(base_cls):
+        merge = Merge("samplerate", "quality", as_string=True)
+        orderby = OrderBy(
+            "nslc_time_quality_samplerate",
+            "timespancount",
+            "timespancount_desc",
+            missing="nslc_time_quality_samplerate",
+        )
+
+    return _AvailabilityExtentSchema
