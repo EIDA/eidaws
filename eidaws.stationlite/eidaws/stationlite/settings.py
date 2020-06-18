@@ -29,7 +29,7 @@ STL_HARVEST_DEFAULT_URLS_ROUTING = [
     # BGR
     "http://eida.bgr.de/eidaws/routing/1/localconfig",
     # NIEP
-    "http://eida-routing.infp.ro/eidaws/routing/1/routing.xml",
+    "http://eida-routing.infp.ro/eidaws/routing/1/localconfig",
     # KOERI
     "http://eida.koeri.boun.edu.tr/eidaws/routing/1/localconfig",
     # LMU
