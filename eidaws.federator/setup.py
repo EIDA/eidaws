@@ -23,6 +23,7 @@ _DEPS = [
     "aiofiles>=0.5.0",
     "aioredis>=1.3.1",
     "brotlipy>=0.7.0",
+    "cached-property>=1.5.1",
     "cchardet>=2.1.5",
     "eidaws.utils==0.1",
     "jsonschema>=3.2.0",

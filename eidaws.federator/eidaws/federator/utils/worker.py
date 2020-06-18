@@ -10,7 +10,7 @@ import sys
 import traceback
 
 from concurrent.futures import ThreadPoolExecutor
-from functools import cached_property
+from cached_property import cached_property
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
