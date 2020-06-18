@@ -190,26 +190,39 @@ def make_federated_eida(loop, aiohttp_client):
 
 
 @pytest.fixture(scope="session")
-def fdsnws_dataselect_content_type():
-    return "application/vnd.fdsn.mseed"
-
-
-@pytest.fixture(scope="session")
-def fdsnws_station_xml_content_type():
+def xml_content_type():
     return "application/xml"
 
 
 @pytest.fixture(scope="session")
-def fdsnws_station_text_content_type():
+def text_content_type():
     return "text/plain; charset=utf-8"
 
 
-fdsnws_error_content_type = fdsnws_station_text_content_type
+@pytest.fixture(scope="session")
+def csv_content_type():
+    return "text/csv; charset=utf-8"
 
 
 @pytest.fixture(scope="session")
-def eidaws_wfcatalog_content_type():
+def json_content_type():
     return "application/json"
+
+
+@pytest.fixture(scope="session")
+def fdsnws_dataselect_content_type():
+    return "application/vnd.fdsn.mseed"
+
+
+fdsnws_station_text_content_type = text_content_type
+fdsnws_station_xml_content_type = xml_content_type
+fdsnws_availability_text_content_type = text_content_type
+fdsnws_availability_request_content_type = text_content_type
+fdsnws_availability_json_content_type = json_content_type
+fdsnws_availability_geocsv_content_type = csv_content_type
+eidaws_wfcatalog_content_type = json_content_type
+
+fdsnws_error_content_type = text_content_type
 
 
 @pytest.fixture(scope="session")

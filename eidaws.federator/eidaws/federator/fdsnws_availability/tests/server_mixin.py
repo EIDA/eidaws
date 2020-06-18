@@ -74,7 +74,7 @@ class _TestAPIMixin:
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_QUERY, **kwargs)
+        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
 
         assert resp.status == 400
         assert f"Error 400: Bad request" in await resp.text()
