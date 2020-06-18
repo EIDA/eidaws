@@ -340,7 +340,7 @@ eidaws.federator:
     # Allowed values: None or int (days)
     # Default: None
     #
-    max_total_stream_epoch_duration: 1000
+    max_total_stream_epoch_duration: 330000
     # ----
     # In addition to the parameters mentioned in the 'common' configuration
     # section, the resource allows setting the following configuration:
