@@ -6,6 +6,7 @@ import errno
 import io
 import struct
 
+from eidaws.federator.fdsnws_dataselect_miniseed.parser import DataselectSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_DATASELECT_MINISEED_FORMAT,
@@ -205,6 +206,7 @@ class DataselectRequestProcessor(BaseRequestProcessor):
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
     ACCESS = "open"
+    QUERY_PARAM_SERIALIZER = DataselectSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
 

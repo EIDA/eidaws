@@ -2,6 +2,7 @@
 
 import aioredis
 import collections
+import inspect
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
@@ -21,6 +22,15 @@ from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
 from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
+
+
+def _serialize_query_params(query_params, serializer=None):
+    if serializer is None:
+        return query_params
+
+    if inspect.isclass(serializer):
+        serializer = serializer()
+    return serializer.dump(query_params)
 
 
 class RedisError(ErrorWithTraceback):

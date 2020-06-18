@@ -9,11 +9,13 @@ import io
 
 from lxml import etree
 
+from eidaws.federator.fdsnws_station_xml.parser import StationXMLSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_XML_FORMAT,
     FED_STATION_XML_SERVICE_ID,
 )
+from eidaws.federator.utils.misc import _serialize_query_params
 from eidaws.federator.utils.process import BaseRequestProcessor
 from eidaws.federator.utils.worker import (
     with_exception_handling,
@@ -324,6 +326,7 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
     SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
+    QUERY_PARAM_SERIALIZER = StationXMLSchema
 
     STATIONXML_SOURCE = "EIDA-Federator"
     STATIONXML_SENDER = "EIDA"
@@ -375,18 +378,17 @@ class StationXMLRequestProcessor(BaseRequestProcessor):
         """
         Dispatch jobs onto ``pool``.
         """
-        grouped_routes = group_routes_by(routes, key="network")
+        qp = _serialize_query_params(
+            self.query_params, self.QUERY_PARAM_SERIALIZER
+        )
 
+        grouped_routes = group_routes_by(routes, key="network")
         for net, _routes in grouped_routes.items():
             self.logger.debug(
                 f"Creating job: Network={net}, route={_routes!r}"
             )
             await pool.submit(
-                _routes,
-                self.query_params,
-                net,
-                req_method=req_method,
-                **req_kwargs,
+                _routes, qp, net, req_method=req_method, **req_kwargs,
             )
 
     async def _write_response_footer(self, response):

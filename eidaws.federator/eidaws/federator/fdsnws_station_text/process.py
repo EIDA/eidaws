@@ -3,6 +3,7 @@
 import asyncio
 import aiohttp
 
+from eidaws.federator.fdsnws_station_text.parser import StationTextSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_TEXT_FORMAT,
@@ -112,6 +113,7 @@ class StationTextRequestProcessor(BaseRequestProcessor):
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
+    QUERY_PARAM_SERIALIZER = StationTextSchema
 
     _HEADER_MAP = {
         "network": b"#Network|Description|StartTime|EndTime|TotalStations",

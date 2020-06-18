@@ -5,6 +5,7 @@ import datetime
 import errno
 import json
 
+from eidaws.federator.eidaws_wfcatalog_json.parser import WFCatalogSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_WFCATALOG_JSON_FORMAT,
@@ -126,6 +127,7 @@ class WFCatalogRequestProcessor(BaseRequestProcessor):
     SERVICE_ID = FED_WFCATALOG_JSON_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
+    QUERY_PARAM_SERIALIZER = WFCatalogSchema
 
     @property
     def content_type(self):
