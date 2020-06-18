@@ -3,7 +3,11 @@ import asyncio
 import collections
 import datetime
 import functools
+import heapq
 import logging
+
+from dataclasses import dataclass, field
+from typing import Any
 
 from aiohttp import web
 
@@ -139,6 +143,8 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     ACCESS = "any"
 
+    RESOURCE_METHOD = None
+
     def __init__(self, request, **kwargs):
         self.request = request
 
@@ -224,6 +230,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             self.stream_epochs,
             self.query_params,
             access=self.ACCESS,
+            method=self.RESOURCE_METHOD,
         )
 
         async with aiohttp.ClientSession(
@@ -383,13 +390,16 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         """
         raise NotImplementedError
 
-    async def finalize(self, **kwargs):
+    async def finalize(self):
         """
         Finalize the response.
         """
 
         for coro in self._await_on_close:
-            await coro(**kwargs)
+            if asyncio.iscoroutine(coro):
+                await coro
+            elif asyncio.iscoroutinefunction(coro):
+                await coro()
 
     async def _gc_response_code_stats(self):
 
@@ -426,7 +436,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         url = None
         skip_url = False
 
-        urls = set([])
+        urls = set()
         routes = []
         total_stream_duration = datetime.timedelta()
 
@@ -461,8 +471,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 # more cache hits (if eida-federator is coupled with
                 # HTTP caching proxy).
                 se = StreamEpoch.from_snclline(
-                    line,
-                    default_endtime=(self._default_endtime if post else None),
+                    line, default_endtime=default_endtime if post else None,
                 )
 
                 stream_duration = se.duration
@@ -560,6 +569,17 @@ class UnsortedResponse(BaseRequestProcessor):
 
 
 class SortedResponse(BaseRequestProcessor):
+    @dataclass(order=True)
+    class PrioritizedItem:
+        priority: int
+        item: Any = field(compare=False)
+
+    def __init__(self, request, **kwargs):
+        super().__init__(request, **kwargs)
+
+        self._current_priority = 0
+        self._buf = []  # heap
+
     def _create_worker_drain(self, *args, **kwargs):
         return QueueDrain(*args, **kwargs)
 
@@ -574,8 +594,10 @@ class SortedResponse(BaseRequestProcessor):
         Return a federated response.
         """
 
-        def create_response_writer(*args, **kwargs):
-            t = asyncio.create_task(self._response_writer(*args, **kwargs))
+        def create_result_processor(*args, **kwargs):
+            t = self.request.loop.create_task(
+                self._process_results(*args, **kwargs)
+            )
             self._await_on_close.append(self._teardown_tasks(t))
             return t
 
@@ -585,13 +607,13 @@ class SortedResponse(BaseRequestProcessor):
             connector_owner=False,
         ) as session:
 
-            queue = asyncio.Queue()
+            result_queue = asyncio.Queue()
             response = self.make_stream_response()
-            drain = self._create_worker_drain(self.request, queue)
-            worker = self._create_worker(session, drain)
+            drain = self._create_worker_drain(result_queue)
+            worker = self._create_worker(self.request, session, drain)
 
             # TODO(damb): Configure timeout for dropping an expected result
-            _ = create_response_writer(queue, response)
+            _ = create_result_processor(result_queue, response)
 
             try:
 
@@ -618,7 +640,10 @@ class SortedResponse(BaseRequestProcessor):
                         service_version=__version__,
                     )
 
-            # TODO TODO TODO
+            # finish processing if previously no streaming_timeout was raised
+            await result_queue.join()
+            await self._write_buffered(response, append=response.prepared)
+
             if not response.prepared:
                 raise FDSNHTTPError.create(
                     self.nodata,
@@ -632,23 +657,90 @@ class SortedResponse(BaseRequestProcessor):
             self._response_sent = True
             return response
 
-        async def _response_writer(self, queue, response, timeout=30):
-            # should consider merging order etc
-            raise NotImplementedError
+    async def _process_results(self, queue, response, timeout=30):
+        """
+        Template method consuming results from a ``queue`` in order to
+        write them to a ``response``.
 
-        async def teardown_tasks(self, *tasks):
-            for t in tasks:
-                t.cancel()
+        :param queue: Queue results are consumed from
+        :param response: Response instance results are written to
+        :param float timeout: Timeout in seconds an expected result is
+            dropped.
+        """
+        # TODO(damb): Implement timeout in order to drop an expected result
+        while True:
+            result_received = False
+            try:
+                priority, result = await asyncio.wait_for(queue.get(), 0.1)
+                result_received = True
+                self.logger.debug(
+                    f"Processing result (priority={priority}) ..."
+                )
 
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for result in results:
-                if isinstance(result, asyncio.CancelledError):
+                if self._current_priority < priority:
+                    item = self.PrioritizedItem(priority, result)
+                    heapq.heappush(self._buf, item)
                     continue
-                if isinstance(result, RuntimeError):
-                    self.logger.debug(
-                        f"RuntimeError while tearing down tasks: {result}"
-                    )
-                elif isinstance(result, Exception):
-                    self.logger.error(
-                        f"Error while tearing down tasks: {type(result)}"
-                    )
+                elif self._current_priority > priority:
+                    continue
+                elif self._current_priority == priority and not result:
+                    self._current_priority += 1
+                    continue
+
+                if not response.prepared:
+                    await self._prepare_response(response)
+                else:
+                    await self._write_separator(response)
+
+                await response.write(result)
+
+                self._current_priority += 1
+
+            except asyncio.TimeoutError:
+                pass
+            finally:
+                if result_received:
+                    queue.task_done()
+
+            await self._write_buffered(response, append=response.prepared)
+
+    async def _write_separator(self, response):
+        """
+        Template method if a chunk separator is required.
+        """
+
+    async def _write_buffered(self, response, append=True):
+        try:
+            while self._current_priority == min(self._buf):
+                buffered = heapq.heappop(self._buf)
+                if buffered.item:
+                    if append:
+                        await self._write_separator(response, append)
+                    else:
+                        await self._prepare_response(response)
+
+                    await response.write(buffered.item)
+
+                self._current_priority += 1
+        except ValueError:
+            pass
+
+    async def _teardown_tasks(self, *tasks):
+        self.logger.debug("Teardown background tasks ...")
+
+        for t in tasks:
+            t.cancel()
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, asyncio.CancelledError):
+                continue
+            if isinstance(result, RuntimeError):
+                self.logger.debug(
+                    f"RuntimeError while tearing down tasks: {result}"
+                )
+            elif isinstance(result, Exception):
+                print(result)
+                self.logger.error(
+                    f"Error while tearing down tasks: {type(result)}"
+                )

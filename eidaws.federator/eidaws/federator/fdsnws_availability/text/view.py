@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from eidaws.federator.settings import FED_AVAILABILITY_TEXT_SERVICE_ID
-from eidaws.federator.fdsnws_availability.parser import (
+from eidaws.federator.fdsnws_availability.text.parser import (
     AvailabilityExtentSchema,
     AvailabilityQuerySchema,
 )
