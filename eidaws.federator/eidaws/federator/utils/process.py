@@ -294,7 +294,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             if isinstance(err, asyncio.TimeoutError):
                 msg = f"TimeoutError: {type(err)}"
             else:
-                msg = str(err)
+                msg = f"{type(err)}: {err}"
 
             msg = f"Error while routing: {msg}"
             self.logger.error(msg)
