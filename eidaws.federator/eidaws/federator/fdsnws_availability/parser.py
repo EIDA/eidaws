@@ -55,12 +55,12 @@ def AvailabilityQuerySchema(base_cls=_AvailabilitySchema):
     class _AvailabilityQuerySchema(base_cls):
         merge = Merge("samplerate", "quality", "overlap", as_string=True)
         mergegaps = NotEmptyFloat(validate=validate.Range(min=0))
-        orderby = OrderBy(
-            "nslc_time_quality_samplerate",
-            "latestupdate",
-            "latestupdate_desc",
-            missing="nslc_time_quality_samplerate",
-        )
+        # orderby = OrderBy(
+        #     "nslc_time_quality_samplerate",
+        #     "latestupdate",
+        #     "latestupdate_desc",
+        #     missing="nslc_time_quality_samplerate",
+        # )
         show = fields.Str(validate=validate.OneOf(["latestupdate"]),)
 
     return _AvailabilityQuerySchema
@@ -69,11 +69,13 @@ def AvailabilityQuerySchema(base_cls=_AvailabilitySchema):
 def AvailabilityExtentSchema(base_cls=_AvailabilitySchema):
     class _AvailabilityExtentSchema(base_cls):
         merge = Merge("samplerate", "quality", as_string=True)
-        orderby = OrderBy(
-            "nslc_time_quality_samplerate",
-            "timespancount",
-            "timespancount_desc",
-            missing="nslc_time_quality_samplerate",
-        )
+        # orderby = OrderBy(
+        #     "nslc_time_quality_samplerate",
+        #     "latestupdate",
+        #     "latestupdate_desc",
+        #     "timespancount",
+        #     "timespancount_desc",
+        #     missing="nslc_time_quality_samplerate",
+        # )
 
     return _AvailabilityExtentSchema
