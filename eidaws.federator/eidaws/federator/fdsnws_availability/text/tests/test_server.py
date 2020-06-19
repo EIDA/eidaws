@@ -78,21 +78,6 @@ class TestFDSNAvailabilityQueryServer(
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
 
-    @staticmethod
-    def get_config(**kwargs):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
-        config_dict.update(kwargs)
-
-        return get_config(SERVICE_ID, defaults=config_dict)
-
-    @classmethod
-    def create_app(cls, config_dict=None):
-
-        if config_dict is None:
-            config_dict = cls.get_config(**cls._DEFAULT_SERVER_CONFIG)
-
-        return functools.partial(create_app, config_dict)
-
     @pytest.mark.parametrize(
         "method,params_or_data",
         [
@@ -175,7 +160,9 @@ class TestFDSNAvailabilityQueryServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data("FR.ZELS.00.LHZ.2019-01-01.2020-01-01"),
+                        body=load_data(
+                            "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.query"
+                        ),
                     ),
                 ),
             ]
@@ -184,7 +171,7 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01",
+            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.query",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -255,6 +242,7 @@ class TestFDSNAvailabilityQueryServer(
                         status=200,
                         body=load_data(
                             "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_samplerate"
+                            ".query"
                         ),
                     ),
                 ),
@@ -264,7 +252,10 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_samplerate",
+            "result": (
+                "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_samplerate"
+                ".query"
+            ),
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -332,6 +323,7 @@ class TestFDSNAvailabilityQueryServer(
                         status=200,
                         body=load_data(
                             "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_quality"
+                            ".query"
                         ),
                     ),
                 ),
@@ -341,7 +333,9 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_quality",
+            "result": (
+                "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.merge_quality" ".query"
+            ),
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -415,7 +409,7 @@ class TestFDSNAvailabilityQueryServer(
                         status=200,
                         body=load_data(
                             "FR.ZELS.00.LHZ.2019-01-01.2020-01-01."
-                            "merge_samplerate_quality"
+                            "merge_samplerate_quality.query"
                         ),
                     ),
                 ),
@@ -427,7 +421,7 @@ class TestFDSNAvailabilityQueryServer(
             "content_type": fdsnws_availability_text_content_type,
             "result": (
                 "FR.ZELS.00.LHZ.2019-01-01.2020-01-01."
-                "merge_samplerate_quality"
+                "merge_samplerate_quality.query"
             ),
         }
         await tester(
@@ -499,6 +493,7 @@ class TestFDSNAvailabilityQueryServer(
                         status=200,
                         body=load_data(
                             "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.mergegaps_10"
+                            ".query"
                         ),
                     ),
                 ),
@@ -508,7 +503,9 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.mergegaps_10",
+            "result": (
+                "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.mergegaps_10" ".query"
+            ),
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -581,7 +578,9 @@ class TestFDSNAvailabilityQueryServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data("FR.ZELS.00.HHZ.2019-01-01.2020-01-01"),
+                        body=load_data(
+                            "FR.ZELS.00.HHZ.2019-01-01.2020-01-01" ".query"
+                        ),
                     ),
                 ),
                 (
@@ -589,7 +588,9 @@ class TestFDSNAvailabilityQueryServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data("FR.ZELS.00.LHZ.2019-01-01.2020-01-01"),
+                        body=load_data(
+                            "FR.ZELS.00.LHZ.2019-01-01.2020-01-01" ".query"
+                        ),
                     ),
                 ),
             ]
@@ -598,7 +599,7 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "FR.ZELS.00.HHZ,LHZ.2019-01-01.2020-01-01",
+            "result": "FR.ZELS.00.HHZ,LHZ.2019-01-01.2020-01-01.query",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -609,7 +610,6 @@ class TestFDSNAvailabilityQueryServer(
             mocked_endpoints,
             expected,
         )
-
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -664,7 +664,7 @@ class TestFDSNAvailabilityQueryServer(
             ]
         }
 
-        config_dict = server_config(self.get_config)
+        config_dict = server_config(self.get_config, **{"pool_size": 2})
         mocked_endpoints = {
             "ws.resif.fr": [
                 (
@@ -672,7 +672,9 @@ class TestFDSNAvailabilityQueryServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data("CL.MALA.00.HHZ.2019-01-01.2020-01-01"),
+                        body=load_data(
+                            "CL.MALA.00.HHZ.2019-01-01.2020-01-01" ".query"
+                        ),
                     ),
                 ),
                 (
@@ -680,7 +682,9 @@ class TestFDSNAvailabilityQueryServer(
                     self.lookup_config("endpoint_request_method", config_dict),
                     web.Response(
                         status=200,
-                        body=load_data("FR.ZELS.00.HHZ.2019-01-01.2020-01-01"),
+                        body=load_data(
+                            "FR.ZELS.00.HHZ.2019-01-01.2020-01-01" ".query"
+                        ),
                     ),
                 ),
             ]
@@ -689,7 +693,7 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "CL,FR.ZELS,MALA.00.HHZ.2019-01-01.2020-01-01",
+            "result": "CL,FR.ZELS,MALA.00.HHZ.2019-01-01.2020-01-01.query",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -700,9 +704,87 @@ class TestFDSNAvailabilityQueryServer(
             mocked_endpoints,
             expected,
         )
-# TODO TODO TODO
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "FR",
+                    "sta": "ZELS",
+                    "loc": "00",
+                    "cha": "LHZ",
+                    "start": "2019-01-01",
+                    "end": "2020-01-01",
+                },
+            ),
+            ("POST", b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",),
+        ],
+    )
+    async def test_cached(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_availability_text_content_type,
+        load_data,
+        cache_config,
+        method,
+        params_or_data,
+    ):
+
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://ws.resif.fr/fdsnws/availability/1/query\n"
+                            "FR ZELS 00 LHZ "
+                            "2019-01-01T00:00:00 2020-01-01T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config, **cache_config)
+        mocked_endpoints = {
+            "ws.resif.fr": [
+                (
+                    self.PATH_RESOURCE,
+                    self.lookup_config("endpoint_request_method", config_dict),
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.query"
+                        ),
+                    ),
+                ),
+            ]
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_availability_text_content_type,
+            "result": "FR.ZELS.00.LHZ.2019-01-01.2020-01-01.query",
+        }
+        await tester(
+            self.FED_PATH_RESOURCE,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+            test_cached=True,
+        )
+
+
 # class TestFDSNAvailabilityExtentServer(
-#     _TestCommonServerConfig,
 #     _TestCORSMixin,
 #     _TestKeywordParserMixin,
 #     _TestRoutingMixin,
