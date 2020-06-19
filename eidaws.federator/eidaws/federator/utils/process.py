@@ -395,11 +395,18 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         Finalize the response.
         """
 
-        for coro in self._await_on_close:
-            if asyncio.iscoroutine(coro):
-                await coro
-            elif asyncio.iscoroutinefunction(coro):
-                await coro()
+        for coro_or_func in self._await_on_close:
+            if asyncio.iscoroutine(coro_or_func):
+                await coro_or_func
+            elif asyncio.iscoroutinefunction(coro_or_func) or (
+                isinstance(coro_or_func, functools.partial)
+                and asyncio.iscoroutinefunction(coro_or_func.func)
+            ):
+                await coro_or_func()
+            elif callable(coro_or_func):
+                coro_or_func()
+            else:
+                raise TypeError('Unknown type: {type(coro_or_func)}')
 
     async def _gc_response_code_stats(self):
 
