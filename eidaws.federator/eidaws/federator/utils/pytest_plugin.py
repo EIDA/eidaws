@@ -242,18 +242,18 @@ def load_data(request):
 
 @pytest.fixture(
     params=[
-        {"pool_size": 1, "endpoint_request_method": "GET"},
-        {"pool_size": 1, "endpoint_request_method": "POST"},
+        {"endpoint_request_method": "GET"},
+        {"endpoint_request_method": "POST"},
     ],
     ids=["req_method=GET", "req_method=POST"],
 )
 def server_config(request):
-    def _get_config(config_factory, **kwargs):
+    def _server_config(config_factory, **kwargs):
         kwargs.update(request.param)
         config = config_factory(**kwargs)
         return config
 
-    return _get_config
+    return _server_config
 
 
 @pytest.fixture(
