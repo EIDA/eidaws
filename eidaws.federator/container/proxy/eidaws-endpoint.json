@@ -49,5 +49,10 @@
     {
         "fqdn": "eida.geo.uib.no",
         "proxy_netloc": "127.0.0.1:44010"
+    },
+    {
+        "fqdn": "ws.icgc.cat",
+        "proxy_netloc": "127.0.0.1:44011",
+        "connection_limit": 10
     }
 ]

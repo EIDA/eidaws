@@ -38,6 +38,8 @@ STL_HARVEST_DEFAULT_URLS_ROUTING = [
     "http://eida.gein.noa.gr/eidaws/routing/1/localconfig",
     # UIB
     "http://eida.geo.uib.no/eidaws/routing.xml",
+    # ICGC
+    "http://ws.icgc.cat/eidaws/routing/1/localconfig",
 ]
 
 STL_HARVEST_DEFAULT_URLS_ROUTING_VNET = STL_HARVEST_DEFAULT_URLS_ROUTING

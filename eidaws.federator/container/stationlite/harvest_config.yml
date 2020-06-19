@@ -33,6 +33,8 @@ eidaws.stationlite.harvest:
     - http://eida.gein.noa.gr/eidaws/routing/1/localconfig
     # UIB
     - http://eida.geo.uib.no/eidaws/routing.xml
+    # ICGC
+    - http://ws.icgc.cat/eidaws/routing/1/localconfig
   #
   # ----
   # List of service resources being harvested.
