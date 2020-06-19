@@ -183,7 +183,7 @@ class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
-                    raise err
+                    self.logger.warning(str(err))
                 else:
                     # align chunk_size with mseed record_size
                     self._chunk_size = max(
