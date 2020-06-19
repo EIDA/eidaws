@@ -73,9 +73,10 @@ class AvailabilityRequestProcessor(_AvailabilityRequestProcessor):
         header.append(b"Latest".rjust(25))
         if self.RESOURCE_METHOD == FDSNWS_QUERY_METHOD_TOKEN:
             if self.query_params.get("show") == "latestupdate":
-                header.append(b"Updated")
+                header.append(b"Updated".rjust(28))
         elif self.RESOURCE_METHOD == FDSNWS_EXTENT_METHOD_TOKEN:
-            header.append(b"TimeSpans")
+            header.append(b"Updated".rjust(28))
+            header.append(b"TimeSpans".rjust(29))
             header.append(b"Restriction")
         return b" ".join(header)
 
