@@ -106,7 +106,7 @@ class FakeServer:
             finally:
                 return route, response
 
-        return route, None
+        return None, None
 
 
 @pytest.fixture
