@@ -37,7 +37,6 @@ class _AvailablityAsyncWorker(AvailabilityAsyncWorker):
 
     def _dump(self, obj):
         _sorted = sorted(obj)
-        print(_sorted)
         return b"".join(obj[i] for i in _sorted)
 
 
