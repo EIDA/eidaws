@@ -618,7 +618,7 @@ class TestFDSNAvailabilityQueryServer(
                 "GET",
                 {
                     "net": "CL,FR",
-                    "sta": "ZELS,MALA",
+                    "sta": "MALA,ZELS",
                     "loc": "00",
                     "cha": "HHZ",
                     "start": "2019-01-01",
@@ -693,7 +693,7 @@ class TestFDSNAvailabilityQueryServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "CL,FR.ZELS,MALA.00.HHZ.2019-01-01.2020-01-01.query",
+            "result": "CL,FR.MALA,ZELS.00.HHZ.2019-01-01.2020-01-01.query",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -1166,7 +1166,7 @@ class TestFDSNAvailabilityExtentServer(
                 "GET",
                 {
                     "net": "CL,FR",
-                    "sta": "ZELS,MALA",
+                    "sta": "MALA,ZELS",
                     "loc": "00",
                     "cha": "HHZ",
                     "start": "2019-01-01",
@@ -1241,7 +1241,7 @@ class TestFDSNAvailabilityExtentServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_availability_text_content_type,
-            "result": "CL,FR.ZELS,MALA.00.HHZ.2019-01-01.2020-01-01.extent",
+            "result": "CL,FR.MALA,ZELS.00.HHZ.2019-01-01.2020-01-01.extent",
         }
         await tester(
             self.FED_PATH_RESOURCE,
