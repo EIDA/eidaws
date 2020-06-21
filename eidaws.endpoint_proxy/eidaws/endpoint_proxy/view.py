@@ -49,7 +49,10 @@ class RedirectView(web.View):
             f'{self.config["hostname"]}:{self.config["port"]}',
         ):
             raise web.HTTPBadRequest(
-                text="ERROR: Recursion error. Invalid 'Host' header specified.\n"
+                text=(
+                    "ERROR: Recursion error. "
+                    "Invalid 'Host' header specified.\n"
+                )
             )
 
         # TODO(damb): Modify request headers if required
@@ -81,7 +84,14 @@ class RedirectView(web.View):
                     await proxied_response.write_eof()
 
                 return proxied_response
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except asyncio.TimeoutError as err:
+            self.logger.warning(
+                f"Error while executing request: error={type(err)}, "
+                f"url={request.url!r}, method={request.method!r}"
+            )
+            raise web.HTTPGatewayTimeout(text=f"ERROR: {str(type(err))}\n")
+
+        except aiohttp.ClientError as err:
             self.logger.warning(
                 f"Error while executing request: error={type(err)}, "
                 f"url={request.url!r}, method={request.method!r}"
