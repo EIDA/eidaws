@@ -25,7 +25,6 @@ async def exception_handling_middleware(request, handler):
         web.HTTPServiceUnavailable,
         asyncio.CancelledError,
     ) as err:
-        print(err)
         raise err
     except Exception as err:
         exc_type, exc_value, exc_traceback = sys.exc_info()

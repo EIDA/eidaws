@@ -84,6 +84,8 @@ class RedirectView(web.View):
                     await proxied_response.write_eof()
 
                 return proxied_response
+        except ConnectionResetError as err:
+            self.logger.debug(f"Connection reset by peer: {err}")
         except asyncio.TimeoutError as err:
             self.logger.warning(
                 f"Error while executing request: error={type(err)}, "
