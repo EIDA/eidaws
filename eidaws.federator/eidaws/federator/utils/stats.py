@@ -114,7 +114,7 @@ class ResponseCodeTimeSeries(RedisCollection):
     _DEFAULT_TTL = 3600  # seconds
     _DEFAULT_WINDOW_SIZE = 10000
 
-    ERROR_CODES = (500, 503)
+    ERROR_CODES = (500, 503, 504)
 
     def __init__(self, redis, key=None, **kwargs):
         super().__init__(redis, key, **kwargs)
