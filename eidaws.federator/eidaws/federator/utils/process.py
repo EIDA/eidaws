@@ -47,7 +47,7 @@ def cached(coro):
     @functools.wraps(coro)
     async def wrapper(self, *args, **kwargs):
         async def set_cache(cache_key):
-            if self._response_sent:
+            if self._response_sent and self.cache_buffer:
                 self.logger.debug(f"Set cache (cache_key={cache_key!r}).")
                 await self.set_cache(cache_key)
 

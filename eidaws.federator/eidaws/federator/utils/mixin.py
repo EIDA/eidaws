@@ -105,9 +105,6 @@ class CachingMixin:
             self.cache_buffer.append(data)
 
     async def set_cache(self, cache_key, timeout=None, **kwargs):
-        if not self.cache_buffer:
-            return
-
         await self.cache.set(
             cache_key, b"".join(self.cache_buffer), timeout=timeout, **kwargs
         )
