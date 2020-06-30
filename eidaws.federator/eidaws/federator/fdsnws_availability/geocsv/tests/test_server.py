@@ -128,30 +128,3 @@ class TestFDSNAvailabilityExtentServer(
     SERVICE_ID = SERVICE_ID
 
     _DEFAULT_SERVER_CONFIG = {"pool_size": 1}
-
-    @pytest.mark.parametrize(
-        "method,params_or_data",
-        [
-            ("GET", {"merge": "overlap"}),
-            ("POST", b"merge=overlap\nNET STA LOC CHA 2020-01-01 2020-01-02"),
-        ],
-    )
-    async def test_bad_request_extent(
-        self,
-        make_federated_eida,
-        fdsnws_error_content_type,
-        method,
-        params_or_data,
-    ):
-        client, _, _ = await make_federated_eida(self.create_app())
-
-        method = method.lower()
-        kwargs = {"params" if method == "get" else "data": params_or_data}
-        resp = await getattr(client, method)(self.FED_PATH_RESOURCE, **kwargs)
-
-        assert resp.status == 400
-        assert "Error 400: Bad request" in await resp.text()
-        assert (
-            "Content-Type" in resp.headers
-            and resp.headers["Content-Type"] == fdsnws_error_content_type
-        )
