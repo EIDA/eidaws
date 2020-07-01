@@ -2,7 +2,7 @@
 <application xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <doc title="EIDA Web Service WFCATALOG service 1.0.018"/>
   <grammars/>
-  <resources base="/eidaws/wfcatalog/1">
+  <resources base="/eidaws/wfcatalog/json/1">
     <resource path="/">
       <method name="GET" id="root">
         <response>
@@ -26,6 +26,7 @@
               <option value="R"/>
               <option value="Q"/>
               <option value="M"/>
+              <option value="B"/>
             </param>
 
             <param name="format" style="query" default="json" type="xsd:string">

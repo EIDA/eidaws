@@ -1,6 +1,6 @@
 <application xmlns="http://wadl.dev.java.net/2009/02"
 		xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<resources base="/fdsnws/1/station">
+	<resources base="/eidaws/station/xml/1">
 		<resource path="query">
 			<method name="GET">
 				<request>
@@ -35,7 +35,6 @@
 					</param>
 					<param name="format" style="query" type="xsd:string" default="xml">
 						<option value="xml"/>
-						<option value="text"/>
 					</param>
 
 					<!-- not implemented -->
@@ -43,7 +42,6 @@
 				</request>
 				<response status="200">
 					<representation mediaType="application/xml"/>
-					<representation mediaType="text/plain"/>
 				</response>
 				<response status="204 400 401 403 404 413 414 500 503">
 					<representation mediaType="text/plain"/>
@@ -52,7 +50,6 @@
 			<method name="POST">
 				<response status="200">
 					<representation mediaType="application/xml"/>
-					<representation mediaType="text/plain"/>
 				</response>
 				<response status="204 400 401 403 404 413 414 500 503">
 					<representation mediaType="text/plain"/>
