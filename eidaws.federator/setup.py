@@ -34,16 +34,8 @@ _DEPS = [
 _ENTRY_POINTS = {
     "console_scripts": [
         (
-            "eida-federator-station-text="
-            "eidaws.federator.fdsnws_station_text.app:main"
-        ),
-        (
-            "eida-federator-station-xml="
-            "eidaws.federator.fdsnws_station_xml.app:main"
-        ),
-        (
-            "eida-federator-dataselect-miniseed="
-            "eidaws.federator.fdsnws_dataselect_miniseed.app:main"
+            "eida-federator-wfcatalog-json="
+            "eidaws.federator.eidaws_wfcatalog.json.app:main"
         ),
         (
             "eida-federator-availability-geocsv="
@@ -62,8 +54,16 @@ _ENTRY_POINTS = {
             "eidaws.federator.fdsnws_availability.text.app:main"
         ),
         (
-            "eida-federator-wfcatalog-json="
-            "eidaws.federator.eidaws_wfcatalog_json.app:main"
+            "eida-federator-dataselect-miniseed="
+            "eidaws.federator.fdsnws_dataselect.miniseed.app:main"
+        ),
+        (
+            "eida-federator-station-text="
+            "eidaws.federator.fdsnws_station.text.app:main"
+        ),
+        (
+            "eida-federator-station-xml="
+            "eidaws.federator.fdsnws_station.xml.app:main"
         ),
     ]
 }
