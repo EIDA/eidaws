@@ -8,9 +8,9 @@ import pytest
 
 from aiohttp import web
 
-from eidaws.federator.eidaws_wfcatalog_json import create_app, SERVICE_ID
-from eidaws.federator.eidaws_wfcatalog_json.app import DEFAULT_CONFIG
-from eidaws.federator.eidaws_wfcatalog_json.route import (
+from eidaws.federator.eidaws_wfcatalog.json import create_app, SERVICE_ID
+from eidaws.federator.eidaws_wfcatalog.json.app import DEFAULT_CONFIG
+from eidaws.federator.eidaws_wfcatalog.json.route import (
     FED_WFCATALOG_PATH_QUERY,
 )
 from eidaws.federator.utils.misc import get_config

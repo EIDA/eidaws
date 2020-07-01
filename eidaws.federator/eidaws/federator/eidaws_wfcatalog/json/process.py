@@ -5,7 +5,7 @@ import datetime
 import errno
 import json
 
-from eidaws.federator.eidaws_wfcatalog_json.parser import WFCatalogSchema
+from eidaws.federator.eidaws_wfcatalog.json.parser import WFCatalogSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_WFCATALOG_JSON_SERVICE_ID,

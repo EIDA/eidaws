@@ -4,7 +4,7 @@ import pathlib
 
 from aiohttp import web
 
-from eidaws.federator.eidaws_wfcatalog_json.view import WFCatalogView
+from eidaws.federator.eidaws_wfcatalog.json.view import WFCatalogView
 from eidaws.federator.settings import FED_STATIC, FED_WFCATALOG_PATH_JSON
 from eidaws.federator.utils.misc import append_static_routes
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN

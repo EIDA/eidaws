@@ -2,7 +2,7 @@
 
 import sys
 
-from eidaws.federator.eidaws_wfcatalog_json import SERVICE_ID, create_app
+from eidaws.federator.eidaws_wfcatalog.json import SERVICE_ID, create_app
 from eidaws.federator.settings import (
     FED_DEFAULT_TMPDIR,
     FED_DEFAULT_BUFFER_ROLLOVER_SIZE,

@@ -6,12 +6,12 @@ from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_WFCATALOG_JSON_SERVICE_ID,
 )
-from eidaws.federator.eidaws_wfcatalog_json.parser import (
+from eidaws.federator.eidaws_wfcatalog.json.parser import (
     StreamEpochSchema,
     ManyStreamEpochSchema,
     WFCatalogSchema,
 )
-from eidaws.federator.eidaws_wfcatalog_json.process import (
+from eidaws.federator.eidaws_wfcatalog.json.process import (
     WFCatalogRequestProcessor,
 )
 from eidaws.federator.utils.parser import fdsnws_parser
