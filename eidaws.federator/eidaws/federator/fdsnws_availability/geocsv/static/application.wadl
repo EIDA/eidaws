@@ -3,20 +3,12 @@
 		xsi:schemaLocation="https://www.w3.org/Submission/wadl/wadl.xsd"
 		xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 		xmlns="http://wadl.dev.java.net/2009/02">
-	<resources base="/fdsnws/availability/1">
+    <resources base="/eidaws/availability/geocsv/1">
 		<resource path="query">
 			<method href="#queryGET"/>
 			<method href="#queryPOST"/>
 		</resource>
-		<resource path="queryauth">
-			<method href="#queryGET"/>
-			<method href="#queryPOST"/>
-		</resource>
 		<resource path="extent">
-			<method href="#extentGET"/>
-			<method href="#extentPOST"/>
-		</resource>
-		<resource path="extentauth">
 			<method href="#extentGET"/>
 			<method href="#extentPOST"/>
 		</resource>
