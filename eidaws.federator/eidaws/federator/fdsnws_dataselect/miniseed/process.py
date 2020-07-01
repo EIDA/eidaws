@@ -13,7 +13,7 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
-    BaseSplitAlignAsyncWorker,
+    BaseSplitAlignWorker,
     WorkerError,
 )
 
@@ -111,7 +111,7 @@ def _get_mseed_record_size(fd):
     return 2 ** record_size_exponent
 
 
-class _DataselectAsyncWorker(BaseSplitAlignAsyncWorker):
+class _DataselectWorker(BaseSplitAlignWorker):
     """
     A worker task implementation for ``fdsnws-dataselect`` ``format=miniseed``.
     The worker implements splitting and aligning facilities.
@@ -212,7 +212,7 @@ class DataselectRequestProcessor(UnsortedResponse):
         await response.prepare(self.request)
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _DataselectAsyncWorker(
+        return _DataselectWorker(
             self.request,
             session,
             drain,

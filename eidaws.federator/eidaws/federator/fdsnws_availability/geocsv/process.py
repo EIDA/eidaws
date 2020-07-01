@@ -3,7 +3,7 @@
 import datetime
 
 from eidaws.federator.fdsnws_availability.process import (
-    AvailabilityAsyncWorker,
+    AvailabilityWorker,
     AvailabilityRequestProcessor as _AvailabilityRequestProcessor,
 )
 from eidaws.federator.fdsnws_availability.geocsv.parser import (
@@ -29,7 +29,7 @@ def _find_nth(string, substr, n):
         return string.find(substr, _find_nth(string, substr, n - 1) + 1)
 
 
-class _AvailablityAsyncWorker(AvailabilityAsyncWorker):
+class _AvailablityWorker(AvailabilityWorker):
 
     SERVICE_ID = FED_AVAILABILITY_GEOCSV_SERVICE_ID
 
@@ -46,11 +46,11 @@ class _AvailablityAsyncWorker(AvailabilityAsyncWorker):
         return b"".join(obj[i] for i in _sorted)
 
 
-class _AvailablityQueryAsyncWorker(_AvailablityAsyncWorker):
+class _AvailablityQueryWorker(_AvailablityWorker):
     QUERY_PARAM_SERIALIZER = AvailabilityQuerySchema
 
 
-class _AvailablityExtentAsyncWorker(_AvailablityAsyncWorker):
+class _AvailablityExtentWorker(_AvailablityWorker):
     QUERY_PARAM_SERIALIZER = AvailabilityExtentSchema
 
 
@@ -122,7 +122,7 @@ class AvailabilityRequestProcessor(_AvailabilityRequestProcessor):
         await response.write(b"\n")
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _AvailablityAsyncWorker(
+        return _AvailablityWorker(
             self.request, session, drain, lock=lock,
         )
 
@@ -131,7 +131,7 @@ class AvailabilityQueryRequestProcessor(AvailabilityRequestProcessor):
     RESOURCE_METHOD = FDSNWS_QUERY_METHOD_TOKEN
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _AvailablityQueryAsyncWorker(
+        return _AvailablityQueryWorker(
             self.request, session, drain, lock=lock,
         )
 
@@ -140,6 +140,6 @@ class AvailabilityExtentRequestProcessor(AvailabilityRequestProcessor):
     RESOURCE_METHOD = FDSNWS_EXTENT_METHOD_TOKEN
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _AvailablityExtentAsyncWorker(
+        return _AvailablityExtentWorker(
             self.request, session, drain, lock=lock,
         )

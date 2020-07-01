@@ -9,7 +9,7 @@ from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
     with_exception_handling,
-    BaseAsyncWorker,
+    BaseWorker,
     NetworkLevelMixin,
 )
 from eidaws.utils.misc import Route
@@ -20,7 +20,7 @@ from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 # TODO(damb): Implement on-the-fly merging of physically distributed data.
 
 
-class AvailabilityAsyncWorker(NetworkLevelMixin, BaseAsyncWorker):
+class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
     def __init__(
         self, request, session, drain, lock=None, **kwargs,
     ):

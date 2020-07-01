@@ -19,7 +19,7 @@ from eidaws.federator.utils.process import (
 )
 from eidaws.federator.utils.worker import (
     with_exception_handling,
-    BaseAsyncWorker,
+    BaseWorker,
     NetworkLevelMixin,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -31,7 +31,7 @@ from eidaws.utils.settings import (
 )
 
 
-class _StationXMLAsyncWorker(NetworkLevelMixin, BaseAsyncWorker):
+class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
     """
     A worker task implementation operating on `StationXML
     <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
@@ -257,7 +257,7 @@ class StationXMLRequestProcessor(UnsortedResponse):
         await response.write(header)
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _StationXMLAsyncWorker(
+        return _StationXMLWorker(
             request, session, drain, lock=lock, *kwargs,
         )
 

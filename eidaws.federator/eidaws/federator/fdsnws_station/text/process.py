@@ -12,12 +12,12 @@ from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
     with_exception_handling,
-    BaseAsyncWorker,
+    BaseWorker,
 )
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
-class _StationTextAsyncWorker(BaseAsyncWorker):
+class _StationTextWorker(BaseWorker):
     """
     A worker task which fetches data and writes the results to the ``response``
     object.
@@ -133,6 +133,6 @@ class StationTextRequestProcessor(UnsortedResponse):
         await response.write(header + b"\n")
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _StationTextAsyncWorker(
+        return _StationTextWorker(
             request, session, drain, lock=lock, **kwargs
         )

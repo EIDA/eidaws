@@ -11,7 +11,7 @@ from eidaws.federator.settings import (
     FED_WFCATALOG_JSON_SERVICE_ID,
 )
 from eidaws.federator.utils.process import UnsortedResponse
-from eidaws.federator.utils.worker import BaseSplitAlignAsyncWorker
+from eidaws.federator.utils.worker import BaseSplitAlignWorker
 
 
 _JSON_ARRAY_START = b"["
@@ -19,7 +19,7 @@ _JSON_ARRAY_END = b"]"
 _JSON_SEP = b","
 
 
-class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
+class _WFCatalogWorker(BaseSplitAlignWorker):
     """
     A worker task implementation for ``eidaws-wfcatalog`` ``format=json``.
     The worker implements splitting and aligning facilities.
@@ -144,7 +144,7 @@ class WFCatalogRequestProcessor(UnsortedResponse):
         await response.write(_JSON_ARRAY_START)
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _WFCatalogAsyncWorker(
+        return _WFCatalogWorker(
             self.request,
             session,
             drain,

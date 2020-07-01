@@ -108,7 +108,7 @@ class WorkerError(ErrorWithTraceback):
     """Base Worker error ({})."""
 
 
-class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
+class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     """
     Abstract base class for worker implementations.
     """
@@ -158,7 +158,7 @@ class BaseAsyncWorker(ClientRetryBudgetMixin, ConfigMixin):
         """
 
 
-class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
+class BaseSplitAlignWorker(BaseWorker):
     """
     Abstract base class for worker implementations providing splitting and
     aligning facilities.
