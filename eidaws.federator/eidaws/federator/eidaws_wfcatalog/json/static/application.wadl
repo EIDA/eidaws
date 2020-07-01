@@ -2,7 +2,7 @@
 <application xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <doc title="EIDA Web Service WFCATALOG service 1.0.018"/>
   <grammars/>
-  <resources base="http://localhost:80/eidaws/wfcatalog/json/1">
+  <resources base="/eidaws/wfcatalog/json/1">
     <resource path="/">
       <method name="GET" id="root">
         <response>
@@ -375,17 +375,22 @@
             <param name="clock_locked_lt" style="query" type="xsd:float"/>
             <param name="clock_locked_le" style="query" type="xsd:float"/>
           </request>
-          <response>
-            <representation mediaType="text/plain"/>
+          <response status="200">
             <representation mediaType="application/json"/>
+          </response>
+          <response status="204 400 401 403 404 413 414 500 503">
+            <representation mediaType="text/plain"/>
           </response>
         </method>
         <method name="POST" id="postQuery">
           <request>
             <representation mediaType="*/*"/>
           </request>
-          <response>
+          <response status="200">
             <representatation mediaType="application/json"/>
+          </response>
+          <response status="204 400 401 403 404 413 414 500 503">
+            <representation mediaType="text/plain"/>
           </response>
         </method>
       </resource>
