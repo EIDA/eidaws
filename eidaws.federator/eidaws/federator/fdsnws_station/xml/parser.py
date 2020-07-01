@@ -5,7 +5,7 @@ Federator schema definitions for ``fdsnws-station-xml``.
 
 from marshmallow import validate, fields
 
-from eidaws.federator.utils.parser import StationSchema
+from eidaws.federator.fdsnws_station.parser import StationSchema
 
 
 # -----------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import io
 
 from lxml import etree
 
-from eidaws.federator.fdsnws_station_xml.parser import StationXMLSchema
+from eidaws.federator.fdsnws_station.xml.parser import StationXMLSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_XML_SERVICE_ID,

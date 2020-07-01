@@ -6,9 +6,9 @@ import pytest
 
 from aiohttp import web
 
-from eidaws.federator.fdsnws_station_text import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_station_text.app import DEFAULT_CONFIG
-from eidaws.federator.fdsnws_station_text.route import (
+from eidaws.federator.fdsnws_station.text import create_app, SERVICE_ID
+from eidaws.federator.fdsnws_station.text.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_station.text.route import (
     FED_STATION_TEXT_PATH_QUERY,
 )
 from eidaws.federator.utils.misc import get_config

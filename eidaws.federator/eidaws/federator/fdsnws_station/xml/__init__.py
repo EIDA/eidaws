@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from eidaws.federator.fdsnws_station_text.route import setup_routes
+from eidaws.federator.fdsnws_station.xml.route import setup_routes
 from eidaws.federator.utils.app import create_app as _create_app
-from eidaws.federator.settings import FED_STATION_TEXT_SERVICE_ID
+from eidaws.federator.settings import FED_STATION_XML_SERVICE_ID
 
 
-SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
+SERVICE_ID = FED_STATION_XML_SERVICE_ID
 
 
 def create_app(config_dict, **kwargs):

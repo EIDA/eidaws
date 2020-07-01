@@ -1,6 +1,6 @@
 <application xmlns="http://wadl.dev.java.net/2009/02"
 		xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<resources base="http://localhost:80/eidaws/station/text/1">
+	<resources base="/eidaws/station/xml/1">
 		<resource path="query">
 			<method name="GET">
 				<request>
@@ -26,21 +26,22 @@
 						<option value="network"/>
 						<option value="station"/>
 						<option value="channel"/>
+						<option value="response"/>
 					</param>
 					<param name="includerestricted" style="query" type="xsd:boolean" default="false"/>
 					<param name="nodata" style="query" type="xsd:int" default="204">
 						<option value="204"/>
 						<option value="404"/>
 					</param>
-					<param name="format" style="query" type="xsd:string" default="text">
-						<option value="text"/>
+					<param name="format" style="query" type="xsd:string" default="xml">
+						<option value="xml"/>
 					</param>
 
 					<!-- not implemented -->
 					<!--param name="updateafter" style="query" type="xsd:dateTime"/-->
 				</request>
 				<response status="200">
-					<representation mediaType="text/plain"/>
+					<representation mediaType="application/xml"/>
 				</response>
 				<response status="204 400 401 403 404 413 414 500 503">
 					<representation mediaType="text/plain"/>
@@ -48,7 +49,7 @@
 			</method>
 			<method name="POST">
 				<response status="200">
-					<representation mediaType="text/plain"/>
+					<representation mediaType="application/xml"/>
 				</response>
 				<response status="204 400 401 403 404 413 414 500 503">
 					<representation mediaType="text/plain"/>

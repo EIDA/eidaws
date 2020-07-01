@@ -5,7 +5,7 @@ Federator schema definitions
 
 from marshmallow import validates_schema, validate, fields, ValidationError
 
-from eidaws.federator.utils.parser import StationSchema
+from eidaws.federator.fdsnws_station.parser import StationSchema
 
 
 # -----------------------------------------------------------------------------

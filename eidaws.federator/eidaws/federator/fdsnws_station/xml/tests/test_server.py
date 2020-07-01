@@ -8,10 +8,10 @@ import pytest
 from aiohttp import web
 from lxml import etree
 
-from eidaws.federator.fdsnws_station_xml import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_station_xml.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_station.xml import create_app, SERVICE_ID
+from eidaws.federator.fdsnws_station.xml.app import DEFAULT_CONFIG
 from eidaws.federator.utils.misc import get_config
-from eidaws.federator.fdsnws_station_xml.route import (
+from eidaws.federator.fdsnws_station.xml.route import (
     FED_STATION_XML_PATH_QUERY,
 )
 from eidaws.federator.utils.pytest_plugin import (

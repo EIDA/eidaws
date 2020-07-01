@@ -2,7 +2,7 @@
 
 import sys
 
-from eidaws.federator.fdsnws_station_text import SERVICE_ID, create_app
+from eidaws.federator.fdsnws_station.xml import SERVICE_ID, create_app
 from eidaws.federator.utils.app import (
     _main,
     config as default_config,
@@ -10,7 +10,7 @@ from eidaws.federator.utils.app import (
 )
 
 
-PROG = "eida-federator-station-text"
+PROG = "eida-federator-station-xml"
 DEFAULT_CONFIG = default_config()
 
 

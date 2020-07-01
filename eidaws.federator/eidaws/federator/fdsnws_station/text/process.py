@@ -3,7 +3,7 @@
 import asyncio
 import aiohttp
 
-from eidaws.federator.fdsnws_station_text.parser import StationTextSchema
+from eidaws.federator.fdsnws_station.text.parser import StationTextSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_TEXT_SERVICE_ID,
