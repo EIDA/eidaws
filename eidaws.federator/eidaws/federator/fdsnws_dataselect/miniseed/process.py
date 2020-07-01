@@ -6,7 +6,7 @@ import errno
 import io
 import struct
 
-from eidaws.federator.fdsnws_dataselect_miniseed.parser import DataselectSchema
+from eidaws.federator.fdsnws_dataselect.miniseed.parser import DataselectSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_DATASELECT_MINISEED_SERVICE_ID,

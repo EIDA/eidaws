@@ -2,7 +2,7 @@
 
 import sys
 
-from eidaws.federator.fdsnws_dataselect_miniseed import SERVICE_ID, create_app
+from eidaws.federator.fdsnws_dataselect.miniseed import SERVICE_ID, create_app
 from eidaws.federator.settings import (
     FED_DEFAULT_TMPDIR,
     FED_DEFAULT_BUFFER_ROLLOVER_SIZE,

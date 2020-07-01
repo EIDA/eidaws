@@ -4,7 +4,7 @@ import pathlib
 
 from aiohttp import web
 
-from eidaws.federator.fdsnws_dataselect_miniseed.view import DataselectView
+from eidaws.federator.fdsnws_dataselect.miniseed.view import DataselectView
 from eidaws.federator.settings import FED_STATIC, FED_DATASELECT_PATH_MINISEED
 from eidaws.federator.utils.misc import append_static_routes
 from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN

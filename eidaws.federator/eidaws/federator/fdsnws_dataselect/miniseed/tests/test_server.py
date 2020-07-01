@@ -6,9 +6,9 @@ import pytest
 
 from aiohttp import web
 
-from eidaws.federator.fdsnws_dataselect_miniseed import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_dataselect_miniseed.app import DEFAULT_CONFIG
-from eidaws.federator.fdsnws_dataselect_miniseed.route import (
+from eidaws.federator.fdsnws_dataselect.miniseed import create_app, SERVICE_ID
+from eidaws.federator.fdsnws_dataselect.miniseed.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_dataselect.miniseed.route import (
     FED_DATASELECT_PATH_QUERY,
 )
 from eidaws.federator.utils.misc import get_config
