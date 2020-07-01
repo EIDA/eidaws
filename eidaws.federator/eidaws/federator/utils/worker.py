@@ -348,3 +348,58 @@ class BaseSplitAlignAsyncWorker(BaseAsyncWorker):
                 break
 
             await drain.drain(chunk)
+
+
+class NetworkLevelMixin:
+    """
+    Mixin providing facilities for worker implementations operating at network
+    level granularity
+    """
+
+    async def _fetch(self, route, req_method="GET", **kwargs):
+        req_handler = FdsnRequestHandler(
+            **route._asdict(), query_params=self.query_params
+        )
+        req_handler.format = self.format
+
+        req = getattr(req_handler, req_method.lower())(self._session)
+        try:
+            resp = await req(**kwargs)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            msg = (
+                f"Error while executing request: error={type(err)}, "
+                f"req_handler={req_handler!r}, method={req_method}"
+            )
+            await self._handle_error(msg=msg)
+            await self.update_cretry_budget(req_handler.url, 503)
+
+            return route, None
+
+        msg = (
+            f"Response: {resp.reason}: resp.status={resp.status}, "
+            f"resp.request_info={resp.request_info}, "
+            f"resp.url={resp.url}, resp.headers={resp.headers}"
+        )
+
+        try:
+            resp.raise_for_status()
+        except aiohttp.ClientResponseError:
+            if resp.status == 413:
+                await self._handle_413()
+            else:
+                await self._handle_error(msg=msg)
+
+            return route, None
+        else:
+            if resp.status != 200:
+                if resp.status in FDSNWS_NO_CONTENT_CODES:
+                    self.logger.info(msg)
+                else:
+                    await self._handle_error(msg=msg)
+
+                return route, None
+
+        self.logger.debug(msg)
+
+        await self.update_cretry_budget(req_handler.url, resp.status)
+        return route, resp

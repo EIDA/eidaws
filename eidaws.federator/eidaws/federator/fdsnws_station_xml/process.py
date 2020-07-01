@@ -20,6 +20,7 @@ from eidaws.federator.utils.process import (
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
+    NetworkLevelMixin,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.utils.settings import (
@@ -30,7 +31,7 @@ from eidaws.utils.settings import (
 )
 
 
-class _StationXMLAsyncWorker(BaseAsyncWorker):
+class _StationXMLAsyncWorker(NetworkLevelMixin, BaseAsyncWorker):
     """
     A worker task implementation operating on `StationXML
     <https://www.fdsn.org/xml/station/>`_ ``NetworkType`` ``BaseNodeType``
@@ -66,10 +67,9 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
             for _route in route
         ]
 
-        responses = await asyncio.gather(*tasks, return_exceptions=False)
+        results = await asyncio.gather(*tasks, return_exceptions=False)
 
-        for resp in responses:
-
+        for _, resp in results:
             station_xml = await self._parse_response(resp)
 
             if station_xml is None:
@@ -213,54 +213,6 @@ class _StationXMLAsyncWorker(BaseAsyncWorker):
             net_element.append(sta_element)
 
         return etree.tostring(net_element)
-
-    async def _fetch(self, route, req_method="GET", **kwargs):
-        req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=self.query_params
-        )
-        req_handler.format = self.format
-
-        req = getattr(req_handler, req_method.lower())(self._session)
-        try:
-            resp = await req(**kwargs)
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            msg = (
-                f"Error while executing request: error={type(err)}, "
-                f"req_handler={req_handler!r}, method={req_method}"
-            )
-            await self._handle_error(msg=msg)
-            await self.update_cretry_budget(req_handler.url, 503)
-
-            return None
-
-        msg = (
-            f"Response: {resp.reason}: resp.status={resp.status}, "
-            f"resp.request_info={resp.request_info}, "
-            f"resp.url={resp.url}, resp.headers={resp.headers}"
-        )
-
-        try:
-            resp.raise_for_status()
-        except aiohttp.ClientResponseError:
-            if resp.status == 413:
-                await self._handle_413()
-            else:
-                await self._handle_error(msg=msg)
-
-            return None
-        else:
-            if resp.status != 200:
-                if resp.status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
-                else:
-                    await self._handle_error(msg=msg)
-
-                return None
-
-        self.logger.debug(msg)
-
-        await self.update_cretry_budget(req_handler.url, resp.status)
-        return resp
 
     @staticmethod
     def _make_key(element, hash_method=hashlib.md5):

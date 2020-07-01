@@ -10,6 +10,7 @@ from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
+    NetworkLevelMixin,
 )
 from eidaws.utils.misc import Route
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
@@ -19,7 +20,7 @@ from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 # TODO(damb): Implement on-the-fly merging of physically distributed data.
 
 
-class AvailabilityAsyncWorker(BaseAsyncWorker):
+class AvailabilityAsyncWorker(NetworkLevelMixin, BaseAsyncWorker):
     def __init__(
         self, request, session, drain, lock=None, **kwargs,
     ):
@@ -59,55 +60,6 @@ class AvailabilityAsyncWorker(BaseAsyncWorker):
 
     async def finalize(self):
         self._buf = {}
-
-    # TODO(damb): Duplicate of fdsnws-station-xml
-    async def _fetch(self, route, req_method="GET", **kwargs):
-        req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=self.query_params
-        )
-        req_handler.format = self.format
-
-        req = getattr(req_handler, req_method.lower())(self._session)
-        try:
-            resp = await req(**kwargs)
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            msg = (
-                f"Error while executing request: error={type(err)}, "
-                f"req_handler={req_handler!r}, method={req_method}"
-            )
-            await self._handle_error(msg=msg)
-            await self.update_cretry_budget(req_handler.url, 503)
-
-            return route, None
-
-        msg = (
-            f"Response: {resp.reason}: resp.status={resp.status}, "
-            f"resp.request_info={resp.request_info}, "
-            f"resp.url={resp.url}, resp.headers={resp.headers}"
-        )
-
-        try:
-            resp.raise_for_status()
-        except aiohttp.ClientResponseError:
-            if resp.status == 413:
-                await self._handle_413()
-            else:
-                await self._handle_error(msg=msg)
-
-            return route, None
-        else:
-            if resp.status != 200:
-                if resp.status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
-                else:
-                    await self._handle_error(msg=msg)
-
-                return route, None
-
-        self.logger.debug(msg)
-
-        await self.update_cretry_budget(req_handler.url, resp.status)
-        return route, resp
 
     async def _parse_response(self, resp):
         if resp is None:
