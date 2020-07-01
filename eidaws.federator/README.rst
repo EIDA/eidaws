@@ -10,9 +10,10 @@ EIDA Federator webservice
 Asynchronous implementation of a federating gateway webservice as part of EIDA
 NG. Federation is performed for
 
-- *fdsnws-station*
-- *fdsnws-dataselect*
 - *eidaws-wfcatalog*
+- *fdsnws-availability*
+- *fdsnws-dataselect*
+- *fdsnws-station*
 
 webservices across all EIDA datacenters (DCs). This means a client can request
 data from an ``eidaws-federator`` resource without having to know where the data
@@ -236,6 +237,10 @@ the resources' pathes. Thus, implementations of the following services are
 provided:
 
 - ``eidaws-wfcatalog-json`` (``/eidaws/wfcatalog/json/1``)
+- ``fdsnws-availability-geocsv`` (``/eidaws/availability/geocsv/1``)
+- ``fdsnws-availability-json`` (``/eidaws/availability/json/1``)
+- ``fdsnws-availability-request`` (``/eidaws/availability/request/1``)
+- ``fdsnws-availability-text`` (``/eidaws/availability/text/1``)
 - ``fdsnws-dataselect-miniseed`` (``/eidaws/dataselect/miniseed/1``)
 - ``fdsnws-station-xml`` (``/eidaws/station/xml/1``)
 - ``fdsnws-station-text``  (``/eidaws/station/text/1``)
@@ -258,6 +263,10 @@ After installing the ``eidaws.federator`` distribution with
 the corresponding standalone applications are available:
 
 - ``eida-federator-wfcatalog-json``
+- ``eida-federator-availability-geocsv``
+- ``eida-federator-availability-json``
+- ``eida-federator-availability-request``
+- ``eida-federator-availability-text``
 - ``eida-federator-dataselect-miniseed``
 - ``eida-federator-station-xml``
 - ``eida-federator-station-text``
@@ -321,6 +330,10 @@ Depending on the federated resource service the following loggers enumerated by
 name are provided:
 
 - ``eidaws.federator.eidaws.wfcatalog.json``
+- ``eidaws.federator.fdsnws.availability.geocsv``
+- ``eidaws.federator.fdsnws.availability.json``
+- ``eidaws.federator.fdsnws.availability.request``
+- ``eidaws.federator.fdsnws.availability.text``
 - ``eidaws.federator.fdsnws.dataselect.miniseed``
 - ``eidaws.federator.fdsnws.station.text``
 - ``eidaws.federator.fdsnws.station.xml``
@@ -353,10 +366,11 @@ In order to run the tests, invoke
 Limitations
 ===========
 
-- AAI of the *fdsnws-dataselect* service is not implemented yet
-- A ``fdsnws-station-xml&level=channel|response`` metadata request including only a
-  single datacenter might be quite imperformant compared to a direct request to
-  the corresponding datacenter.
+- AAI of both *fdsnws-dataselect* and *fdsnws-availability* resources is not
+  implemented yet
+- A ``fdsnws-station-xml&level=channel|response`` metadata request including
+  only a single datacenter might be quite imperformant compared to a direct
+  request to the corresponding datacenter.
 - In certain cases, HTTP response codes might be misleading due to limitations
   of the `FDSN webservice <https://www.fdsn.org/webservices/>`_ specification
   not fully prepared to operate in a distributed environment.
