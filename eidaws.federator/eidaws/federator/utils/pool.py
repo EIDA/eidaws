@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import logging
+import sys
+import traceback
 
 from collections import deque
 
+from eidaws.federator.settings import FED_BASE_ID
 from eidaws.utils.error import ErrorWithTraceback
 
 
 # NOTE(damb): Based on https://github.com/CaliDog/asyncpool with some minor
 # modifications.
+
+logger = logging.getLogger(FED_BASE_ID + ".pool")
 
 
 def _coroutine_or_raise(obj):
@@ -18,6 +24,7 @@ def _coroutine_or_raise(obj):
     if obj and not any(
         [asyncio.iscoroutine(obj), asyncio.iscoroutinefunction(obj)]
     ):
+
         raise ValueError(f"{obj!r} is not a coroutine.")
     return obj
 
@@ -27,9 +34,16 @@ class PoolError(ErrorWithTraceback):
 
 
 class Pool:
+
     DEFAULT_NUM_WORKERS = 32
 
-    def __init__(self, worker_coro=None, max_workers=None, timeout=None):
+    QUEUE_CLS = asyncio.Queue
+
+    LOGGER = FED_BASE_ID + ".pool"
+
+    def __init__(
+        self, worker_coro=None, max_workers=None, timeout=None,
+    ):
 
         if max_workers is None:
             max_workers = self.DEFAULT_NUM_WORKERS
@@ -39,7 +53,7 @@ class Pool:
         self._size = max_workers
         self._loop = asyncio.get_event_loop()
 
-        self._queue = asyncio.Queue()
+        self._queue = self.QUEUE_CLS()
         self._exceptions = False
 
         self._worker_coro = _coroutine_or_raise(worker_coro)
@@ -67,7 +81,7 @@ class Pool:
             worker_coro = self._wrap_worker_coro(self._worker_coro)
             self._worker_tasks.append(asyncio.create_task(worker_coro))
 
-    async def submit(self, *args, return_future=True, **kwargs):
+    async def submit(self, *args, return_future=False, **kwargs):
         fut = self._loop.create_future() if return_future else None
         await self._queue.put((fut, args, kwargs))
         return fut
@@ -120,7 +134,8 @@ class Pool:
                 fut, args, kwargs = obj
                 result = await coro(*args, **kwargs)
 
-                fut.set_result(result)
+                if fut:
+                    fut.set_result(result)
             except asyncio.CancelledError:
                 raise
             except Exception as err:
@@ -128,6 +143,15 @@ class Pool:
                     fut.set_exception(err)
                 self._exception = True
 
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                logger.critical(
+                    f"PoolWorker Exception: {type(err)}; Traceback information: "
+                    + repr(
+                        traceback.format_exception(
+                            exc_type, exc_value, exc_traceback
+                        )
+                    )
+                )
                 raise PoolError(err)
 
             finally:

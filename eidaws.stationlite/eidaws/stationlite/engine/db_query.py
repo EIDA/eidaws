@@ -6,6 +6,8 @@ DB query facilities for eidaws-stationlite
 import collections
 import logging
 
+from sqlalchemy import or_
+
 from eidaws.stationlite.engine import orm
 from eidaws.utils.misc import Route
 from eidaws.utils.settings import (
@@ -109,6 +111,7 @@ def find_streamepochs_and_routes(
     service,
     level="channel",
     access="any",
+    method=None,
     minlat=-90.0,
     maxlat=90.0,
     minlon=-180.0,
@@ -124,8 +127,9 @@ def find_streamepochs_and_routes(
     :type stream_epoch: :py:class:`~eidaws.utils.sncl.StreamEpoch`
     :param str service: String specifying the webservice
     :param str level: Optional `fdsnws-station` *level* parameter
-    :param str access: Optional access parameter; The parameter is only taken
-        into consideration if ``service`` equal ``dataselect``
+    :param str access: Optional access parameter
+    :param method: Optional list of FDSNWS method tokens to be filter for
+    :type method: List of str or None
     :param float minlat: Latitude larger than or equal to the specified minimum
     :param float maxlat: Latitude smaller than or equal to the specified
         maximum
@@ -137,11 +141,6 @@ def find_streamepochs_and_routes(
     :return: List of :py:class:`~eidaws.utils.misc.Route` objects
     :rtype: list
     """
-    VALID_ACCESS = ("open", "closed", "any")
-
-    if access not in VALID_ACCESS:
-        raise ValueError(f"Invalid restriction parameter: {access!r}")
-
     logger.debug(f"Processing request for (SQL) {stream_epoch!r}")
     sql_stream_epoch = stream_epoch.fdsnws_to_sql_wildcards()
 
@@ -198,8 +197,13 @@ def find_streamepochs_and_routes(
             orm.ChannelEpoch.starttime < sql_stream_epoch.endtime
         )
 
-    if access != "any" and service == "dataselect":
+    if access != "any":
         query = query.filter(orm.ChannelEpoch.restrictedstatus == access)
+
+    if method:
+        query = query.filter(
+            or_(orm.Endpoint.url.like(f"%{m}") for m in method)
+        )
 
     routes = collections.defaultdict(StreamEpochsHandler)
 
@@ -250,4 +254,7 @@ def find_streamepochs_and_routes(
 
             routes[row[8]].add(stream_epoch)
 
-    return [Route(url=url, stream_epochs=streams) for url, streams in routes.items()]
+    return [
+        Route(url=url, stream_epochs=streams)
+        for url, streams in routes.items()
+    ]

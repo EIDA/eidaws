@@ -9,6 +9,7 @@ from marshmallow import (
     ValidationError,
 )
 from webargs import core
+from webargs.fields import DelimitedList
 from webargs.flaskparser import parser, FlaskParser
 
 from eidaws.stationlite.version import __version__
@@ -16,6 +17,12 @@ from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.settings import STL_DEFAULT_CLIENT_MAX_SIZE
 from eidaws.utils.parser import FDSNWSParserMixin
 from eidaws.utils.schema import FDSNWSBool, Latitude, Longitude, NoData
+from eidaws.utils.settings import (
+    FDSNWS_QUERY_METHOD_TOKEN,
+    FDSNWS_QUERYAUTH_METHOD_TOKEN,
+    FDSNWS_EXTENT_METHOD_TOKEN,
+    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+)
 
 
 class StationLiteSchema(Schema):
@@ -35,7 +42,9 @@ class StationLiteSchema(Schema):
     )
     service = fields.Str(
         missing="dataselect",
-        validate=validate.OneOf(["dataselect", "station", "wfcatalog"]),
+        validate=validate.OneOf(
+            ["availability", "dataselect", "station", "wfcatalog"]
+        ),
     )
 
     nodata = NoData()
@@ -46,6 +55,20 @@ class StationLiteSchema(Schema):
     level = fields.Str(
         missing="channel",
         validate=validate.OneOf(["network", "station", "channel", "response"]),
+    )
+    method = DelimitedList(
+        fields.Str(
+            validate=validate.OneOf(
+                [
+                    FDSNWS_QUERY_METHOD_TOKEN,
+                    FDSNWS_QUERYAUTH_METHOD_TOKEN,
+                    FDSNWS_EXTENT_METHOD_TOKEN,
+                    FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+                ]
+            ),
+        ),
+        missing=None,
+        allow_none=True,
     )
     # geographic (rectangular spatial) options
     # XXX(damb): Default values are defined and assigned within merge_keys ()
@@ -99,16 +122,19 @@ class StationLiteSchema(Schema):
     def validate_level(self, data, **kwargs):
         if data["level"] != "channel" and data["service"] != "station":
             raise ValidationError(
-                "Bad Request: Invalid 'level' value {!r} for service "
-                "{!r}.".format(data["level"], data["service"])
+                f"Bad Request: Invalid 'level' value {data['level']!r} "
+                f"for service {data['service']!r}."
             )
 
     @validates_schema
     def validate_access(self, data, **kwargs):
-        if data["access"] != "any" and data["service"] != "dataselect":
+        if data["access"] != "any" and data["service"] not in (
+            "dataselect",
+            "availability",
+        ):
             raise ValidationError(
-                "Bad Request: Invalid 'access' value {!r} for service "
-                "{!r}".format(data["access"], data["service"])
+                f"Bad Request: Invalid 'access' value {data['access']!r} "
+                f"for service {data['service']!r}"
             )
 
     class Meta:

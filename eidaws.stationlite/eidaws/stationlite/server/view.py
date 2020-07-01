@@ -9,7 +9,11 @@ from flask import request, make_response, render_template
 from flask_restful import Resource
 from webargs.flaskparser import use_args
 
-from eidaws.stationlite.server.parser import use_fdsnws_args, use_fdsnws_kwargs
+from eidaws.stationlite.server.parser import (
+    use_fdsnws_args,
+    use_fdsnws_kwargs,
+    StationLiteSchema,
+)
 from eidaws.stationlite.server.strict import with_strict_args
 from eidaws.stationlite.version import __version__
 from eidaws.utils.sncl import StreamEpochsHandler, StreamEpoch
@@ -26,7 +30,6 @@ from eidaws.stationlite.engine.db_query import (
 )
 from eidaws.stationlite.server.db import db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
-from eidaws.stationlite.server.schema import StationLiteSchema
 from eidaws.stationlite.server.stream import OutputStream
 
 
@@ -137,6 +140,7 @@ class StationLiteQueryResource(Resource):
                 args["service"],
                 level=args["level"],
                 access=args["access"],
+                method=args["method"],
                 minlat=args["minlatitude"],
                 maxlat=args["maxlatitude"],
                 minlon=args["minlongitude"],

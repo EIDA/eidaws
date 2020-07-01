@@ -10,7 +10,6 @@ from eidaws.federator.utils.misc import HelperGETRequest
 from eidaws.federator.version import __version__
 from eidaws.utils.misc import convert_sncl_dicts_to_query_params
 from eidaws.utils.schema import StreamEpochSchema
-from eidaws.utils.settings import FDSNWS_QUERY_METHOD_TOKEN
 
 
 def _query_params_from_stream_epochs(stream_epochs):
@@ -47,7 +46,7 @@ class RequestHandlerBase:
         url = urlparse(url)
         self._scheme = url.scheme
         self._netloc = url.netloc
-        self._path = url.path.rstrip(FDSNWS_QUERY_METHOD_TOKEN).rstrip("/")
+        self._path = url.path.rstrip("/")
 
         self._query_params = OrderedDict(
             (p, v)
@@ -64,14 +63,7 @@ class RequestHandlerBase:
         Returns request URL without query parameters.
         """
         return urlunparse(
-            (
-                self._scheme,
-                self._netloc,
-                "{}/{}".format(self._path, FDSNWS_QUERY_METHOD_TOKEN),
-                "",
-                "",
-                "",
-            )
+            (self._scheme, self._netloc, self._path, "", "", "",)
         )
 
     @property
@@ -144,8 +136,8 @@ class RoutingRequestHandler(RequestHandlerBase):
         self, url, stream_epochs=[], query_params={}, headers={}, **kwargs
     ):
         """
-        :param str proxy_netloc: Force StationLite to prefix URLs with a proxy
-            network location
+        :param method: Specifies the ``method`` query filter parameter when
+            requesting data from StationLite
         :param str access: Specifies the ``access`` query parameter when
             requesting data from StationLite
         """
@@ -153,11 +145,11 @@ class RoutingRequestHandler(RequestHandlerBase):
         super().__init__(url, stream_epochs, query_params, headers)
 
         self._query_params["format"] = "post"
-
-        if "proxy_netloc" in kwargs and kwargs["proxy_netloc"] is not None:
-            self._query_params["proxynetloc"] = kwargs["proxy_netloc"]
-
         self._query_params["access"] = kwargs.get("access", "any")
+
+        method = kwargs.get("method")
+        if method:
+            self._query_params["method"] = method
 
     @property
     def payload_post(self):

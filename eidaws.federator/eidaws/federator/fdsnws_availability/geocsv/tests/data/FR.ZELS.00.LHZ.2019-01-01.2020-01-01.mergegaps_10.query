@@ -1,0 +1,7 @@
+#dataset: GeoCSV 2.0
+#delimiter: |
+#field_unit: unitless|unitless|unitless|unitless|unitless|hertz|ISO_8601|ISO_8601
+#field_type: string|string|string|string|string|float|datetime|datetime
+Network|Station|Location|Channel|Quality|SampleRate|Earliest|Latest
+FR|ZELS|00|LHZ|M|1.0|2019-01-01T00:00:00.000000Z|2019-01-24T14:04:46.000000Z
+FR|ZELS|00|LHZ|M|1.0|2019-01-25T00:02:27.000000Z|2020-01-01T00:00:00.000000Z

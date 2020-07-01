@@ -8,10 +8,9 @@ import json
 from eidaws.federator.eidaws_wfcatalog_json.parser import WFCatalogSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
-    FED_WFCATALOG_JSON_FORMAT,
     FED_WFCATALOG_JSON_SERVICE_ID,
 )
-from eidaws.federator.utils.process import BaseRequestProcessor
+from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import BaseSplitAlignAsyncWorker
 
 
@@ -31,10 +30,9 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
     """
 
     SERVICE_ID = FED_WFCATALOG_JSON_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = WFCatalogSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
-
-    QUERY_FORMAT = FED_WFCATALOG_JSON_FORMAT
 
     _CHUNK_SIZE = 8192
 
@@ -107,11 +105,11 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
 
             await buf.write(chunk)
 
-    async def _write_buffer_to_response(self, buf, resp, append=True):
+    async def _write_buffer_to_drain(self, buf, drain, append=True):
         await buf.seek(0)
 
         if append:
-            await resp.write(_JSON_SEP)
+            await drain.drain(_JSON_SEP)
 
         while True:
             chunk = await buf.read(self._chunk_size)
@@ -119,15 +117,14 @@ class _WFCatalogAsyncWorker(BaseSplitAlignAsyncWorker):
             if not chunk:
                 break
 
-            await resp.write(chunk)
+            await drain.drain(chunk)
 
 
-class WFCatalogRequestProcessor(BaseRequestProcessor):
+class WFCatalogRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_WFCATALOG_JSON_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
-    QUERY_PARAM_SERIALIZER = WFCatalogSchema
 
     @property
     def content_type(self):
@@ -146,15 +143,14 @@ class WFCatalogRequestProcessor(BaseRequestProcessor):
         await response.prepare(self.request)
         await response.write(_JSON_ARRAY_START)
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _WFCatalogAsyncWorker(
             self.request,
             session,
-            response,
-            lock,
+            drain,
+            lock=lock,
             endtime=self._default_endtime,
-            prepare_callback=self._prepare_response,
-            write_callback=self.dump_to_cache_buffer,
+            **kwargs,
         )
 
     async def _write_response_footer(self, response):

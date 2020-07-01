@@ -1,0 +1,3 @@
+#Network Station Location Channel Quality SampleRate Earliest                    Latest                      Updated                     TimeSpans Restriction
+FR       ZELS    00       HHZ     M       200.0      2019-01-01T00:00:00.000000Z 2020-01-01T00:00:00.000000Z 2020-02-25T11:31:43.188806Z 58        OPEN       
+FR       ZELS    00       LHZ     M       1.0        2019-01-01T00:00:00.000000Z 2020-01-01T00:00:00.000000Z 2020-02-25T11:31:43.340639Z 49        OPEN       

@@ -6,11 +6,10 @@ import aiohttp
 from eidaws.federator.fdsnws_station_text.parser import StationTextSchema
 from eidaws.federator.settings import (
     FED_BASE_ID,
-    FED_STATION_TEXT_FORMAT,
     FED_STATION_TEXT_SERVICE_ID,
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
-from eidaws.federator.utils.process import BaseRequestProcessor
+from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
     with_exception_handling,
     BaseAsyncWorker,
@@ -25,17 +24,16 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
     """
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
+    QUERY_PARAM_SERIALIZER = StationTextSchema
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    QUERY_FORMAT = FED_STATION_TEXT_FORMAT
-
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, query_params, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", **req_kwargs):
         req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=query_params
+            **route._asdict(), query_params=self.query_params
         )
-        req_handler.format = self.QUERY_FORMAT
+        req_handler.format = self.format
 
         req = getattr(req_handler, req_method.lower())(self._session)
 
@@ -56,14 +54,7 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
 
             if data is not None:
                 async with self._lock:
-                    if not self._response.prepared:
-
-                        if self._prepare_callback is not None:
-                            await self._prepare_callback(self._response)
-                        else:
-                            await self._response.prepare(self.request)
-
-                    await self._response.write(data)
+                    await self._drain.drain(data)
 
             resp_status = resp.status
         finally:
@@ -108,12 +99,11 @@ class _StationTextAsyncWorker(BaseAsyncWorker):
             return text[(text.find(b"\n") + 1) :]
 
 
-class StationTextRequestProcessor(BaseRequestProcessor):
+class StationTextRequestProcessor(UnsortedResponse):
 
     SERVICE_ID = FED_STATION_TEXT_SERVICE_ID
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "process"])
-    QUERY_PARAM_SERIALIZER = StationTextSchema
 
     _HEADER_MAP = {
         "network": b"#Network|Description|StartTime|EndTime|TotalStations",
@@ -129,13 +119,6 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         ),
     }
 
-    def __init__(self, request, **kwargs):
-        super().__init__(
-            request, **kwargs,
-        )
-
-        self._level = self.query_params.get("level", "station")
-
     @property
     def content_type(self):
         return "text/plain"
@@ -145,18 +128,11 @@ class StationTextRequestProcessor(BaseRequestProcessor):
         return "utf-8"
 
     async def _prepare_response(self, response):
-        response.content_type = self.content_type
-        response.charset = self.charset
-        await response.prepare(self.request)
-
-        header = self._HEADER_MAP[self._level]
+        await super()._prepare_response(response)
+        header = self._HEADER_MAP[self.query_params["level"]]
         await response.write(header + b"\n")
 
-    def _emerge_worker(self, session, response, lock):
+    def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _StationTextAsyncWorker(
-            self.request,
-            session,
-            response,
-            lock,
-            prepare_callback=self._prepare_response,
+            request, session, drain, lock=lock, **kwargs
         )
