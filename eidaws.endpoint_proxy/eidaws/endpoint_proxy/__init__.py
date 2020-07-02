@@ -2,7 +2,10 @@
 
 from aiohttp import web
 
-from eidaws.endpoint_proxy.middleware import exception_handling_middleware
+from eidaws.endpoint_proxy.middleware import (
+    before_request,
+    exception_handling_middleware,
+)
 from eidaws.endpoint_proxy.route import setup_routes
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
 from eidaws.endpoint_proxy.utils import setup_endpoint_http_conn_pool
@@ -16,7 +19,9 @@ def create_app(config_dict):
         # ignore hostname:port
         config["hostname"] = config["port"] = None
 
-    app = web.Application(middlewares=[exception_handling_middleware])
+    app = web.Application(
+        middlewares=[before_request, exception_handling_middleware]
+    )
 
     # populate application with config
     for k, v in config_dict.items():

@@ -24,6 +24,7 @@ from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
 from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
+from eidaws.utils.misc import ContextLoggerAdapter
 
 
 def _serialize_query_params(query_params, serializer=None):
@@ -237,20 +238,3 @@ def route_to_uuid(route):
 def make_context_logger(logger, request, *args):
     ctx = [request[FED_BASE_ID + ".request_id"]] + list(args)
     return ContextLoggerAdapter(logger, {"ctx": ctx})
-
-
-class ContextLoggerAdapter(logging.LoggerAdapter):
-    """
-    Adapter expecting the passed in dict-like object to have a 'ctx' key, whose
-    value in brackets is prepended to the log message.
-    """
-
-    def process(self, msg, kwargs):
-        try:
-            ctx = self.extra["ctx"]
-            if isinstance(ctx, (list, tuple)):
-                ctx = "::".join(str(c) for c in ctx)
-        except KeyError:
-            return f"{msg}", kwargs
-        else:
-            return f"[{ctx}] {msg}", kwargs

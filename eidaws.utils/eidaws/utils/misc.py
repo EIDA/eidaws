@@ -2,6 +2,7 @@
 import argparse
 import collections
 import datetime
+import logging
 import os
 import re
 
@@ -201,3 +202,20 @@ class DefaultOrderedDict(collections.OrderedDict):
         import copy
 
         return type(self)(self.default_factory, copy.deepcopy(self.items()))
+
+
+class ContextLoggerAdapter(logging.LoggerAdapter):
+    """
+    Adapter expecting the passed in dict-like object to have a 'ctx' key, whose
+    value in brackets is prepended to the log message.
+    """
+
+    def process(self, msg, kwargs):
+        try:
+            ctx = self.extra["ctx"]
+            if isinstance(ctx, (list, tuple)):
+                ctx = "::".join(str(c) for c in ctx)
+        except KeyError:
+            return f"{msg}", kwargs
+        else:
+            return f"[{ctx}] {msg}", kwargs
