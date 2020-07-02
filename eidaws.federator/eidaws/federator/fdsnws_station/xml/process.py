@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import aiohttp
 import asyncio
 import datetime
 import hashlib
@@ -23,9 +22,7 @@ from eidaws.federator.utils.worker import (
     BaseWorker,
     NetworkLevelMixin,
 )
-from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.utils.settings import (
-    FDSNWS_NO_CONTENT_CODES,
     STATIONXML_TAGS_NETWORK,
     STATIONXML_TAGS_STATION,
     STATIONXML_TAGS_CHANNEL,

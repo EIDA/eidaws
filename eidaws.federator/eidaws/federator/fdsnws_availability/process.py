@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import aiohttp
-
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.process import group_routes_by, SortedResponse
-from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
     with_context_logging,
@@ -14,7 +11,6 @@ from eidaws.federator.utils.worker import (
     NetworkLevelMixin,
 )
 from eidaws.utils.misc import Route
-from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 
 
