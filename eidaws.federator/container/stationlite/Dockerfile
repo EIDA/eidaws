@@ -75,7 +75,7 @@ RUN mkdir /etc/service/apache2 && \
 
 # Add the harvesting cronjob (once per day)
 RUN sed -e 's/^/export /' -i /etc/eidaws-stationlite/env
-RUN echo "0 1 * * * root source /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_config.yml" >> /etc/crontab
+RUN echo "0 1 * * * root . /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_config.yml" >> /etc/crontab
 
 # Expose HTTP default port
 EXPOSE 8089
