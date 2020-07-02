@@ -20,6 +20,7 @@ from eidaws.federator.utils.misc import (
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
+from eidaws.federator.utils.misc import route_to_uuid
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.misc import _callable_or_raise
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
@@ -60,6 +61,28 @@ def with_exception_handling(ignore_runtime_exception=False):
                         )
                     )
                 )
+
+        return wrapper
+
+    return decorator
+
+
+def with_context_logging():
+    """
+    Method decorator for :py:func:`BaseWorker.run` coros providing providing
+    context logging facilities.
+    """
+
+    def decorator(coro):
+        @functools.wraps(coro)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                ctx_args = self.create_job_context(args[0])
+            except IndexError:
+                ctx_args = [self.request]
+
+            self.logger = make_context_logger(self._logger, *ctx_args)
+            await coro(self, *args, **kwargs)
 
         return wrapper
 
@@ -144,10 +167,12 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     async def run(self, route, req_method="GET", **req_kwargs):
         raise NotImplementedError
 
-    async def _handle_error(self, error=None, **kwargs):
+    async def _handle_error(self, error=None, logger=None, **kwargs):
+        logger = logger or self.logger
         msg = kwargs.get("msg", error)
+
         if msg is not None:
-            self.logger.warning(str(msg))
+            logger.warning(str(msg))
 
     async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
         raise WorkerError("HTTP code 413 handling not implemented.")
@@ -156,6 +181,12 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         """
         Template coro intented to be called when finializing a job.
         """
+
+    def create_job_context(self, route):
+        return [
+            self.request,
+            route_to_uuid(route),
+        ]
 
 
 class BaseSplitAlignWorker(BaseWorker):
@@ -180,6 +211,7 @@ class BaseSplitAlignWorker(BaseWorker):
 
         assert self._lock is not None, "Lock not assigned"
 
+    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, req_method="GET", **req_kwargs):
         def route_with_single_stream(route):
@@ -356,7 +388,12 @@ class NetworkLevelMixin:
     level granularity
     """
 
-    async def _fetch(self, route, req_method="GET", **kwargs):
+    async def _fetch(self, route, req_method="GET", parent_ctx=None, **kwargs):
+        logger = self.logger
+        if parent_ctx is not None:
+            parent_ctx.append(route_to_uuid(route))
+            logger = make_context_logger(self._logger, *parent_ctx)
+
         req_handler = FdsnRequestHandler(
             **route._asdict(), query_params=self.query_params
         )
@@ -370,7 +407,7 @@ class NetworkLevelMixin:
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg)
+            await self._handle_error(msg=msg, logger=logger)
             await self.update_cretry_budget(req_handler.url, 503)
 
             return route, None
@@ -387,19 +424,19 @@ class NetworkLevelMixin:
             if resp.status == 413:
                 await self._handle_413()
             else:
-                await self._handle_error(msg=msg)
+                await self._handle_error(msg=msg, logger=logger)
 
             return route, None
         else:
             if resp.status != 200:
                 if resp.status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
+                    logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg, logger=logger)
 
                 return route, None
 
-        self.logger.debug(msg)
+        logger.debug(msg)
 
         await self.update_cretry_budget(req_handler.url, resp.status)
         return route, resp
