@@ -1441,7 +1441,7 @@ class StationLiteHarvestApp:
             pid_lock = InterProcessLock(path_pidfile)
             pid_lock_gotten = pid_lock.acquire(blocking=False)
             if not pid_lock_gotten:
-                raise AlreadyHarvesting(self.path_pidfile)
+                raise AlreadyHarvesting(path_pidfile)
             self.logger.debug(
                 f"Aquired PID lock {self.config['path_pidfile']!r}"
             )
