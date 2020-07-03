@@ -70,29 +70,32 @@ def _get_mseed_record_size(fd):
     blockette_start = 0
     b1000_found = False
 
-    while blockette_start < remaining_header_size:
+    try:
+        while blockette_start < remaining_header_size:
 
-        # 2 bytes, unsigned short
-        (blockette_id,) = struct.unpack(
-            b"!H", buf[blockette_start : blockette_start + 2]
-        )
+            # 2 bytes, unsigned short
+            (blockette_id,) = struct.unpack(
+                b"!H", buf[blockette_start : blockette_start + 2]
+            )
 
-        # get start of next blockette (second value, 2 bytes, unsigned short)
-        (next_blockette_start,) = struct.unpack(
-            b"!H", buf[blockette_start + 2 : blockette_start + 4]
-        )
+            # get start of next blockette (second value, 2 bytes, unsigned short)
+            (next_blockette_start,) = struct.unpack(
+                b"!H", buf[blockette_start + 2 : blockette_start + 4]
+            )
 
-        if blockette_id == DATA_ONLY_BLOCKETTE_NUMBER:
+            if blockette_id == DATA_ONLY_BLOCKETTE_NUMBER:
 
-            b1000_found = True
-            break
+                b1000_found = True
+                break
 
-        elif next_blockette_start == 0:
-            # no blockettes follow
-            break
+            elif next_blockette_start == 0:
+                # no blockettes follow
+                break
 
-        else:
-            blockette_start = next_blockette_start
+            else:
+                blockette_start = next_blockette_start
+    except struct.error as err:
+        pass
 
     # blockette 1000 not found
     if not b1000_found:
