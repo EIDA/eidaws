@@ -38,7 +38,10 @@ async def exception_handling_middleware(request, handler):
     except Exception as err:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         _logger = make_context_logger(logger, request)
-        _logger.critical(f"Local Exception: {type(err)}")
+        _logger.critical(
+            f"Local Exception: error={type(err)}, "
+            f"url={request.url!r}, method={request.method!r}"
+        )
         _logger.critical(
             "Traceback information: "
             + repr(
