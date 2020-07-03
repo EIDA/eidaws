@@ -40,8 +40,7 @@ def _get_mseed_record_size(fd):
     if not buf:
         raise MiniseedParsingError("Missing data.")
 
-    # get offset of data (value before last,
-    # 2 bytes, unsigned short)
+    # get offset of data (value before last, 2 bytes, unsigned short)
     data_offset_idx = FIXED_DATA_HEADER_SIZE - 4
     (data_offset,) = struct.unpack(
         b"!H", buf[data_offset_idx : data_offset_idx + 2]
@@ -51,16 +50,14 @@ def _get_mseed_record_size(fd):
         remaining_header_size = data_offset - FIXED_DATA_HEADER_SIZE
 
     elif data_offset == 0:
-        # This means that blockettes can follow,
-        # but no data samples. Use minimum record
-        # size to read following blockettes. This
-        # can still fail if blockette 1000 is after
-        # position 256
+        # This means that blockettes can follow, but no data samples. Use
+        # minimum record size to read following blockettes. This can still fail
+        # if blockette 1000 is after position 256
         remaining_header_size = MINIMUM_RECORD_LENGTH - FIXED_DATA_HEADER_SIZE
 
     else:
-        # Full header size cannot be smaller than
-        # fixed header size. This is an error.
+        # Full header size cannot be smaller than fixed header size. This is an
+        # error.
         raise MiniseedParsingError(
             f"Data offset smaller than fixed header length: {data_offset}"
         )
@@ -80,8 +77,7 @@ def _get_mseed_record_size(fd):
             b"!H", buf[blockette_start : blockette_start + 2]
         )
 
-        # get start of next blockette (second
-        # value, 2 bytes, unsigned short)
+        # get start of next blockette (second value, 2 bytes, unsigned short)
         (next_blockette_start,) = struct.unpack(
             b"!H", buf[blockette_start + 2 : blockette_start + 4]
         )
