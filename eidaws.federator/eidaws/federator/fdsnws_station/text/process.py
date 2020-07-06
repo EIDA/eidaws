@@ -11,6 +11,7 @@ from eidaws.federator.settings import (
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
+    with_context_logging,
     with_exception_handling,
     BaseWorker,
 )
@@ -28,6 +29,7 @@ class _StationTextWorker(BaseWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
+    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, req_method="GET", **req_kwargs):
         req_handler = FdsnRequestHandler(
@@ -60,6 +62,8 @@ class _StationTextWorker(BaseWorker):
         finally:
             if resp_status is not None:
                 await self.update_cretry_budget(req_handler.url, resp_status)
+
+            await self.finalize()
 
     async def _parse_resp(self, resp):
         msg = (

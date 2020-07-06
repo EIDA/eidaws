@@ -13,7 +13,6 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
-from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.mixin import (
     CachingMixin,
     ClientRetryBudgetMixin,
@@ -24,10 +23,13 @@ from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.utils.worker import ReponseDrain, QueueDrain
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
-from eidaws.utils.misc import Route
+from eidaws.utils.misc import get_req_config, make_context_logger, Route
 from eidaws.utils.settings import (
     FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
     FDSNWS_NO_CONTENT_CODES,
+    KEY_REQUEST_QUERY_PARAMS,
+    KEY_REQUEST_STARTTIME,
+    KEY_REQUEST_STREAM_EPOCHS,
 )
 from eidaws.utils.sncl import StreamEpoch
 
@@ -162,15 +164,15 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
     @property
     def query_params(self):
-        return self.request[FED_BASE_ID + ".query_params"]
+        return get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)
 
     @property
     def stream_epochs(self):
-        return self.request[FED_BASE_ID + ".stream_epochs"]
+        return get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)
 
     @property
     def request_submitted(self):
-        return self.request[FED_BASE_ID + ".request_starttime"]
+        return get_req_config(self.request, KEY_REQUEST_STARTTIME)
 
     @property
     def nodata(self):
@@ -327,6 +329,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 proxy=self.proxy,
             )
         finally:
+            # TODO(damb): Finalization prevents access logs being output
             await asyncio.shield(self.finalize())
 
     def make_stream_response(self, *args, **kwargs):
@@ -406,7 +409,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             elif callable(coro_or_func):
                 coro_or_func()
             else:
-                raise TypeError('Unknown type: {type(coro_or_func)}')
+                raise TypeError("Unknown type: {type(coro_or_func)}")
 
     async def _gc_response_code_stats(self):
 
@@ -747,7 +750,6 @@ class SortedResponse(BaseRequestProcessor):
                     f"RuntimeError while tearing down tasks: {result}"
                 )
             elif isinstance(result, Exception):
-                print(result)
                 self.logger.error(
                     f"Error while tearing down tasks: {type(result)}"
                 )

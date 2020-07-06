@@ -63,3 +63,11 @@ def _element_to_tags(element):
 STATIONXML_TAGS_NETWORK = _element_to_tags(STATIONXML_ELEMENT_NETWORK)
 STATIONXML_TAGS_STATION = _element_to_tags(STATIONXML_ELEMENT_STATION)
 STATIONXML_TAGS_CHANNEL = _element_to_tags(STATIONXML_ELEMENT_CHANNEL)
+
+
+# ----------------------------------------------------------------------------
+REQUEST_CONFIG_KEY = "eidaws"
+KEY_REQUEST_ID = "request_id"
+KEY_REQUEST_STARTTIME = "request_starttime"
+KEY_REQUEST_QUERY_PARAMS = "query_params"
+KEY_REQUEST_STREAM_EPOCHS = "stream_epochs"

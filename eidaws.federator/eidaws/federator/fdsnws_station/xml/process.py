@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import aiohttp
 import asyncio
 import datetime
 import hashlib
@@ -18,13 +17,12 @@ from eidaws.federator.utils.process import (
     UnsortedResponse,
 )
 from eidaws.federator.utils.worker import (
+    with_context_logging,
     with_exception_handling,
     BaseWorker,
     NetworkLevelMixin,
 )
-from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.utils.settings import (
-    FDSNWS_NO_CONTENT_CODES,
     STATIONXML_TAGS_NETWORK,
     STATIONXML_TAGS_STATION,
     STATIONXML_TAGS_CHANNEL,
@@ -56,14 +54,18 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
     def level(self):
         return self.query_params["level"]
 
+    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, net, req_method="GET", **req_kwargs):
 
         self.logger.debug(f"Fetching data for network: {net}")
+        job_ctx = self.create_job_context(route)
 
         # granular request strategy
         tasks = [
-            self._fetch(_route, req_method=req_method, **req_kwargs)
+            self._fetch(
+                _route, req_method=req_method, parent_ctx=job_ctx, **req_kwargs
+            )
             for _route in route
         ]
 
@@ -257,9 +259,7 @@ class StationXMLRequestProcessor(UnsortedResponse):
         await response.write(header)
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _StationXMLWorker(
-            request, session, drain, lock=lock, *kwargs,
-        )
+        return _StationXMLWorker(request, session, drain, lock=lock, *kwargs,)
 
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """

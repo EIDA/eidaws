@@ -131,7 +131,7 @@ def main():
 
     app = create_app(config_dict=config_dict)
 
-    logger.info(f'Application routes: {list(app.router.routes())}')
+    logger.info(f"Application routes: {list(app.router.routes())}")
 
     # run standalone app
     web.run_app(

@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import aiohttp
-
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.process import group_routes_by, SortedResponse
-from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
+    with_context_logging,
     with_exception_handling,
     BaseWorker,
     NetworkLevelMixin,
 )
 from eidaws.utils.misc import Route
-from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 
 
@@ -30,14 +27,18 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
 
         self._buf = {}
 
+    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, net, priority, req_method="GET", **req_kwargs):
 
         self.logger.debug(f"Fetching data for network: {net}")
+        job_ctx = self.create_job_context(route)
 
         # granular request strategy
         tasks = [
-            self._fetch(_route, req_method=req_method, **req_kwargs)
+            self._fetch(
+                _route, req_method=req_method, parent_ctx=job_ctx, **req_kwargs
+            )
             for _route in route
         ]
 

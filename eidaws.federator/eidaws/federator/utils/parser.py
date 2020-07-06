@@ -12,9 +12,10 @@ from marshmallow import (
     post_load,
 )
 
-from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.utils.parser import FDSNWSParserMixin
+from eidaws.utils.misc import get_req_config
+from eidaws.utils.settings import KEY_REQUEST_STARTTIME
 
 
 class ServiceOpts(SchemaOpts):
@@ -55,7 +56,7 @@ def setup_parser_error_handler(service_version=None):
         raise FDSNHTTPError.create(
             400,
             req,
-            request_submitted=req[FED_BASE_ID + ".request_starttime"],
+            request_submitted=get_req_config(req, KEY_REQUEST_STARTTIME),
             service_version=service_version,
             error_desc_long=str(error),
         )

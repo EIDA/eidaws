@@ -2,10 +2,17 @@
 import argparse
 import collections
 import datetime
+import logging
 import os
 import re
 
 from marshmallow.utils import from_iso_date
+
+from eidaws.utils.settings import (
+    REQUEST_CONFIG_KEY,
+    KEY_REQUEST_ID,
+    KEY_REQUEST_STARTTIME,
+)
 
 
 dateutil_available = False
@@ -57,6 +64,10 @@ def real_file_path(path):
     if not os.path.isfile(path):
         raise argparse.ArgumentTypeError
     return path
+
+
+def get_req_config(request, key):
+    return request[REQUEST_CONFIG_KEY].get(key)
 
 
 # -----------------------------------------------------------------------------
@@ -201,3 +212,39 @@ class DefaultOrderedDict(collections.OrderedDict):
         import copy
 
         return type(self)(self.default_factory, copy.deepcopy(self.items()))
+
+
+def make_context_logger(logger, request, *args):
+    ctx = [get_req_config(request, KEY_REQUEST_ID)] + list(args)
+    return ContextLoggerAdapter(logger, {"ctx": ctx})
+
+
+def log_access(logger, request):
+    def get_req_header(key):
+        return request.headers.get(key, "-")
+
+    start_time = get_req_config(request, KEY_REQUEST_STARTTIME)
+    logger = make_context_logger(logger, request)
+    logger.info(
+        f"{request.remote} {start_time.isoformat()} "
+        f'"{request.method} {request.path_qs} '
+        f"HTTP/{request.version.major}.{request.version.minor}' "
+        f"{get_req_header('Referer')!r} {get_req_header('User-Agent')!r}"
+    )
+
+
+class ContextLoggerAdapter(logging.LoggerAdapter):
+    """
+    Adapter expecting the passed in dict-like object to have a 'ctx' key, whose
+    value in brackets is prepended to the log message.
+    """
+
+    def process(self, msg, kwargs):
+        try:
+            ctx = self.extra["ctx"]
+            if isinstance(ctx, (list, tuple)):
+                ctx = "::".join(str(c) for c in ctx)
+        except KeyError:
+            return f"{msg}", kwargs
+        else:
+            return f"[{ctx}] {msg}", kwargs

@@ -9,10 +9,15 @@ from webargs.aiohttpparser import parser
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.strict import keyword_parser
-from eidaws.federator.utils.misc import make_context_logger
 from eidaws.federator.utils.mixin import ConfigMixin
 from eidaws.federator.utils.parser import fdsnws_parser
+from eidaws.utils.misc import get_req_config, make_context_logger
 from eidaws.utils.schema import StreamEpochSchema, ManyStreamEpochSchema
+from eidaws.utils.settings import (
+    REQUEST_CONFIG_KEY,
+    KEY_REQUEST_QUERY_PARAMS,
+    KEY_REQUEST_STREAM_EPOCHS,
+)
 
 
 class BaseView(web.View, CorsViewMixin, ConfigMixin):
@@ -40,8 +45,12 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
     async def get(self):
         await self._parse_get()
 
-        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
-        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
+        self.logger.debug(
+            get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)
+        )
+        self.logger.debug(
+            get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)
+        )
 
         processor = self._processor_cls(self.request)
         processor.post = False
@@ -51,8 +60,12 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
     async def post(self):
         await self._parse_post()
 
-        self.logger.debug(self.request[FED_BASE_ID + ".query_params"])
-        self.logger.debug(self.request[FED_BASE_ID + ".stream_epochs"])
+        self.logger.debug(
+            get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)
+        )
+        self.logger.debug(
+            get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)
+        )
 
         processor = self._processor_cls(self.request)
         processor.post = True
@@ -68,7 +81,9 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         )
 
         # parse query parameters
-        self.request[FED_BASE_ID + ".query_params"] = await parser.parse(
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_QUERY_PARAMS
+        ] = await parser.parse(
             self._schema(), self.request, locations=("query",)
         )
 
@@ -77,9 +92,9 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
             self.request,
             locations=("query",),
         )
-        self.request[FED_BASE_ID + ".stream_epochs"] = stream_epochs_dict[
-            "stream_epochs"
-        ]
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_STREAM_EPOCHS
+        ] = stream_epochs_dict["stream_epochs"]
 
     async def _parse_post(self):
         # strict parameter validation
@@ -88,8 +103,8 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
         )
 
         # parse query parameters
-        self.request[
-            FED_BASE_ID + ".query_params"
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_QUERY_PARAMS
         ] = await fdsnws_parser.parse(
             self._schema(), self.request, locations=("form",)
         )
@@ -99,6 +114,6 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
             self.request,
             locations=("form",),
         )
-        self.request[FED_BASE_ID + ".stream_epochs"] = stream_epochs_dict[
-            "stream_epochs"
-        ]
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_STREAM_EPOCHS
+        ] = stream_epochs_dict["stream_epochs"]

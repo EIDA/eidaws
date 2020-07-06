@@ -6,11 +6,13 @@ import inspect
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
+import uuid
 import warnings
 import yaml
 
 from aiohttp import web, TCPConnector
 from collections import ChainMap
+from hashlib import md5
 from jsonschema import validate, ValidationError
 
 from eidaws.federator.settings import (
@@ -227,17 +229,6 @@ class HelperPOSTRequest:
 
 
 # ----------------------------------------------------------------------------
-def make_context_logger(logger, request):
-    return ContextLoggerAdapter(
-        logger, {"ctx": request[FED_BASE_ID + ".request_id"]}
-    )
-
-
-class ContextLoggerAdapter(logging.LoggerAdapter):
-    """
-    Adapter expecting the passed in dict-like object to have a 'ctx' key, whose
-    value in brackets is prepended to the log message.
-    """
-
-    def process(self, msg, kwargs):
-        return f"[{self.extra['ctx']}] {msg}", kwargs
+def route_to_uuid(route):
+    h = md5(str(route).encode("utf-8"))
+    return uuid.UUID(bytes=h.digest())
