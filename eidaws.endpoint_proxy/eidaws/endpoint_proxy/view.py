@@ -8,7 +8,7 @@ import socket
 from aiohttp import web
 
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
-from eidaws.endpoint_proxy.utils import make_context_logger
+from eidaws.utils.misc import make_context_logger
 
 
 class RedirectView(web.View):
@@ -57,10 +57,6 @@ class RedirectView(web.View):
                 )
             )
 
-        self.logger.info(
-            f"Proxying request (host={request.host!r}, "
-            f"path={request.path!r}, query={request.query_string!r}) ..."
-        )
         # XXX(damb): Modify request headers if required
         try:
             async with aiohttp.ClientSession(

@@ -14,16 +14,21 @@ from cached_property import cached_property
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
-from eidaws.federator.utils.misc import (
-    _serialize_query_params,
-    make_context_logger,
-)
+from eidaws.federator.utils.misc import _serialize_query_params
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
 from eidaws.federator.utils.misc import route_to_uuid
 from eidaws.utils.error import ErrorWithTraceback
-from eidaws.utils.misc import _callable_or_raise
-from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
+from eidaws.utils.misc import (
+    _callable_or_raise,
+    get_req_config,
+    make_context_logger,
+)
+from eidaws.utils.settings import (
+    FDSNWS_NO_CONTENT_CODES,
+    KEY_REQUEST_QUERY_PARAMS,
+    KEY_REQUEST_ID,
+)
 
 
 def _split_stream_epoch(stream_epoch, num, default_endtime):
@@ -156,7 +161,7 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         Return serialized query parameters.
         """
         return _serialize_query_params(
-            self.request[FED_BASE_ID + ".query_params"],
+            get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS),
             self.QUERY_PARAM_SERIALIZER,
         )
 
@@ -227,7 +232,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 route
             ), "Cannot handle multiple streams within a single route."
 
-            req_id = self.request[FED_BASE_ID + ".request_id"]
+            req_id = get_req_config(self.request, KEY_REQUEST_ID)
             async with AioSpooledTemporaryFile(
                 max_size=self.config["buffer_rollover_size"],
                 prefix=str(req_id) + ".",

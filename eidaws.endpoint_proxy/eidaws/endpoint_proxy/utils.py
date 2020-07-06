@@ -12,7 +12,6 @@ from jsonschema import validate, ValidationError
 
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
 from eidaws.utils.app import ConfigurationError
-from eidaws.utils.misc import ContextLoggerAdapter
 
 
 def get_config(path_config=None, cli_config={}, defaults={}, json_schema=None):
@@ -102,8 +101,3 @@ def setup_logger(path_logging_conf=None, capture_warnings=False):
     logging.captureWarnings(bool(capture_warnings))
 
     return logger
-
-
-def make_context_logger(logger, request):
-    ctx = request["request_id"]
-    return ContextLoggerAdapter(logger, {"ctx": ctx})

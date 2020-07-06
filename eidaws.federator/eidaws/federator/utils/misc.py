@@ -24,7 +24,6 @@ from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
 from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
-from eidaws.utils.misc import ContextLoggerAdapter
 
 
 def _serialize_query_params(query_params, serializer=None):
@@ -233,8 +232,3 @@ class HelperPOSTRequest:
 def route_to_uuid(route):
     h = md5(str(route).encode("utf-8"))
     return uuid.UUID(bytes=h.digest())
-
-
-def make_context_logger(logger, request, *args):
-    ctx = [request[FED_BASE_ID + ".request_id"]] + list(args)
-    return ContextLoggerAdapter(logger, {"ctx": ctx})

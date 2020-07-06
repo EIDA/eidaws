@@ -17,6 +17,11 @@ from eidaws.federator.eidaws_wfcatalog.json.process import (
 from eidaws.federator.utils.parser import fdsnws_parser
 from eidaws.federator.utils.strict import keyword_parser
 from eidaws.federator.utils.view import BaseView
+from eidaws.utils.settings import (
+    REQUEST_CONFIG_KEY,
+    KEY_REQUEST_QUERY_PARAMS,
+    KEY_REQUEST_STREAM_EPOCHS,
+)
 
 
 class WFCatalogView(BaseView):
@@ -41,7 +46,9 @@ class WFCatalogView(BaseView):
         )
 
         # parse query parameters
-        self.request[FED_BASE_ID + ".query_params"] = await parser.parse(
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_QUERY_PARAMS
+        ] = await parser.parse(
             self._schema(), self.request, locations=("query",)
         )
 
@@ -50,9 +57,9 @@ class WFCatalogView(BaseView):
             self.request,
             locations=("query",),
         )
-        self.request[FED_BASE_ID + ".stream_epochs"] = stream_epochs_dict[
-            "stream_epochs"
-        ]
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_STREAM_EPOCHS
+        ] = stream_epochs_dict["stream_epochs"]
 
     async def _parse_post(self):
         # strict parameter validation
@@ -61,8 +68,8 @@ class WFCatalogView(BaseView):
         )
 
         # parse query parameters
-        self.request[
-            FED_BASE_ID + ".query_params"
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_QUERY_PARAMS
         ] = await fdsnws_parser.parse(
             self._schema(), self.request, locations=("form",)
         )
@@ -72,6 +79,6 @@ class WFCatalogView(BaseView):
             self.request,
             locations=("form",),
         )
-        self.request[FED_BASE_ID + ".stream_epochs"] = stream_epochs_dict[
-            "stream_epochs"
-        ]
+        self.request[REQUEST_CONFIG_KEY][
+            KEY_REQUEST_STREAM_EPOCHS
+        ] = stream_epochs_dict["stream_epochs"]

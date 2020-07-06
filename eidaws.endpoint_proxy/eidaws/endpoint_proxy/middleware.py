@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import datetime
 import logging
 import sys
 import traceback
@@ -9,7 +10,12 @@ import uuid
 from aiohttp import web
 
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
-from eidaws.endpoint_proxy.utils import make_context_logger
+from eidaws.utils.misc import log_access, make_context_logger
+from eidaws.utils.settings import (
+    REQUEST_CONFIG_KEY,
+    KEY_REQUEST_ID,
+    KEY_REQUEST_STARTTIME,
+)
 
 
 logger = logging.getLogger(PROXY_BASE_ID + ".middleware")
@@ -17,7 +23,15 @@ logger = logging.getLogger(PROXY_BASE_ID + ".middleware")
 
 @web.middleware
 async def before_request(request, handler):
-    request["request_id"] = uuid.uuid4()
+    # set up config dict
+    request[REQUEST_CONFIG_KEY] = dict()
+    request[REQUEST_CONFIG_KEY][
+        KEY_REQUEST_STARTTIME
+    ] = datetime.datetime.utcnow()
+    request[REQUEST_CONFIG_KEY][KEY_REQUEST_ID] = uuid.uuid4()
+
+    log_access(logger, request)
+
     return await handler(request)
 
 
