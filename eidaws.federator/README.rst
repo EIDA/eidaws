@@ -76,6 +76,11 @@ The deployment described includes containerized versions of
 * Python3.6/3.7
 * Logging (syslog)
 
+.. note::
+
+  Currently, `fdsnws-availability` resources are not part of the container
+  deployment.
+
 **Introduction**:
 
 To build a container image with the appropriate configuration it is recommended
