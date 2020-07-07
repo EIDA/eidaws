@@ -8,7 +8,6 @@ from eidaws.federator.settings import (
     FED_BASE_ID,
     FED_STATION_TEXT_SERVICE_ID,
 )
-from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
     with_context_logging,
@@ -32,8 +31,10 @@ class _StationTextWorker(BaseWorker):
     @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(self, route, req_method="GET", **req_kwargs):
-        req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=self.query_params
+        req_handler = self.REQUEST_HANDLER_CLS(
+            **route._asdict(),
+            query_params=self.query_params,
+            headers=self.request_headers,
         )
         req_handler.format = self.format
 
@@ -137,6 +138,4 @@ class StationTextRequestProcessor(UnsortedResponse):
         await response.write(header + b"\n")
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _StationTextWorker(
-            request, session, drain, lock=lock, **kwargs
-        )
+        return _StationTextWorker(request, session, drain, lock=lock, **kwargs)

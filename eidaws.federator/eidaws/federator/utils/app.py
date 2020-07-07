@@ -21,12 +21,14 @@ from eidaws.federator.utils.misc import (
     setup_logger,
 )
 from eidaws.federator.utils.parser import setup_parser_error_handler
+from eidaws.federator.utils.remote import XForwardedRelaxed
 from eidaws.federator.settings import (
     FED_DEFAULT_CONFIG_BASEDIR,
     FED_DEFAULT_CONFIG_FILE,
     FED_DEFAULT_HOSTNAME,
     FED_DEFAULT_PORT,
     FED_DEFAULT_UNIX_PATH,
+    FED_DEFAULT_NUM_FORWARDED,
     FED_DEFAULT_SERVE_STATIC,
     FED_DEFAULT_URL_ROUTING,
     FED_DEFAULT_NETLOC_PROXY,
@@ -172,6 +174,7 @@ config_schema = {
                 },
             ]
         },
+        "num_forwarded": {"type": "integer", "minimum": 0},
     },
     "additionalProperties": False,
 }
@@ -231,6 +234,7 @@ def config():
     )
     config.setdefault("streaming_timeout", FED_DEFAULT_STREAMING_TIMEOUT)
     config.setdefault("proxy_netloc", FED_DEFAULT_NETLOC_PROXY)
+    config.setdefault("num_forwarded", FED_DEFAULT_NUM_FORWARDED)
 
     return config
 
@@ -248,7 +252,11 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
 
     app = web.Application(
         # XXX(damb): The ordering of middlewares matters
-        middlewares=[before_request, exception_handling_middleware],
+        middlewares=[
+            before_request,
+            exception_handling_middleware,
+            XForwardedRelaxed(num=config["num_forwarded"]).middleware,
+        ],
         client_max_size=config["client_max_size"],
     )
 

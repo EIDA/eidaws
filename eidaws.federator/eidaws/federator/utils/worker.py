@@ -141,6 +141,7 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     Abstract base class for worker implementations.
     """
 
+    REQUEST_HANDLER_CLS = FdsnRequestHandler
     QUERY_PARAM_SERIALIZER = None
     LOGGER = FED_BASE_ID + ".worker"
 
@@ -168,6 +169,15 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     @property
     def format(self):
         return self.query_params["format"]
+
+    @property
+    def request_headers(self):
+        headers = copy.deepcopy(self.REQUEST_HANDLER_CLS.DEFAULT_HEADERS)
+        if not self.config["num_forwarded"]:
+            return headers
+
+        headers["X-Forwarded-For"] = self.request.remote
+        return headers
 
     async def run(self, route, req_method="GET", **req_kwargs):
         raise NotImplementedError
@@ -275,8 +285,11 @@ class BaseSplitAlignWorker(BaseWorker):
     ):
         for se in stream_epochs:
 
-            req_handler = FdsnRequestHandler(
-                url=url, stream_epochs=[se], query_params=self.query_params
+            req_handler = self.REQUEST_HANDLER_CLS(
+                url=url,
+                stream_epochs=[se],
+                query_params=self.query_params,
+                headers=self.request_headers,
             )
             req_handler.format = self.format
 
@@ -399,8 +412,10 @@ class NetworkLevelMixin:
             parent_ctx.append(route_to_uuid(route))
             logger = make_context_logger(self._logger, *parent_ctx)
 
-        req_handler = FdsnRequestHandler(
-            **route._asdict(), query_params=self.query_params
+        req_handler = self.REQUEST_HANDLER_CLS(
+            **route._asdict(),
+            query_params=self.query_params,
+            headers=self.request_headers,
         )
         req_handler.format = self.format
 
