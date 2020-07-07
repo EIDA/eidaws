@@ -40,6 +40,7 @@ class _StationTextWorker(BaseWorker):
 
         req = getattr(req_handler, req_method.lower())(self._session)
 
+        self._log_request(req_handler, req_method)
         resp_status = None
         try:
             resp = await req(**req_kwargs)

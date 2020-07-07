@@ -197,6 +197,9 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         Template coro intented to be called when finializing a job.
         """
 
+    def _log_request(self, req_handler, method):
+        self.logger.debug(f"Request ({method}): {req_handler!r}")
+
     def create_job_context(self, route):
         return [
             self.request,
@@ -294,6 +297,7 @@ class BaseSplitAlignWorker(BaseWorker):
             req_handler.format = self.format
 
             req = getattr(req_handler, req_method.lower())(self._session)
+            self._log_request(req_handler, req_method)
             try:
                 resp = await req(**req_kwargs)
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
@@ -420,6 +424,7 @@ class NetworkLevelMixin:
         req_handler.format = self.format
 
         req = getattr(req_handler, req_method.lower())(self._session)
+        self._log_request(req_handler, req_method)
         try:
             resp = await req(**kwargs)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
