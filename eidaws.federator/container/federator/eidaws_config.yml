@@ -193,13 +193,13 @@ eidaws.federator:
     # TTL is disabled.
     # Default: 3600
     #
-    client_retry_budget_ttl: 1800
+    client_retry_budget_ttl: 960
     #
     # ----
     # Rolling window size with respect to response code time series.
     # Default: 10000
     #
-    client_retry_budget_window_size: 4096
+    # client_retry_budget_window_size: 10000
 
     # ----
     # Cache specific configuration options
