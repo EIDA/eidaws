@@ -319,6 +319,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         self.logger.debug(
             f"Number of (demuxed) routes received: {len(routes)}"
         )
+        self.logger.debug(f"Routes received: {routes}")
 
         try:
             # XXX(damb): Handle exceptions within middleware.
@@ -436,6 +437,22 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 and total_stream_duration
                 > self.max_total_stream_epoch_duration
             ):
+                self.logger.debug(
+                    "Exceeded configured limits: {}{}".format(
+                        "stream_duration="
+                        f"{stream_duration.total_seconds()}s (configured="
+                        f"{self.max_stream_epoch_duration.total_seconds()}s), "
+                        if self.max_stream_epoch_duration
+                        else "",
+                        "total_stream_duration: "
+                        f"{total_stream_duration.total_seconds()}s "
+                        "(configured="
+                        f"{self.max_total_stream_epoch_duration.total_seconds()}s"
+                        ")"
+                        if self.max_total_stream_epoch_duration
+                        else "",
+                    )
+                )
                 raise FDSNHTTPError.create(
                     413,
                     self.request,
