@@ -48,12 +48,16 @@ def main():
     with open(PATH_TMP / EIDAWS_CONFIG_YML_TEMPLATE, "r") as ifd:
         eidaws_yml_template = ifd.read()
 
-    for i, config in enumerate(backend_configs):
+    for config in backend_configs:
 
         service_dir = PATH_RUNIT_SERVICE / config["fqdn"]
         os.mkdir(service_dir)
 
         hostname, port = config["proxy_netloc"].split(":")
+        path_config = (
+            PATH_EIDAWS_ENDPOINT_PROXY_CONF
+            / f"eidaws_config_{config['fqdn']}.yml"
+        )
 
         with open(service_dir / "run", "w") as ofd:
             ofd.write("#!/bin/bash\n")
@@ -61,7 +65,7 @@ def main():
                 f"exec /sbin/setuser www-data "
                 f"{PATH_VENV}/bin/eida-endpoint-proxy "
                 f"-H {hostname} -P {port} "
-                f"-c {PATH_EIDAWS_ENDPOINT_PROXY_CONF}/eidaws_config_{i}.yml "
+                f"-c {path_config} "
                 f"2>&1"
             )
 
@@ -77,9 +81,7 @@ def main():
                 flags=re.M,
             )
 
-        with open(
-            PATH_EIDAWS_ENDPOINT_PROXY_CONF / f"eidaws_config_{i}.yml", "w"
-        ) as ofd:
+        with open(path_config, "w") as ofd:
             ofd.write(interpolated)
 
 
