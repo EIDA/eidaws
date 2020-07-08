@@ -19,6 +19,7 @@ _VERSION = get_version(os.path.join("eidaws", "federator", "version.py"))
 _DEPS = [
     "aiohttp>=3.6.2",
     "aiohttp_cors>=0.7.0",
+    "aiohttp-remotes>=0.1.2",
     "aiodns>=2.0.0",
     "aiofiles>=0.5.0",
     "aioredis>=1.3.1",

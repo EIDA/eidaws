@@ -95,10 +95,11 @@ class RequestHandlerBase:
     def __str__(self):
         return ", ".join(
             [
-                "scheme={}".format(self._scheme),
-                "netloc={}".format(self._netloc),
-                "path={}.".format(self._path),
-                "qp={}".format(self._query_params),
+                f"scheme={self._scheme}",
+                f"netloc={self._netloc}",
+                f"path={self._path}",
+                f"headers={self._headers}",
+                f"qp={self._query_params}",
                 "streams={}".format(
                     ", ".join(str(se) for se in self._stream_epochs)
                 ),
@@ -106,7 +107,7 @@ class RequestHandlerBase:
         )
 
     def __repr__(self):
-        return "<{}: {}>".format(type(self).__name__, self)
+        return f"<{type(self).__name__}: {self}>"
 
     def _filter_query_params(self, param, value):
         return True

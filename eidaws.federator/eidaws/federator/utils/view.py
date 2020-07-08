@@ -45,13 +45,7 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
     async def get(self):
         await self._parse_get()
 
-        self.logger.debug(
-            get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)
-        )
-        self.logger.debug(
-            get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)
-        )
-
+        self._log()
         processor = self._processor_cls(self.request)
         processor.post = False
 
@@ -60,17 +54,27 @@ class BaseView(web.View, CorsViewMixin, ConfigMixin):
     async def post(self):
         await self._parse_post()
 
-        self.logger.debug(
-            get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)
-        )
-        self.logger.debug(
-            get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)
-        )
-
+        self._log()
         processor = self._processor_cls(self.request)
         processor.post = True
 
         return await processor.federate(timeout=self.client_timeout)
+
+    def _log(self):
+        self.logger.debug(
+            f"Request (received): path={self.request.path!r}, "
+            f"query_string={self.request.query_string!r} "
+            f"headers={self.request.headers!r}, "
+            f"remote={self.request.remote!r}"
+        )
+        self.logger.debug(
+            "Query parameters (parsed): "
+            f"{get_req_config(self.request, KEY_REQUEST_QUERY_PARAMS)}"
+        )
+        self.logger.debug(
+            "Stream epochs (parsed): "
+            f"{get_req_config(self.request, KEY_REQUEST_STREAM_EPOCHS)}"
+        )
 
     async def _parse_get(self):
         # strict parameter validation

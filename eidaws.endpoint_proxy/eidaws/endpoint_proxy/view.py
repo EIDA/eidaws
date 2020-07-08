@@ -2,6 +2,7 @@
 
 import aiohttp
 import asyncio
+import copy
 import logging
 import socket
 
@@ -57,10 +58,23 @@ class RedirectView(web.View):
                 )
             )
 
-        # XXX(damb): Modify request headers if required
+        self.logger.debug(
+            f"Request (redirecting): method={request.method!r} "
+            f"path={request.path!r}, query_string={request.query_string!r}, "
+            f"headers={request.headers!r}, remote={request.remote!r}"
+        )
+        # modify headers
+        if self.config["num_forwarded"]:
+            req_headers = copy.deepcopy(dict(headers))
+            req_headers["X-Forwarded-For"] = request.remote
+
+            self.logger.debug(
+                f"Request headers (redirecting, modified): {req_headers!r}"
+            )
+
         try:
             async with aiohttp.ClientSession(
-                headers=headers,
+                headers=req_headers,
                 connector=connector,
                 timeout=self.client_timeout,
                 connector_owner=False,
