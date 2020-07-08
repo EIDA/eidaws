@@ -29,6 +29,15 @@ eidaws.endpoint_proxy:
     # logging_conf: ~/work/projects/eidaws/config/logging.conf
     #
     # ----
+    # Consider the X-Forwarded-For HTTP header field and set the header field
+    # accordingly when proxying requests. This is particularly useful if the
+    # service is deployed behind a reverse-proxy and passing the remote IP
+    # address is desired.
+    # If set to 0 (default) the X-Forwarded-For header field is not set.
+    #
+    # num_forwarded: 0
+    #
+    # ----
     # Overall maximum number of concurrent HTTP connections to the proxied
     # endpoint.
     # Allowed values: int
