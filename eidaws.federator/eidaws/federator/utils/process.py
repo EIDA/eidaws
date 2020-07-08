@@ -458,6 +458,19 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                     self.request,
                     request_submitted=self.request_submitted,
                     service_version=__version__,
+                    error_desc_long=(
+                        "Exceeded configured stream epoch limits: "
+                        "({}{})".format(
+                            "limit per requested stream epoch="
+                            f"{self.max_stream_epoch_duration.days} days, "
+                            if self.max_stream_epoch_duration
+                            else "",
+                            f"total={self.max_total_stream_epoch_duration.days}"
+                            " days"
+                            if self.max_total_stream_epoch_duration
+                            else "",
+                        )
+                    ),
                 )
 
         url = None
