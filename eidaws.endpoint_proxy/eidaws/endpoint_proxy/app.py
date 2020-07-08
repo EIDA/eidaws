@@ -15,6 +15,7 @@ from eidaws.endpoint_proxy.settings import (
     PROXY_DEFAULT_PORT,
     PROXY_DEFAULT_UNIX_PATH,
     PROXY_DEFAULT_CONN_LIMIT,
+    PROXY_DEFAULT_NUM_FORWARDED,
     PROXY_DEFAULT_TIMEOUT_CONNECT,
     PROXY_DEFAULT_TIMEOUT_SOCK_CONNECT,
     PROXY_DEFAULT_TIMEOUT_SOCK_READ,
@@ -45,6 +46,7 @@ config_schema = {
         "endpoint_timeout_sock_read": {
             "oneOf": [{"type": "null"}, {"type": "number", "minimum": 0}]
         },
+        "num_forwarded": {"type": "integer", "minimum": 0},
     },
 }
 
@@ -67,6 +69,7 @@ def config():
     config.setdefault(
         "endpoint_timeout_sock_read", PROXY_DEFAULT_TIMEOUT_SOCK_READ
     )
+    config.setdefault("num_forwarded", PROXY_DEFAULT_NUM_FORWARDED)
 
     return config
 

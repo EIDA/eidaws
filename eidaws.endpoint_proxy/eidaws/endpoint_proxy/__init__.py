@@ -6,6 +6,7 @@ from eidaws.endpoint_proxy.middleware import (
     before_request,
     exception_handling_middleware,
 )
+from eidaws.endpoint_proxy.remote import XForwardedRelaxed
 from eidaws.endpoint_proxy.route import setup_routes
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
 from eidaws.endpoint_proxy.utils import setup_endpoint_http_conn_pool
@@ -20,7 +21,11 @@ def create_app(config_dict):
         config["hostname"] = config["port"] = None
 
     app = web.Application(
-        middlewares=[before_request, exception_handling_middleware]
+        middlewares=[
+            before_request,
+            exception_handling_middleware,
+            XForwardedRelaxed(num=config["num_forwarded"]).middleware,
+        ]
     )
 
     # populate application with config
