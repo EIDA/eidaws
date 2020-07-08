@@ -411,10 +411,12 @@ class NetworkLevelMixin:
     """
 
     async def _fetch(self, route, req_method="GET", parent_ctx=None, **kwargs):
+        # context logging
         logger = self.logger
         if parent_ctx is not None:
-            parent_ctx.append(route_to_uuid(route))
-            logger = make_context_logger(self._logger, *parent_ctx)
+            logger = make_context_logger(
+                self._logger, *parent_ctx, route_to_uuid(route)
+            )
 
         req_handler = self.REQUEST_HANDLER_CLS(
             **route._asdict(),
