@@ -170,7 +170,6 @@ class StreamEpochSchema(_StreamEpochSchema):
                     raise ValidationError("missing temporal constraints")
 
             now = datetime.datetime.utcnow()
-
             if self.context.get("request").method == "GET" and endtime > now:
                 endtime = now
 

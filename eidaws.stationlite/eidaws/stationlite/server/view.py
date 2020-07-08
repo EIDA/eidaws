@@ -13,11 +13,12 @@ from eidaws.stationlite.server.parser import (
     use_fdsnws_args,
     use_fdsnws_kwargs,
     StationLiteSchema,
+    StreamEpochSchema,
+    ManyStreamEpochSchema,
 )
 from eidaws.stationlite.server.strict import with_strict_args
 from eidaws.stationlite.version import __version__
 from eidaws.utils.sncl import StreamEpochsHandler, StreamEpoch
-from eidaws.utils.schema import ManyStreamEpochSchema, StreamEpochSchema
 from eidaws.utils.settings import (
     EIDAWS_ROUTING_PATH_QUERY,
     FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,

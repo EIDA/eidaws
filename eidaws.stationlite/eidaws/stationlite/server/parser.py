@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+
 from marshmallow import (
     Schema,
     fields,
@@ -16,12 +18,59 @@ from eidaws.stationlite.version import __version__
 from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.settings import STL_DEFAULT_CLIENT_MAX_SIZE
 from eidaws.utils.parser import FDSNWSParserMixin
-from eidaws.utils.schema import FDSNWSBool, Latitude, Longitude, NoData
+from eidaws.utils.schema import (
+    FDSNWSBool,
+    Latitude,
+    Longitude,
+    NoData,
+    StreamEpochSchema as _StreamEpochSchema,
+    _ManyStreamEpochSchema,
+)
 from eidaws.utils.settings import (
     FDSNWS_QUERY_METHOD_TOKEN,
     FDSNWS_QUERYAUTH_METHOD_TOKEN,
     FDSNWS_EXTENT_METHOD_TOKEN,
     FDSNWS_EXTENTAUTH_METHOD_TOKEN,
+)
+
+
+class StreamEpochSchema(_StreamEpochSchema):
+    @validates_schema
+    def validate_temporal_constraints(self, data, **kwargs):
+        """
+        Validation of temporal constraints.
+        """
+        # NOTE(damb): context dependent validation
+        if self.context.get("request"):
+
+            starttime = data.get("starttime")
+            endtime = data.get("endtime")
+            now = datetime.datetime.utcnow()
+
+            if self.context.get("request").method == "GET":
+
+                if not endtime:
+                    endtime = now
+                elif endtime > now:
+                    endtime = now
+                    # silently reset endtime
+                    data["endtime"] = now
+
+            elif self.context.get("request").method == "POST":
+                if starttime is None or endtime is None:
+                    raise ValidationError("missing temporal constraints")
+
+            if starttime:
+                if starttime > now:
+                    raise ValidationError("starttime in future")
+                elif starttime >= endtime:
+                    raise ValidationError(
+                        "endtime must be greater than starttime"
+                    )
+
+
+ManyStreamEpochSchema = _ManyStreamEpochSchema(
+    stream_epoch_schema=StreamEpochSchema
 )
 
 
