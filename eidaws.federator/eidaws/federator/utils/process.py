@@ -242,7 +242,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
         ) as session:
             req = (
                 req_handler.post(session)
-                if self._post
+                if self.post
                 else req_handler.get(session)
             )
 
@@ -284,7 +284,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
 
                 return await self._emerge_routes(
                     await resp.text(),
-                    post=self._post,
+                    post=self.post,
                     default_endtime=self._default_endtime,
                 )
 
