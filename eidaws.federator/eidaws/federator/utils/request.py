@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import functools
 
 from collections import OrderedDict
@@ -19,6 +20,22 @@ def _query_params_from_stream_epochs(stream_epochs):
     )
 
     return convert_sncl_dicts_to_query_params(serializer.dump(stream_epochs))
+
+
+def _serialize_stream_epochs_post(stream_epochs):
+    serializer = StreamEpochSchema(many=True)
+    serialized = serializer.dump(stream_epochs)
+    now = datetime.datetime.utcnow().isoformat()
+
+    # set endtime if not specified
+    se_maps = []
+    for _map in serialized:
+        if _map["endtime"] is None:
+            _map["endtime"] = now
+
+        se_maps.append(" ".join(str(v) for v in _map.values()))
+
+    return "\n".join(m for m in se_maps)
 
 
 # -----------------------------------------------------------------------------
@@ -159,7 +176,7 @@ class RoutingRequestHandler(RequestHandlerBase):
         )
 
         return "{}\n{}".format(
-            data, "\n".join(str(se) for se in self._stream_epochs)
+            data, _serialize_stream_epochs_post(self._stream_epochs)
         )
 
     @property
@@ -223,7 +240,7 @@ class FdsnRequestHandler(RequestHandlerBase):
         )
 
         return "{}\n{}".format(
-            data, "\n".join(str(se) for se in self._stream_epochs)
+            data, _serialize_stream_epochs_post(self._stream_epochs)
         )
 
     @property
