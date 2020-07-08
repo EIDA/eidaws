@@ -115,7 +115,7 @@ class AvailabilityRequestProcessor(_AvailabilityRequestProcessor):
             + FED_BASE_ID.replace(".", "-")
             + "-"
             + datetime.datetime.utcnow().isoformat()
-            + '.txt"'
+            + '.csv"'
         )
         await response.prepare(self.request)
         await response.write(self.header)
