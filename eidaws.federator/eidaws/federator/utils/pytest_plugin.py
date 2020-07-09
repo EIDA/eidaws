@@ -11,6 +11,7 @@ from aiohttp.resolver import DefaultResolver
 from aiohttp.test_utils import unused_port
 
 from eidaws.federator.utils.misc import RedisError
+from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
 class FakeResolver:
@@ -305,7 +306,8 @@ def tester(make_federated_eida, content_tester):
                     and resp.headers["Content-Encoding"] in encoding
                 )
 
-            await content_tester(resp, expected=expected.get("result"))
+            if resp.status not in FDSNWS_NO_CONTENT_CODES:
+                await content_tester(resp, expected=expected.get("result"))
 
         client, faked_routing, faked_endpoints = await make_federated_eida(
             app_factory(),
