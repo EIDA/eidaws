@@ -140,7 +140,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
 
         self._mseed_record_size = None
 
-    async def _write_response_to_buffer(self, buf, resp):
+    async def _write_response_to_buffer(self, resp, buf):
         last_record = None
         await buf.seek(0, 2)
         if await buf.tell():
