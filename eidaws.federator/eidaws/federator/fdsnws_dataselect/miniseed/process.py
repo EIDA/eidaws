@@ -42,9 +42,12 @@ def _get_mseed_record_size(fd):
 
     # get offset of data (value before last, 2 bytes, unsigned short)
     data_offset_idx = FIXED_DATA_HEADER_SIZE - 4
-    (data_offset,) = struct.unpack(
-        b"!H", buf[data_offset_idx : data_offset_idx + 2]
-    )
+    try:
+        (data_offset,) = struct.unpack(
+            b"!H", buf[data_offset_idx : data_offset_idx + 2]
+        )
+    except struct.error as err:
+        MiniseedParsingError(f"Error while reading data offset: {err}")
 
     if data_offset >= FIXED_DATA_HEADER_SIZE:
         remaining_header_size = data_offset - FIXED_DATA_HEADER_SIZE
@@ -69,7 +72,6 @@ def _get_mseed_record_size(fd):
     # scan variable header for blockette 1000
     blockette_start = 0
     b1000_found = False
-
     try:
         while blockette_start < remaining_header_size:
 
@@ -94,7 +96,7 @@ def _get_mseed_record_size(fd):
 
             else:
                 blockette_start = next_blockette_start
-    except struct.error as err:
+    except struct.error:
         pass
 
     # blockette 1000 not found
