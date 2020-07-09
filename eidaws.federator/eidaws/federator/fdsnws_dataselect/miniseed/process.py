@@ -19,7 +19,7 @@ from eidaws.federator.utils.worker import (
 
 
 class MiniseedParsingError(WorkerError):
-    """Error while parsing miniseed data: {}."""
+    """Error while parsing miniseed data: {}"""
 
 
 def _get_mseed_record_size(fd):
@@ -100,7 +100,7 @@ def _get_mseed_record_size(fd):
 
     # blockette 1000 not found
     if not b1000_found:
-        raise MiniseedParsingError("Blockette 1000 not found, stop reading")
+        raise MiniseedParsingError("Blockette 1000 not found")
 
     # get record size (1 byte, unsigned char)
     record_size_exponent_idx = blockette_start + 6
@@ -170,7 +170,8 @@ class _DataselectWorker(BaseSplitAlignWorker):
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
-                    self.logger.warning(str(err))
+                    self.logger.warning(f"{err}; Stop reading.")
+                    break
                 else:
                     # align chunk_size with mseed record_size
                     self._chunk_size = max(
