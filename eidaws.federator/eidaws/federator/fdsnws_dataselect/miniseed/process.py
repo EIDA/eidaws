@@ -27,8 +27,7 @@ def _get_mseed_record_size(fd):
     Extract the *MiniSEED* record length from a file-like object.
 
     .. note::
-        Taken from `SeisComP3's fdsnws_fetch
-        <https://github.com/SeisComP3/seiscomp3/blob/master/src/trunk/apps/fdsnws/fdsnws_fetch.py>_`.
+        Taken from `fdsnws_fetch <https://github.com/andres-h/fdsnws_scripts>_`.
     """
 
     FIXED_DATA_HEADER_SIZE = 48
