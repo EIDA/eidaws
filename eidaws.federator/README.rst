@@ -36,7 +36,7 @@ Features
   of concurrent endpoint requests configurable on federated resource granularity
 - Support for both HTTP **POST** and **GET** endpoint request method
 - Full support for virtual networks
-- ``fdsnws-station`` requests run entirely in-memory
+- ``fdsnws-availability`` and ``fdsnws-station`` requests run entirely in-memory
 - ``fdsnws-dataselect`` and ``eidaws-wfcatalog`` request are buffered in-memory
   for small chunks of data; larger chunks of data are dynamically moved to disk
 - ``fdsnws-dataselect`` and ``eidaws-wfcatalog``  response data is returned
@@ -78,7 +78,7 @@ The deployment described includes containerized versions of
 
 .. note::
 
-  Currently, `fdsnws-availability` resources are not part of the container
+  Currently, ``fdsnws-availability`` resources are not part of the container
   deployment.
 
 **Introduction**:
@@ -259,13 +259,8 @@ provided:
   <https://www.fdsn.org/webservices/>`_ conform API consider the deployment
   behind a *reverse proxy*.
 
-After installing the ``eidaws.federator`` distribution with
-
-.. code::
-
-  $ pip install eidaws.utils eidaws.federator
-
-the corresponding standalone applications are available:
+After installing the ``eidaws.federator`` distribution the corresponding 
+standalone applications are available:
 
 - ``eida-federator-wfcatalog-json``
 - ``eida-federator-availability-geocsv``
