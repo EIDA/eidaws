@@ -99,6 +99,10 @@ class Drain:
     Abstract base class for consumer implementations.
     """
 
+    @property
+    def prepared(self):
+        return False
+
     async def drain(self, chunk):
         raise NotImplementedError
 
@@ -110,12 +114,11 @@ class ReponseDrain(Drain):
         self._prepare_callback = _callable_or_raise(prepare_callback)
 
     @property
-    def response(self):
-        return self._response
+    def prepared(self):
+        return self._response.prepared
 
     async def drain(self, chunk):
-        if not self._response.prepared:
-
+        if not self.prepared:
             if self._prepare_callback is not None:
                 await self._prepare_callback(self._response)
             else:
@@ -127,6 +130,10 @@ class ReponseDrain(Drain):
 class QueueDrain(Drain):
     def __init__(self, queue):
         self._queue = queue
+
+    @property
+    def prepared(self):
+        return True
 
     async def drain(self, chunk):
         await self._queue.put(chunk)
@@ -268,14 +275,12 @@ class BaseSplitAlignWorker(BaseWorker):
 
                 if await buf.tell():
                     async with self._lock:
-                        append = (
-                            True if self._drain.response.prepared else False
-                        )
+                        append = True if self._drain.prepared else False
                         await self._write_buffer_to_drain(
                             buf, self._drain, append=append,
                         )
 
-            await self.finalize()
+        await self.finalize()
 
     async def _run(
         self,
