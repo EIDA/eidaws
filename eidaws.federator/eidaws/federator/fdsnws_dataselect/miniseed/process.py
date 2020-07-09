@@ -66,7 +66,7 @@ def _get_mseed_record_size(fd):
 
     buf = fd.read(remaining_header_size)
     if not buf:
-        raise MiniseedParsingError("remaining header corrupt in record")
+        raise MiniseedParsingError("Remaining header corrupt in record")
 
     # scan variable header for blockette 1000
     blockette_start = 0
@@ -100,7 +100,7 @@ def _get_mseed_record_size(fd):
 
     # blockette 1000 not found
     if not b1000_found:
-        raise MiniseedParsingError("blockette 1000 not found, stop reading")
+        raise MiniseedParsingError("Blockette 1000 not found, stop reading")
 
     # get record size (1 byte, unsigned char)
     record_size_exponent_idx = blockette_start + 6
