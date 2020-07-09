@@ -96,7 +96,7 @@ def with_context_logging():
 
 class Drain:
     """
-    Abstract base class for consumer implementations.
+    Abstract base class for drain implementations.
     """
 
     @property
