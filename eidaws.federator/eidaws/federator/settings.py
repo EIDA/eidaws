@@ -124,3 +124,6 @@ FED_DEFAULT_STREAMING_TIMEOUT = 600
 
 # Default splitting factor for HTTP status code 413 handling
 FED_DEFAULT_SPLITTING_FACTOR = 2
+
+# Fallback miniseed record size in case no blockette 1000 was found
+FED_DEFAULT_FALLBACK_MSEED_RECORD_SIZE = 0

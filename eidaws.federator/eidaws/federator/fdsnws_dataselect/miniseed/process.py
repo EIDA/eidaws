@@ -18,6 +18,11 @@ from eidaws.federator.utils.worker import (
 )
 
 
+FIXED_DATA_HEADER_SIZE = 48
+MINIMUM_RECORD_LENGTH = 256
+DATA_ONLY_BLOCKETTE_NUMBER = 1000
+
+
 class MiniseedParsingError(WorkerError):
     """Error while parsing miniseed data: {}"""
 
@@ -29,10 +34,6 @@ def _get_mseed_record_size(fd):
     .. note::
         Taken from `fdsnws_fetch <https://github.com/andres-h/fdsnws_scripts>_`.
     """
-
-    FIXED_DATA_HEADER_SIZE = 48
-    MINIMUM_RECORD_LENGTH = 256
-    DATA_ONLY_BLOCKETTE_NUMBER = 1000
 
     # read fixed header
     buf = fd.read(FIXED_DATA_HEADER_SIZE)
@@ -129,7 +130,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
 
     # minimum chunk size; the chunk size must be aligned with the mseed
     # record_size
-    _CHUNK_SIZE = 4096
+    _CHUNK_SIZE = MINIMUM_RECORD_LENGTH
 
     def __init__(
         self, request, session, drain, lock=None, **kwargs,
@@ -170,13 +171,23 @@ class _DataselectWorker(BaseSplitAlignWorker):
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
-                    self.logger.warning(f"{err}; Stop reading.")
-                    break
-                else:
-                    # align chunk_size with mseed record_size
-                    self._chunk_size = max(
-                        self._mseed_record_size, self._chunk_size
+
+                    msg = f"{err}; stop reading."
+                    fallback = self.config["fallback_mseed_record_size"]
+                    if not fallback:
+                        self.logger.warning(f"{msg}")
+                        break
+
+                    self.logger.info(f"{msg}")
+                    self.logger.debug(
+                        f"Using fallback miniseed record size: {fallback} "
+                        "bytes"
                     )
+                    self._mseed_record_size = fallback
+                finally:
+                    if self._mseed_record_size:
+                        # align chunk_size with mseed record_size
+                        self._chunk_size = self._mseed_record_size
 
             if last_record is not None:
                 if last_record in chunk:
