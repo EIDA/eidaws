@@ -276,7 +276,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 if await buf.tell():
                     async with self._lock:
                         append = True if self._drain.prepared else False
-                        await self._write_buffer_to_drain(
+                        await self._flush(
                             buf, self._drain, append=append,
                         )
 
@@ -348,7 +348,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
-            await self._write_response_to_buffer(resp, buf)
+            await self._buffer_response(resp, buf)
 
     async def _handle_413(self, url, stream_epoch, **kwargs):
 
@@ -391,13 +391,16 @@ class BaseSplitAlignWorker(BaseWorker):
             **req_kwargs,
         )
 
-    async def _write_response_to_buffer(self, resp, buf):
+    async def _buffer_response(self, resp, buf):
         """
         Template coro.
         """
         raise NotImplementedError
 
-    async def _write_buffer_to_drain(self, buf, drain, append=True):
+    async def _flush(self, buf, drain, append=True):
+        """
+        Write ``buf`` to ``drain``.
+        """
         await buf.seek(0)
 
         while True:

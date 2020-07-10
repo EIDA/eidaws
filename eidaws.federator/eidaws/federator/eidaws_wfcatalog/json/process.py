@@ -36,7 +36,7 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
     _CHUNK_SIZE = 8192
 
-    async def _write_response_to_buffer(self, resp, buf):
+    async def _buffer_response(self, resp, buf):
         last_obj = None
         last_obj_length = 0
 
@@ -105,7 +105,7 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
             await buf.write(chunk)
 
-    async def _write_buffer_to_drain(self, buf, drain, append=True):
+    async def _flush(self, buf, drain, append=True):
         await buf.seek(0)
 
         if append:
