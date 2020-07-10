@@ -268,14 +268,7 @@ class RoutingHarvester(Harvester):
             if event == "end" and len(route_element):
 
                 stream = Stream.from_route_attrs(**dict(route_element.attrib))
-                attrs = dict(stream._asdict())
-                # create query parameters from stream attrs
-                query_params = "&".join(
-                    [
-                        f"{query_param}={query_val}"
-                        for query_param, query_val in attrs.items()
-                    ]
-                )
+                query_params = stream._as_query_string()
 
                 # extract fdsn-station service url for each route
                 urls = set(

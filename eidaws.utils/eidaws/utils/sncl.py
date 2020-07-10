@@ -172,6 +172,10 @@ class Stream(
         fields = self.FIELDS_SHORT if short_keys else self._fields
         return OrderedDict(zip(fields, self))
 
+    def _as_query_string(self, short_keys=True):
+        attrs = self._asdict(short_keys=short_keys)
+        return "&".join(f"{k}={v}" for k, v in attrs.items())
+
     def __eq__(self, other):
         return self.id() == other.id()
 
