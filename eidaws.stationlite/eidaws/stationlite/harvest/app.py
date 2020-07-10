@@ -157,7 +157,7 @@ class Harvester:
 
         try:
             self._harvest_localconfig(session)
-        except etree.XMLSyntaxError as err:
+        except (RequestsError, etree.XMLSyntaxError) as err:
             raise self.HarvesterError(err)
 
     def _harvest_localconfig(self, session):
@@ -1687,8 +1687,6 @@ class StationLiteHarvestApp:
                 with db.session_guard(session) as _session:
                     h.harvest(_session)
 
-            except RequestsError as err:
-                self.logger.warning(str(err))
             except Harvester.HarvesterError as err:
                 self.logger.error(str(err))
 
@@ -1711,8 +1709,6 @@ class StationLiteHarvestApp:
                 with db.session_guard(session) as _session:
                     h.harvest(_session)
 
-            except RequestsError as err:
-                self.logger.warning(str(err))
             except Harvester.HarvesterError as err:
                 self.logger.error(str(err))
 
