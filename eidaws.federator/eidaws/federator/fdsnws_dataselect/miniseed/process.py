@@ -18,8 +18,13 @@ from eidaws.federator.utils.worker import (
 )
 
 
+FIXED_DATA_HEADER_SIZE = 48
+MINIMUM_RECORD_LENGTH = 256
+DATA_ONLY_BLOCKETTE_NUMBER = 1000
+
+
 class MiniseedParsingError(WorkerError):
-    """Error while parsing miniseed data: {}."""
+    """Error while parsing miniseed data: {}"""
 
 
 def _get_mseed_record_size(fd):
@@ -29,10 +34,6 @@ def _get_mseed_record_size(fd):
     .. note::
         Taken from `fdsnws_fetch <https://github.com/andres-h/fdsnws_scripts>_`.
     """
-
-    FIXED_DATA_HEADER_SIZE = 48
-    MINIMUM_RECORD_LENGTH = 256
-    DATA_ONLY_BLOCKETTE_NUMBER = 1000
 
     # read fixed header
     buf = fd.read(FIXED_DATA_HEADER_SIZE)
@@ -100,7 +101,7 @@ def _get_mseed_record_size(fd):
 
     # blockette 1000 not found
     if not b1000_found:
-        raise MiniseedParsingError("Blockette 1000 not found, stop reading")
+        raise MiniseedParsingError("Blockette 1000 not found")
 
     # get record size (1 byte, unsigned char)
     record_size_exponent_idx = blockette_start + 6
@@ -120,6 +121,13 @@ class _DataselectWorker(BaseSplitAlignWorker):
     data is downloaded sequentially. Note, that a worker assumes the MiniSEED
     data to be shipped with a uniform record length (with respect to a stream
     epoch initially requested).
+
+    .. note::
+
+        The implementation strongly relies on the availability of ``blockette
+        1000`` (i.e. data only miniseed blockette). For additional information
+        see also the `SEED Reference Manual
+        <http://www.fdsn.org/pdf/SEEDManual_V2.4.pdf>`_.
     """
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
@@ -129,7 +137,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
 
     # minimum chunk size; the chunk size must be aligned with the mseed
     # record_size
-    _CHUNK_SIZE = 4096
+    _CHUNK_SIZE = MINIMUM_RECORD_LENGTH
 
     def __init__(
         self, request, session, drain, lock=None, **kwargs,
@@ -140,7 +148,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
 
         self._mseed_record_size = None
 
-    async def _write_response_to_buffer(self, buf, resp):
+    async def _write_response_to_buffer(self, resp, buf):
         last_record = None
         await buf.seek(0, 2)
         if await buf.tell():
@@ -170,12 +178,23 @@ class _DataselectWorker(BaseSplitAlignWorker):
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
-                    self.logger.warning(str(err))
-                else:
-                    # align chunk_size with mseed record_size
-                    self._chunk_size = max(
-                        self._mseed_record_size, self._chunk_size
+
+                    msg = f"{err}; stop reading."
+                    fallback = self.config["fallback_mseed_record_size"]
+                    if not fallback:
+                        self.logger.warning(f"{msg}")
+                        break
+
+                    self.logger.info(f"{msg}")
+                    self.logger.debug(
+                        f"Using fallback miniseed record size: {fallback} "
+                        "bytes"
                     )
+                    self._mseed_record_size = fallback
+                finally:
+                    if self._mseed_record_size:
+                        # align chunk_size with mseed record_size
+                        self._chunk_size = self._mseed_record_size
 
             if last_record is not None:
                 if last_record in chunk:

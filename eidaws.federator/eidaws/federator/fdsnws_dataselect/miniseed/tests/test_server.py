@@ -41,6 +41,17 @@ def content_tester(load_data):
     return _content_tester
 
 
+@pytest.fixture(
+    params=[
+        {"fallback_mseed_record_size": 0},
+        {"fallback_mseed_record_size": 512},
+    ],
+    ids=["mseed_fallback=0", "mseed_fallback=512"],
+)
+def mseed_fallback_config(request):
+    return request.param
+
+
 class TestFDSNDataselectServer(
     _TestCommonServerConfig,
     _TestCORSMixin,
@@ -720,4 +731,92 @@ class TestFDSNDataselectServer(
             mocked_endpoints,
             expected,
             test_cached=True,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
+                    "net": "GR",
+                    "sta": "BFO",
+                    "loc": "--",
+                    "cha": "HHZ",
+                    "start": "2020-02-01T06:30:00",
+                    "end": "2020-02-01T06:35:00",
+                },
+            ),
+            (
+                "POST",
+                b"GR BFO -- HHZ 2020-02-01T06:30:00 2020-02-01T06:35:00",
+            ),
+        ],
+    )
+    async def test_fallback_mseed_record_size(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_dataselect_content_type,
+        fdsnws_error_content_type,
+        load_data,
+        mseed_fallback_config,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://eida.bgr.de/fdsnws/dataselect/1/query\n"
+                            "GR BFO -- HHZ "
+                            "2020-02-01T06:30:00 2020-02-01T06:35:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config, **mseed_fallback_config)
+        mocked_endpoints = {
+            "eida.bgr.de": [
+                (
+                    self.PATH_RESOURCE,
+                    self.lookup_config("endpoint_request_method", config_dict),
+                    web.Response(
+                        status=200,
+                        body=load_data(
+                            "GR.BFO..HHZ."
+                            "2020-02-01T06:30:00.2020-02-01T06:35:00"
+                        ),
+                    ),
+                ),
+            ]
+        }
+        if self.lookup_config("fallback_mseed_record_size", config_dict):
+            expected = {
+                "status": 200,
+                "content_type": fdsnws_dataselect_content_type,
+                "result": "GR.BFO..HHZ.2020-02-01T06:30:00.2020-02-01T06:35:00",
+            }
+        else:
+            # disabled fallback
+            expected = {
+                "status": 204,
+                "content_type": fdsnws_error_content_type,
+            }
+
+        await tester(
+            self.FED_PATH_RESOURCE,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
         )

@@ -348,7 +348,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 await self.update_cretry_budget(req_handler.url, resp.status)
 
             self.logger.debug(msg)
-            await self._write_response_to_buffer(buf, resp)
+            await self._write_response_to_buffer(resp, buf)
 
     async def _handle_413(self, url, stream_epoch, **kwargs):
 
@@ -391,7 +391,7 @@ class BaseSplitAlignWorker(BaseWorker):
             **req_kwargs,
         )
 
-    async def _write_response_to_buffer(self, buf, resp):
+    async def _write_response_to_buffer(self, resp, buf):
         """
         Template coro.
         """
