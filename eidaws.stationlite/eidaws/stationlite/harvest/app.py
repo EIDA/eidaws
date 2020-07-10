@@ -134,7 +134,6 @@ class Harvester:
 
     def __init__(self, url):
         self._url = url
-        self._config = None
 
         self.logger = logging.getLogger(self.LOGGER)
 
@@ -142,15 +141,12 @@ class Harvester:
     def url(self):
         return self._url
 
-    @property
+    @cached_property
     def config(self):
         # proxy for fetching the config from the EIDA node
-        if self._config is None:
-            req = functools.partial(requests.get, self.url)
-            with binary_request(req, timeout=60) as resp:
-                self._config = resp
-
-        return self._config
+        req = functools.partial(requests.get, self.url)
+        with binary_request(req, timeout=60) as resp:
+            return resp
 
     @staticmethod
     def _update_lastseen(obj):
