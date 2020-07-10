@@ -765,8 +765,8 @@ class RoutingHarvester(Harvester):
                 (
                     (orm.ChannelEpoch.starttime < channel.start_date.datetime)
                     & (
-                        (orm.ChannelEpoch.endtime == None)
-                        | (  # noqa
+                        (orm.ChannelEpoch.endtime == None)  # noqa
+                        | (
                             channel.start_date.datetime
                             < orm.ChannelEpoch.endtime
                         )
@@ -779,8 +779,8 @@ class RoutingHarvester(Harvester):
                 (
                     (orm.ChannelEpoch.starttime < channel.start_date.datetime)
                     & (
-                        (orm.ChannelEpoch.endtime == None)
-                        | (  # noqa
+                        (orm.ChannelEpoch.endtime == None)  # noqa
+                        | (
                             channel.start_date.datetime
                             < orm.ChannelEpoch.endtime
                         )
@@ -889,8 +889,8 @@ class RoutingHarvester(Harvester):
                 (
                     (orm.Routing.starttime < start)
                     & (
-                        (orm.Routing.endtime == None)
-                        | (start < orm.Routing.endtime)  # noqa
+                        (orm.Routing.endtime == None)  # noqa
+                        | (start < orm.Routing.endtime)
                     )
                 )
                 | (orm.Routing.starttime > start)
@@ -900,8 +900,8 @@ class RoutingHarvester(Harvester):
                 (
                     (orm.Routing.starttime < start)
                     & (
-                        (orm.Routing.endtime == None)
-                        | (start < orm.Routing.endtime)  # noqa
+                        (orm.Routing.endtime == None)  # noqa
+                        | (start < orm.Routing.endtime)
                     )
                 )
                 | (
@@ -1105,8 +1105,8 @@ class VNetHarvester(Harvester):
                             )
                         )
                         .filter(
-                            (orm.ChannelEpoch.endtime == None)
-                            | (  # noqa
+                            (orm.ChannelEpoch.endtime == None)  # noqa
+                            | (
                                 orm.ChannelEpoch.endtime
                                 > sql_stream_epoch.starttime
                             )
@@ -1189,10 +1189,8 @@ class VNetHarvester(Harvester):
                 (
                     (orm.StreamEpoch.starttime < stream_epoch.starttime)
                     & (
-                        (orm.StreamEpoch.endtime == None)
-                        | (  # noqa
-                            stream_epoch.starttime < orm.StreamEpoch.endtime
-                        )
+                        (orm.StreamEpoch.endtime == None)  # noqa
+                        | (stream_epoch.starttime < orm.StreamEpoch.endtime)
                     )
                 )
                 | (orm.StreamEpoch.starttime > stream_epoch.starttime)
@@ -1202,10 +1200,8 @@ class VNetHarvester(Harvester):
                 (
                     (orm.StreamEpoch.starttime < stream_epoch.starttime)
                     & (
-                        (orm.StreamEpoch.endtime == None)
-                        | (  # noqa
-                            stream_epoch.starttime < orm.StreamEpoch.endtime
-                        )
+                        (orm.StreamEpoch.endtime == None)  # noqa
+                        | (stream_epoch.starttime < orm.StreamEpoch.endtime)
                     )
                 )
                 | (
