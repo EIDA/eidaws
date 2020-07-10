@@ -153,6 +153,14 @@ class Harvester:
         obj.lastseen = datetime.datetime.utcnow()
 
     def harvest(self, session):
+        """Harvest the routing configuration."""
+
+        try:
+            self._harvest_localconfig(session)
+        except etree.XMLSyntaxError as err:
+            raise self.HarvesterError(err)
+
+    def _harvest_localconfig(self, session):
         raise NotImplementedError
 
 
@@ -199,9 +207,7 @@ class RoutingHarvester(Harvester):
         self._services = kwargs.get("services", STL_HARVEST_DEFAULT_SERVICES)
         self._force_restricted = kwargs.get("force_restricted", True)
 
-    def harvest(self, session):
-        """Harvest the routing configuration."""
-
+    def _harvest_localconfig(self, session):
         def validate_cha_epoch(cha_epoch, service_tag):
             if inspect(cha_epoch).deleted:
                 # In case a orm.ChannelEpoch object is marked
@@ -1023,6 +1029,12 @@ class VNetHarvester(Harvester):
         """Base error for virtual netowork harvesting ({})."""
 
     def harvest(self, session):
+        try:
+            self._harvest_localconfig(session)
+        except etree.XMLSyntaxError as err:
+            raise self.HarvesterError(err)
+
+    def _harvest_localconfig(self, session):
 
         vnet_tag = f"{self.NS_ROUTINGXML}vnetwork"
         stream_tag = f"{self.NS_ROUTINGXML}stream"
