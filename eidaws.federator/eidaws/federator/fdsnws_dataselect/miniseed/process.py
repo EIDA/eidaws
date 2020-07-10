@@ -121,6 +121,13 @@ class _DataselectWorker(BaseSplitAlignWorker):
     data is downloaded sequentially. Note, that a worker assumes the MiniSEED
     data to be shipped with a uniform record length (with respect to a stream
     epoch initially requested).
+
+    .. note::
+
+        The implementation strongly relies on the availability of ``blockette
+        1000`` (i.e. data only miniseed blockette). For additional information
+        see also the `SEED Reference Manual
+        <http://www.fdsn.org/pdf/SEEDManual_V2.4.pdf>`_.
     """
 
     SERVICE_ID = FED_DATASELECT_MINISEED_SERVICE_ID
