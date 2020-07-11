@@ -47,7 +47,7 @@ def _get_mseed_record_size(fd):
             b"!H", buf[data_offset_idx : data_offset_idx + 2]
         )
     except struct.error as err:
-        MiniseedParsingError(f"Error while reading data offset: {err}")
+        raise MiniseedParsingError(f"Error while reading data offset: {err}")
 
     if data_offset >= FIXED_DATA_HEADER_SIZE:
         remaining_header_size = data_offset - FIXED_DATA_HEADER_SIZE
