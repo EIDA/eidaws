@@ -99,9 +99,11 @@ class RedirectView(web.View):
 
                     await proxied_response.write_eof()
 
-                return proxied_response
         except ConnectionResetError as err:
-            self.logger.debug(f"Connection reset by peer: {err}")
+            self.logger.warning(f"Connection reset by peer: {err}")
+            # TODO(damb): Would implementing a retry mechanism be an
+            # alternative?
+            raise web.HTTPNoContent()
         except asyncio.TimeoutError as err:
             self.logger.warning(
                 f"Error while executing request: error={type(err)}, "
@@ -115,3 +117,5 @@ class RedirectView(web.View):
                 f"url={request.url!r}, method={request.method!r}"
             )
             raise web.HTTPServiceUnavailable(text=f"ERROR: {str(type(err))}\n")
+        else:
+            return proxied_response
