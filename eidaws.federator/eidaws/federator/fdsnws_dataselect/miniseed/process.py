@@ -147,6 +147,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
         )
 
         self._mseed_record_size = None
+        self._read_method = "readexactly"
 
     async def _buffer_response(self, resp, buf):
         last_record = None
@@ -164,7 +165,9 @@ class _DataselectWorker(BaseSplitAlignWorker):
 
         while True:
             try:
-                chunk = await resp.content.read(self._chunk_size)
+                chunk = await getattr(resp.content, self._read_method)(
+                    self._chunk_size
+                )
             except asyncio.TimeoutError as err:
                 self.logger.warning(f"Socket read timeout: {type(err)}")
                 break
@@ -178,23 +181,21 @@ class _DataselectWorker(BaseSplitAlignWorker):
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
-
-                    msg = f"{err}; stop reading."
                     fallback = self.config["fallback_mseed_record_size"]
                     if not fallback:
-                        self.logger.warning(f"{msg}")
+                        self.logger.warning(f"{err}; stop reading")
                         break
 
-                    self.logger.info(f"{msg}")
-                    self.logger.debug(
-                        f"Using fallback miniseed record size: {fallback} "
-                        "bytes"
+                    self.logger.info(
+                        f"{err}; using fallback miniseed record size: "
+                        f"{fallback} bytes"
                     )
                     self._mseed_record_size = fallback
                 finally:
                     if self._mseed_record_size:
                         # align chunk_size with mseed record_size
                         self._chunk_size = self._mseed_record_size
+                        self._read_method = "read"
 
             if last_record is not None:
                 if last_record in chunk:
@@ -206,6 +207,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
     async def finalize(self):
         self._mseed_record_size = None
         self._chunk_size = self._CHUNK_SIZE
+        self._read_method = "readexactly"
 
 
 class DataselectRequestProcessor(UnsortedResponse):
