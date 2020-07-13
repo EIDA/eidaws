@@ -1,12 +1,107 @@
 # -*- coding: utf-8 -*-
 
+import collections
+import os
 import re
 import sys
 
 from string import Template
 
+import configargparse
+
 from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import Error
+
+
+class InterpolatingYAMLConfigFileParser(configargparse.YAMLConfigFileParser):
+    SECTIONS = None
+
+    def __init__(self, sections=None):
+        self._sections = sections or self.SECTIONS
+
+    def get_syntax_description(self):
+        msg = (
+            "The config file uses YAML syntax and must represent a YAML "
+            "'mapping' (for details, see "
+            "http://learn.getgrav.org/advanced/yaml). Environment variables "
+            "are interpolated, automatically."
+        )
+        return msg
+
+    def _parse_section(self, parsed_obj, section, stream):
+        try:
+            if not isinstance(
+                parsed_obj[section],
+                (collections.abc.Mapping, collections.abc.MutableMapping,),
+            ):
+
+                raise configargparse.ConfigFileParserException(
+                    "The config file doesn't appear to "
+                    "contain 'key: value' pairs (aka. a YAML mapping). "
+                    "yaml.load('%s') returned type '%s' instead of "
+                    "type 'dict' in section %r."
+                    % (
+                        getattr(stream, "name", "stream"),
+                        type(parsed_obj).__name__,
+                        section,
+                    )
+                )
+
+            # interpolate environment variables
+            interpolated = interpolate_environment_variables(
+                parsed_obj, os.environ, section
+            )
+
+        except KeyError:
+            return {}
+        else:
+            return interpolated[section]
+
+    def parse(self, stream):
+        yaml = self._load_yaml()
+
+        try:
+            parsed_obj = yaml.safe_load(stream)
+        except Exception as e:
+            raise configargparse.ConfigFileParserException(
+                "Couldn't parse config file: %s" % e
+            )
+
+        if not isinstance(parsed_obj, dict):
+            raise configargparse.ConfigFileParserException(
+                "The config file doesn't appear to "
+                "contain 'key: value' pairs (aka. a YAML mapping). "
+                "yaml.load('%s') returned type '%s' instead of type 'dict'."
+                % (
+                    getattr(stream, "name", "stream"),
+                    type(parsed_obj).__name__,
+                )
+            )
+
+        if isinstance(self._sections, str):
+            parsed_obj = self._parse_section(
+                parsed_obj, stream, self._sections
+            )
+        elif isinstance(self._sections, (list, tuple)):
+            _maps = [
+                self._parse_section(parsed_obj, stream, s)
+                for s in reversed(self._sections)
+            ]
+
+            parsed_obj = collections.ChainMap(*_maps)
+        else:
+            parsed_obj = interpolate_environment_variables(
+                parsed_obj, os.environ
+            )
+
+        result = collections.OrderedDict()
+        for key, value in parsed_obj.items():
+            if isinstance(value, list):
+                result[key] = value
+            else:
+                result[key] = str(value)
+
+        return result
 
 
 # NOTE(damb): Modified from
@@ -33,7 +128,7 @@ class Interpolator:
 
 
 def interpolate_environment_variables(
-    config, section, environment, converter=None
+    config, environment, section=None, converter=None
 ):
     interpolator = Interpolator(TemplateWithDefaults, environment)
 
@@ -48,9 +143,16 @@ def interpolate_environment_variables(
             for key, val in (config_dict or {}).items()
         )
 
+    if section:
+        return dict(
+            (name, process_item(name, config_dict or {}))
+            for name, config_dict in config.items()
+        )
+
+    # flat configuration
     return dict(
-        (name, process_item(name, config_dict or {}))
-        for name, config_dict in config.items()
+        (key, interpolate_value(None, key, val, None, interpolator, converter))
+        for key, val in config.items()
     )
 
 

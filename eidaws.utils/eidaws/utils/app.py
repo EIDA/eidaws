@@ -4,6 +4,8 @@ import argparse
 import copy
 import sys
 
+import configargparse
+
 from eidaws.utils.error import Error, ExitCodes
 
 
@@ -33,7 +35,7 @@ class ConfigurationError(AppError):
     """Configuration error: {}"""
 
 
-class CustomParser(argparse.ArgumentParser):
+class CustomParser(configargparse.ArgumentParser):
     """
     Custom argument parser.
     """
@@ -46,3 +48,6 @@ class CustomParser(argparse.ArgumentParser):
         sys.stderr.write("USAGE ERROR: %s\n" % message)
         self.print_help()
         sys.exit(ExitCodes.EXIT_ERROR)
+
+    def format_help(self):
+        return argparse.ArgumentParser.format_help(self)

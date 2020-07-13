@@ -5,6 +5,7 @@ eidaws-stationlite harvesting facilities.
 
 import argparse
 import collections
+import copy
 import datetime
 import functools
 import logging
@@ -14,15 +15,13 @@ import os
 import sys
 import traceback
 import warnings
-import yaml
 
 import requests
 
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urlunparse, urljoin
 
 from cached_property import cached_property
 from fasteners import InterProcessLock
-from jsonschema import validate, ValidationError
 from lxml import etree
 from obspy import read_inventory, UTCDateTime
 from sqlalchemy import create_engine, inspect
@@ -37,32 +36,24 @@ from eidaws.stationlite.harvest.request import (
 )
 from eidaws.stationlite.settings import (
     STL_HARVEST_BASE_ID,
+    STL_HARVEST_DEFAULT_CONFIG_FILES,
     STL_HARVEST_DEFAULT_NO_ROUTES,
     STL_HARVEST_DEFAULT_NO_VNETWORKS,
     STL_HARVEST_DEFAULT_PATH_PIDFILE,
-    STL_HARVEST_DEFAULT_PATH_CONFIG,
     STL_HARVEST_DEFAULT_PATH_LOGGING_CONF,
     STL_HARVEST_DEFAULT_SERVICES,
     STL_HARVEST_DEFAULT_STRICT_RESTRICTED,
     STL_HARVEST_DEFAULT_TRUNCATE_TIMESTAMP,
     STL_HARVEST_DEFAULT_URL_DB,
-    STL_HARVEST_DEFAULT_URLS_ROUTING,
 )
 from eidaws.stationlite.version import __version__
 from eidaws.utils.app import (
-    prepare_cli_config,
     AppError,
-    ConfigurationError,
     CustomParser,
 )
-from eidaws.utils.config import (
-    to_boolean,
-    re_path,
-    interpolate_environment_variables,
-    ConversionMap as _ConversionMap,
-)
+from eidaws.utils.config import InterpolatingYAMLConfigFileParser
 from eidaws.utils.error import Error, ExitCodes
-from eidaws.utils.misc import realpath, real_file_path
+from eidaws.utils.misc import real_file_path
 from eidaws.utils.settings import (
     FDSNWS_QUERY_METHOD_TOKEN,
     FDSNWS_QUERYAUTH_METHOD_TOKEN,
@@ -1275,81 +1266,15 @@ class StationLiteHarvestApp:
 
     DB_PRAGMAS = ["PRAGMA journal_mode=WAL"]
 
-    JSON_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "no_routes": {"type": "boolean"},
-            "no_vnetworks": {"type": "boolean"},
-            "path_pidfile": {
-                "oneOf": [
-                    {"type": "null"},
-                    {"type": "string", "pattern": r"^/"},
-                ]
-            },
-            "path_logging_conf": {
-                "oneOf": [{"type": "null"}, {"type": "string"}]
-            },
-            "strict_restricted": {"type": "boolean"},
-            "services": {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": [
-                        "availability",
-                        "dataselect",
-                        "station",
-                        "wfcatalog",
-                    ],
-                },
-                "uniqueItems": True,
-            },
-            "truncate": {
-                "oneOf": [
-                    {"type": "null"},
-                    {"type": "string", "format": "date"},
-                    {"type": "string", "format": "date-time"},
-                ],
-            },
-            "sqlalchemy_database_uri": {"type": "string", "format": "uri"},
-            "urls_localconfig": {
-                "type": "array",
-                "items": {"type": "string", "format": "uri"},
-                "uniqueItems": True,
-            },
-        },
-        "additionalProperties": False,
-    }
+    _POSITIONAL_ARG = "urls-localconfig"
 
     @cached_property
     def config(self):
-
-        default_config = {
-            "no_routes": STL_HARVEST_DEFAULT_NO_ROUTES,
-            "no_vnetworks": STL_HARVEST_DEFAULT_NO_VNETWORKS,
-            "path_pidfile": STL_HARVEST_DEFAULT_PATH_PIDFILE,
-            "path_logging_conf": STL_HARVEST_DEFAULT_PATH_LOGGING_CONF,
-            "strict_restricted": STL_HARVEST_DEFAULT_STRICT_RESTRICTED,
-            "services": STL_HARVEST_DEFAULT_SERVICES,
-            "truncate": STL_HARVEST_DEFAULT_TRUNCATE_TIMESTAMP,
-            "sqlalchemy_database_uri": STL_HARVEST_DEFAULT_URL_DB,
-            "urls_localconfig": STL_HARVEST_DEFAULT_URLS_ROUTING,
-        }
-
-        # do all the dirty work of parsing and merging the configuration
-        def _parse_urls_localconfig(ifd):
-            return [url.strip() for url in ifd.read().split()]
-
-        def _validate(config_dict):
-            try:
-                validate(
-                    instance=dict(config_dict), schema=self.JSON_SCHEMA,
-                )
-            except ValidationError as err:
-                raise ConfigurationError(str(err))
-
         def configure_logging(config_dict):
             try:
-                path_logging_conf = realpath(config_dict["path_logging_conf"])
+                path_logging_conf = real_file_path(
+                    config_dict["path_logging_conf"]
+                )
             except (KeyError, TypeError):
                 path_logging_conf = None
 
@@ -1357,68 +1282,65 @@ class StationLiteHarvestApp:
                 path_logging_conf, capture_warnings=True
             )
 
-        # CLI configuration
-        args = self._build_cli_parser().parse_args()
-        cli_config = {}
-        if args.path_urls_localconfig:
-            cli_config["urls_localconfig"] = _parse_urls_localconfig(
-                args.path_urls_localconfig
-            )
-        cli_config.update(
-            prepare_cli_config(
-                args, attrs_to_remove=["path_config", "path_urls_localconfig"]
-            )
+        def parse_positional(dest, remaining_args):
+
+            _remaining_args = copy.deepcopy(remaining_args)
+
+            positionals = []
+            for arg in _remaining_args:
+                try:
+                    key, value = arg.split("=")
+                    if dest == key[2:]:
+                        positionals.append(value)
+
+                        remaining_args.remove(arg)
+                except ValueError:
+                    pass
+
+            return positionals, remaining_args
+
+        def error_method(message):
+            pass
+
+        # XXX(damb): A dirty workaround is required in order to allow parsing
+        # positional arguments from the configuration file.
+        parser = self._build_parser()
+        _error_method = parser.error
+        parser.error = error_method
+        args, argv = parser.parse_known_args()
+
+        parser.error = _error_method
+        positional, remaining_args = parse_positional(
+            self._POSITIONAL_ARG, argv
         )
 
-        if args.path_config is None:
-            config_dict = collections.ChainMap(cli_config, default_config)
-            _validate(config_dict)
-            configure_logging(config_dict)
-            return config_dict
-
-        # configuration from yaml configuration file
-        file_config = {}
-        try:
-            with open(args.path_config) as ifd:
-                _file_config = yaml.safe_load(ifd)
-        except yaml.YAMLError as err:
-            warnings.warn(f"Exception while parsing configuration file: {err}")
-        except FileNotFoundError as err:
-            warnings.warn(
-                f"Configuration file not found ({err}). Using defaults."
-            )
-        else:
-            if _file_config is not None and isinstance(
-                _file_config.get(STL_HARVEST_BASE_ID),
-                (collections.abc.Mapping, collections.abc.MutableMapping),
-            ):
-
-                def stl_harvest_path(*args):
-                    return re_path(STL_HARVEST_BASE_ID, *args)
-
-                class ConversionMap(_ConversionMap):
-                    MAP = {
-                        stl_harvest_path("no_routes"): to_boolean,
-                        stl_harvest_path("no_vnetworks"): to_boolean,
-                        stl_harvest_path("strict_restricted"): to_boolean,
-                    }
-
-                # interpolate environment variables
-                _file_config = interpolate_environment_variables(
-                    _file_config,
-                    STL_HARVEST_BASE_ID,
-                    os.environ,
-                    converter=ConversionMap(),
+        args = vars(args)
+        if args[self._POSITIONAL_ARG] is None:
+            if not positional:
+                parser.error(
+                    "the following arguments are required: "
+                    f"{self._POSITIONAL_ARG}"
                 )
-                file_config = _file_config[STL_HARVEST_BASE_ID]
+            if remaining_args:
+                parser.error(
+                    "unrecognized arguments: {}".format(
+                        " ".join(remaining_args)
+                    )
+                )
 
-        config_dict = collections.ChainMap(
-            cli_config, file_config, default_config
+            args[self._POSITIONAL_ARG] = positional
+        else:
+            if argv:
+                parser.error(
+                    "unrecognized arguments: {}".format(" ".join(argv))
+                )
+
+        args[self._POSITIONAL_ARG.replace("-", "_")] = args.pop(
+            self._POSITIONAL_ARG
         )
 
-        _validate(config_dict)
-        configure_logging(config_dict)
-        return config_dict
+        configure_logging(args)
+        return args
 
     def run(self):
         """
@@ -1490,7 +1412,7 @@ class StationLiteHarvestApp:
                     session = Session()
                     with db.session_guard(session) as _session:
                         num_removed_rows = db.clean(
-                            _session, UTCDateTime(self.config["truncate"]),
+                            _session, self.config["truncate"],
                         )
                         self.logger.info(
                             f"Number of rows removed: {num_removed_rows}"
@@ -1524,7 +1446,7 @@ class StationLiteHarvestApp:
 
         sys.exit(exit_code)
 
-    def _build_cli_parser(self, parents=[]):
+    def _build_parser(self, parents=[]):
         """
         Configure a parser.
 
@@ -1532,35 +1454,66 @@ class StationLiteHarvestApp:
         :returns: parser
         :rtype: :py:class:`argparse.ArgumentParser`
         """
+
+        def _abs_path(path):
+            if not os.path.isabs(path):
+                raise argparse.ArgumentError(
+                    f"Not an absolute file path: {path!r}"
+                )
+            return path
+
+        def _sqlalchemy_database_uri(uri):
+            parsed = urlparse(uri)
+            if not (
+                all([parsed.scheme, parsed.path])
+                or all([parsed.scheme, parsed.netloc, parsed.path])
+            ):
+                raise argparse.ArgumentError(f"Invalid database URI: {uri!r}")
+
+            return uri
+
+        def _url(url):
+            parsed = urlparse(url, scheme="http",)
+            if not (all([parsed.scheme, parsed.netloc])):
+                raise argparse.ArgumentError(f"Invalid URL: {url!r}")
+
+            return urlunparse(parsed)
+
+        def _service(service):
+            if service not in STL_HARVEST_DEFAULT_SERVICES:
+                raise argparse.ArgumentError(f"Invalid service: {service!r}")
+            return service
+
+        def _utcdatetime_or_none(timestamp):
+            if timestamp is None:
+                return
+
+            try:
+                dt = UTCDateTime(timestamp)
+            except Exception as err:
+                argparse.ArgumentError(f"Invalid UTCDateTime passed: {err}")
+
+            return dt
+
         parser = CustomParser(
             prog=self.PROG,
             description="Harvest routes for eidaws-stationlite.",
             parents=parents,
+            default_config_files=STL_HARVEST_DEFAULT_CONFIG_FILES,
+            config_file_parser_class=InterpolatingYAMLConfigFileParser,
+            args_for_setting_config_path=["-c", "--config"],
         )
         # optional arguments
         parser.add_argument(
-            "--version",
-            "-V",
-            action="version",
-            version="%(prog)s version " + __version__,
-        )
-        parser.add_argument(
-            "--url-file",
-            type=argparse.FileType("r"),
-            dest="path_urls_localconfig",
-            metavar="PATH",
-            help=(
-                "Path to a configuration file containing a list of URLs to "
-                "eidaws-routing localconfig configurations. If a - is passed "
-                "the input is read from stdin."
-            ),
+            "-V", action="version", version="%(prog)s version " + __version__,
         )
         parser.add_argument(
             "-S",
             "--services",
             nargs="+",
-            type=str,
+            type=_service,
             metavar="SERVICE",
+            default=STL_HARVEST_DEFAULT_SERVICES,
             choices=sorted(STL_HARVEST_DEFAULT_SERVICES),
             help=(
                 "Whitespace-separated list of services to "
@@ -1572,12 +1525,11 @@ class StationLiteHarvestApp:
             "--strict-restricted",
             action="store_true",
             dest="strict_restricted",
+            default=STL_HARVEST_DEFAULT_STRICT_RESTRICTED,
             help=(
-                "Perform a strict validation of channel "
-                "epochs to use the correct "
-                "dataselect method token depending on "
-                "their restricted status property. By "
-                "default method tokens are adjusted "
+                "Perform a strict validation of channel epochs to use the "
+                "correct method token depending on their restricted status "
+                "property. By default method tokens are adjusted "
                 "automatically."
             ),
         )
@@ -1585,53 +1537,63 @@ class StationLiteHarvestApp:
             "--no-routes",
             action="store_true",
             dest="no_routes",
+            default=STL_HARVEST_DEFAULT_NO_ROUTES,
             help="Do not harvest <route></route> information.",
         )
         parser.add_argument(
             "--no-vnetworks",
             action="store_true",
             dest="no_vnetworks",
+            default=STL_HARVEST_DEFAULT_NO_VNETWORKS,
             help="Do not harvest <vnetwork></vnetwork> information.",
         )
         parser.add_argument(
             "-t",
             "--truncate",
-            type=str,
+            type=_utcdatetime_or_none,
             metavar="TIMESTAMP",
-            help="Truncate DB (delete outdated information).",
-        )
-        parser.add_argument(
-            "--db",
-            type=str,
-            dest="sqlalchemy_database_uri",
-            metavar="URL",
+            default=STL_HARVEST_DEFAULT_TRUNCATE_TIMESTAMP,
             help=(
-                "DB URL indicating the database dialect and "
-                "connection arguments."
+                "Truncate DB (delete outdated information). The format of "
+                "TIMESTAMP must agree with formats supported by "
+                "obspy.UTCDateTime."
             ),
         )
         parser.add_argument(
-            "-P",
-            "--pid-file",
-            type=str,
-            metavar="PATH",
-            dest="path_pidfile",
-            help="Path to PID file.",
+            "--database",
+            type=_sqlalchemy_database_uri,
+            metavar="URL",
+            dest="sqlalchemy_database_uri",
+            default=STL_HARVEST_DEFAULT_URL_DB,
+            help=(
+                "DB URL indicating the database dialect and connection "
+                "arguments (default: %(default)s)."
+            ),
         )
         parser.add_argument(
-            "-c",
-            "--config",
-            type=real_file_path,
+            "--pid-file",
+            "-P",
+            type=_abs_path,
             metavar="PATH",
-            dest="path_config",
-            default=STL_HARVEST_DEFAULT_PATH_CONFIG,
-            help="Path to configuration file.",
+            dest="path_pidfile",
+            default=STL_HARVEST_DEFAULT_PATH_PIDFILE,
+            help="Absolute path to PID file (default: %(default)s).",
         )
         parser.add_argument(
             "--logging-conf",
             dest="path_logging_conf",
             metavar="PATH",
+            default=STL_HARVEST_DEFAULT_PATH_LOGGING_CONF,
             help="Path to logging configuration file.",
+        )
+
+        # positional arguments
+        parser.add_argument(
+            self._POSITIONAL_ARG,
+            type=_url,
+            metavar="URL",
+            nargs="+",
+            help=("URL to eidaws-routing localconfig configuration."),
         )
         return parser
 
