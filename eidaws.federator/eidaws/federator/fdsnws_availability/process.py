@@ -37,16 +37,18 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
         # granular request strategy
         tasks = [
             self._fetch(
-                _route, req_method=req_method, parent_ctx=job_ctx, **req_kwargs
+                _route,
+                parser_cb=self._parse_response,
+                req_method=req_method,
+                parent_ctx=job_ctx,
+                **req_kwargs,
             )
             for _route in route
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=False)
 
-        for _route, resp in results:
-            data = await self._parse_response(resp)
-
+        for _route, data in results:
             if not data:
                 continue
 

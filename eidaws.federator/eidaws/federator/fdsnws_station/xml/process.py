@@ -64,16 +64,18 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         # granular request strategy
         tasks = [
             self._fetch(
-                _route, req_method=req_method, parent_ctx=job_ctx, **req_kwargs
+                _route,
+                parser_cb=self._parse_response,
+                req_method=req_method,
+                parent_ctx=job_ctx,
+                **req_kwargs,
             )
             for _route in route
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=False)
 
-        for _, resp in results:
-            station_xml = await self._parse_response(resp)
-
+        for _, station_xml in results:
             if station_xml is None:
                 continue
 

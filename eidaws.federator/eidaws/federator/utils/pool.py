@@ -8,25 +8,18 @@ import traceback
 from collections import deque
 
 from eidaws.federator.settings import FED_BASE_ID
+from eidaws.federator.utils.misc import _coroutine_or_raise
 from eidaws.utils.error import ErrorWithTraceback
 
 
 # NOTE(damb): Based on https://github.com/CaliDog/asyncpool with some minor
 # modifications.
+#
+# Consider using https://github.com/cgarciae/pypeln instead. See also: https://
+# medium.com/@cgarciae/
+# making-an-infinite-number-of-requests-with-python-aiohttp-pypeln-3a552b97dc95
 
 logger = logging.getLogger(FED_BASE_ID + ".pool")
-
-
-def _coroutine_or_raise(obj):
-    """Makes sure an object is callable if it is not ``None``. If not
-    a coroutine, a ``ValueError`` is raised.
-    """
-    if obj and not any(
-        [asyncio.iscoroutine(obj), asyncio.iscoroutinefunction(obj)]
-    ):
-
-        raise ValueError(f"{obj!r} is not a coroutine.")
-    return obj
 
 
 class PoolError(ErrorWithTraceback):

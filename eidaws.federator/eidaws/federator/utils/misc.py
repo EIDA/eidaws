@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import aioredis
+import asyncio
 import collections
 import inspect
 import logging
@@ -24,6 +25,18 @@ from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
 from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
+
+
+def _coroutine_or_raise(obj):
+    """Makes sure an object is callable if it is not ``None``. If not
+    a coroutine, a ``ValueError`` is raised.
+    """
+    if obj and not any(
+        [asyncio.iscoroutine(obj), asyncio.iscoroutinefunction(obj)]
+    ):
+
+        raise ValueError(f"{obj!r} is not a coroutine.")
+    return obj
 
 
 def _serialize_query_params(query_params, serializer=None):
