@@ -41,15 +41,6 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    def __init__(
-        self, request, session, drain, lock=None, **kwargs,
-    ):
-        super().__init__(
-            request, session, drain, lock=lock, **kwargs,
-        )
-
-        self._network_elements = {}
-
     @property
     def level(self):
         return self.query_params["level"]
@@ -58,12 +49,16 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
     async def run(
         self, route, net, req_method="GET", context=None, **req_kwargs
     ):
-        # context logging
-        logger = self.logger
-        if context:
-            logger = make_context_logger(self._logger, *context)
+        context = context or {}
+        context["buffer"] = {}
 
-        logger.debug(f"Fetching data for network: {net}")
+        # context logging
+        try:
+            logger = make_context_logger(self._logger, *context["logger_ctx"])
+        except (TypeError, KeyError):
+            logger = self.logger
+
+        logger.debug(f"Fetching data for network: {net!r}")
 
         # TODO(damb): Currently, limiting the number of concurrent connection
         # is guaranteed by sharing an aiohttp.TCPConnector instance. Though,
@@ -82,7 +77,7 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                context=self.create_job_context(route, _route),
+                context={"logger_ctx": self.create_job_context(route, _route)},
                 **req_kwargs,
             )
             for _route in route
@@ -98,22 +93,15 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                 continue
 
             for net_element in station_xml.iter(STATIONXML_TAGS_NETWORK):
-                self._merge_net_element(net_element, level=self.level)
-
-        if self._network_elements:
-            for (
-                net_element,
-                sta_elements,
-            ) in self._network_elements.values():
-                serialized = self._serialize_net_element(
-                    net_element, sta_elements
+                self._merge_net_element(
+                    net_element, level=self.level, context=context
                 )
-                await self._drain.drain(serialized)
+
+        for (net_element, sta_elements,) in context["buffer"].values():
+            serialized = self._serialize_net_element(net_element, sta_elements)
+            await self._drain.drain(serialized)
 
         await self.finalize()
-
-    async def finalize(self):
-        self._network_elements = {}
 
     async def _parse_response(self, resp):
         if resp is None:
@@ -124,7 +112,7 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         # implementation
         return etree.parse(ifd).getroot()
 
-    def _merge_net_element(self, net_element, level):
+    def _merge_net_element(self, net_element, level, context):
         """
         Merge a `StationXML
         <https://www.fdsn.org/xml/station/fdsn-station-1.0.xsd>`_
@@ -140,7 +128,7 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
             ) = self._deserialize_net_element(net_element)
 
             loaded_net_element, sta_elements = self._emerge_net_element(
-                loaded_net_element
+                loaded_net_element, context
             )
 
             # append / merge <Station></Station> elements
@@ -163,7 +151,7 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
             ) = self._deserialize_net_element(net_element)
 
             loaded_net_element, sta_elements = self._emerge_net_element(
-                loaded_net_element
+                loaded_net_element, context
             )
 
             # append <Station></Station> elements if
@@ -172,11 +160,11 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                 sta_elements.setdefault(key, loaded_sta_element)
 
         elif level == "network":
-            _ = self._emerge_net_element(net_element)
+            _ = self._emerge_net_element(net_element, context)
         else:
             raise ValueError(f"Unknown level: {level!r}")
 
-    def _emerge_net_element(self, net_element):
+    def _emerge_net_element(self, net_element, context):
         """
         Emerge a ``<Network></Network>`` epoch element. If the
         ``<Network></Network>`` element is unknown it is automatically
@@ -186,7 +174,7 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         :type net_element: :py:class:`lxml.etree.Element`
         :returns: Emerged ``<Network></Network>`` element
         """
-        return self._network_elements.setdefault(
+        return context["buffer"].setdefault(
             self._make_key(net_element), (net_element, {})
         )
 
@@ -282,7 +270,7 @@ class StationXMLRequestProcessor(UnsortedResponse):
         """
         grouped_routes = group_routes_by(routes, key="network")
         for net, _routes in grouped_routes.items():
-            ctx = self.create_job_context(_routes)
+            ctx = {"logger_ctx": self.create_job_context(_routes)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, network={net}, "
                 f"route={_routes!r}"

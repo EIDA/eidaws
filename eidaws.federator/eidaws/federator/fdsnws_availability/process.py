@@ -17,15 +17,6 @@ from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 
 
 class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
-    def __init__(
-        self, request, session, drain, lock=None, **kwargs,
-    ):
-        super().__init__(
-            request, session, drain, lock=lock, **kwargs,
-        )
-
-        self._buf = {}
-
     @with_exception_handling(ignore_runtime_exception=True)
     async def run(
         self,
@@ -36,40 +27,42 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
         context=None,
         **req_kwargs,
     ):
+        context = context or {}
         # context logging
-        logger = self.logger
-        if context:
-            logger = make_context_logger(self._logger, *context)
+        try:
+            logger = make_context_logger(self._logger, *context["logger_ctx"])
+        except (TypeError, KeyError):
+            logger = self.logger
 
-        self.logger.debug(f"Fetching data for network: {net}")
+        _buffer = {}
+
+        logger.debug(f"Fetching data for network: {net!r}")
         # granular request strategy
         tasks = [
             self._fetch(
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                context=self.create_job_context(route, _route),
+                context={"logger_ctx": self.create_job_context(route, _route)},
                 **req_kwargs,
             )
             for _route in route
         ]
         results = await asyncio.gather(*tasks, return_exceptions=False)
 
+        logger.debug(f"Processing data for network: {net!r}")
         for _route, data in results:
             if not data:
                 continue
 
             se = _route.stream_epochs[0]
-            self._buf[se.id()] = data
+            _buffer[se.id()] = data
 
-        if self._buf:
-            serialized = self._dump(self._buf)
+        if _buffer:
+            serialized = self._dump(_buffer)
             await self._drain.drain((priority, serialized))
 
         await self.finalize()
-
-    async def finalize(self):
-        self._buf = {}
 
     async def _parse_response(self, resp):
         if resp is None:
@@ -151,7 +144,7 @@ class AvailabilityRequestProcessor(SortedResponse):
         _sorted = sorted(grouped_routes)
         for priority, net in enumerate(_sorted):
             _routes = grouped_routes[net]
-            ctx = self.create_job_context(_routes)
+            ctx = {"logger_ctx": self.create_job_context(_routes)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, priority={priority}, "
                 f"network={net!r}, route={_routes!r}"

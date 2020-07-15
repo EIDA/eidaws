@@ -546,7 +546,7 @@ class UnsortedResponse(BaseRequestProcessor):
         Dispatch jobs onto ``pool``.
         """
         for route in routes:
-            ctx = self.create_job_context(route)
+            ctx = {"logger_ctx": self.create_job_context(route)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, route={route!r}"
             )

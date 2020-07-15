@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import asyncio
 import datetime
 import errno
 import json
@@ -36,16 +35,18 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
     _CHUNK_SIZE = 8192
 
-    async def _buffer_response(self, resp, buf, logger):
+    async def _buffer_response(self, resp, buf, context, **kwargs):
+        chunk_size = context["chunk_size"]
+
         last_obj = None
         last_obj_length = 0
 
         await buf.seek(0, 2)
         if await buf.tell():
             # deserialize the last JSON object from buffer
-            # XXX(damb): Assume that self._chunk_size >= last_obj_length
+            # XXX(damb): Assume that chunk_size >= last_obj_length
             try:
-                await buf.seek(-self._chunk_size, 2)
+                await buf.seek(-chunk_size, 2)
             except OSError as err:
                 if err.errno == errno.EINVAL:
                     await buf.seek(0)
@@ -70,12 +71,8 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
         first_chunk = True
         while True:
-            try:
-                chunk = await resp.content.read(self._chunk_size)
-            except asyncio.TimeoutError as err:
-                logger.warning(f"Socket read timeout: {type(err)}")
-                break
 
+            chunk = await resp.content.read(chunk_size)
             if not chunk:
                 # chop off b']'
                 await buf.truncate(await buf.tell() - 1)
@@ -105,14 +102,14 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
             await buf.write(chunk)
 
-    async def _flush(self, buf, drain, append=True):
+    async def _flush(self, buf, drain, context, append=True):
         await buf.seek(0)
 
         if append:
             await drain.drain(_JSON_SEP)
 
         while True:
-            chunk = await buf.read(self._chunk_size)
+            chunk = await buf.read(context.get("chunk_size", -1))
 
             if not chunk:
                 break
