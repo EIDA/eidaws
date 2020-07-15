@@ -17,11 +17,11 @@ from eidaws.federator.utils.process import (
     UnsortedResponse,
 )
 from eidaws.federator.utils.worker import (
-    with_context_logging,
     with_exception_handling,
     BaseWorker,
     NetworkLevelMixin,
 )
+from eidaws.utils.misc import make_context_logger
 from eidaws.utils.settings import (
     STATIONXML_TAGS_NETWORK,
     STATIONXML_TAGS_STATION,
@@ -54,12 +54,16 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
     def level(self):
         return self.query_params["level"]
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, net, req_method="GET", **req_kwargs):
+    async def run(
+        self, route, net, req_method="GET", context=None, **req_kwargs
+    ):
+        # context logging
+        logger = self.logger
+        if context:
+            logger = make_context_logger(self._logger, *context)
 
-        self.logger.debug(f"Fetching data for network: {net}")
-        job_ctx = self.create_job_context(route)
+        logger.debug(f"Fetching data for network: {net}")
 
         # granular request strategy
         tasks = [
@@ -67,14 +71,17 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                parent_ctx=job_ctx,
+                context=self.create_job_context(route, _route),
                 **req_kwargs,
             )
             for _route in route
         ]
-
         results = await asyncio.gather(*tasks, return_exceptions=False)
 
+        logger.debug(
+            f"Merging StationXML network element (net={net!r}, "
+            f"level={self.level!r}) ..."
+        )
         for _, station_xml in results:
             if station_xml is None:
                 continue
@@ -269,11 +276,13 @@ class StationXMLRequestProcessor(UnsortedResponse):
         """
         grouped_routes = group_routes_by(routes, key="network")
         for net, _routes in grouped_routes.items():
+            ctx = self.create_job_context(_routes)
             self.logger.debug(
-                f"Creating job: Network={net}, route={_routes!r}"
+                f"Creating job: context={ctx!r}, network={net}, "
+                f"route={_routes!r}"
             )
             await pool.submit(
-                _routes, net, req_method=req_method, **req_kwargs,
+                _routes, net, req_method=req_method, context=ctx, **req_kwargs,
             )
 
     async def _write_response_footer(self, response):

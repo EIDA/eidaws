@@ -47,7 +47,6 @@ def _serialize_query_params(query_params, serializer=None):
         serializer = serializer()
     return serializer.dump(query_params)
 
-
 class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
 
@@ -245,3 +244,6 @@ class HelperPOSTRequest:
 def route_to_uuid(route):
     h = md5(str(route).encode("utf-8"))
     return uuid.UUID(bytes=h.digest())
+
+def create_job_context(request, *routes):
+    return [request] + [route_to_uuid(route) for route in routes]

@@ -20,7 +20,7 @@ from eidaws.federator.utils.misc import (
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
-from eidaws.federator.utils.misc import route_to_uuid
+from eidaws.federator.utils.misc import create_job_context
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.misc import (
     _callable_or_raise,
@@ -69,28 +69,6 @@ def with_exception_handling(ignore_runtime_exception=False):
                         )
                     )
                 )
-
-        return wrapper
-
-    return decorator
-
-
-def with_context_logging():
-    """
-    Method decorator for :py:func:`BaseWorker.run` coros providing providing
-    context logging facilities.
-    """
-
-    def decorator(coro):
-        @functools.wraps(coro)
-        async def wrapper(self, *args, **kwargs):
-            try:
-                ctx_args = self.create_job_context(args[0])
-            except IndexError:
-                ctx_args = [self.request]
-
-            self.logger = make_context_logger(self._logger, *ctx_args)
-            await coro(self, *args, **kwargs)
 
         return wrapper
 
@@ -189,17 +167,18 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         headers["X-Forwarded-For"] = self.request.remote
         return headers
 
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
         raise NotImplementedError
 
     async def _handle_error(self, error=None, logger=None, **kwargs):
         logger = logger or self.logger
         msg = kwargs.get("msg", error)
-
         if msg is not None:
             logger.warning(str(msg))
 
-    async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
+    async def _handle_413(
+        self, url=None, stream_epoch=None, logger=None, **kwargs
+    ):
         raise WorkerError("HTTP code 413 handling not implemented.")
 
     async def finalize(self):
@@ -207,14 +186,12 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         Template coro intented to be called when finializing a job.
         """
 
-    def _log_request(self, req_handler, method):
-        self.logger.debug(f"Request ({method}): {req_handler!r}")
+    def create_job_context(self, *routes):
+        return create_job_context(self.request, *routes)
 
-    def create_job_context(self, route):
-        return [
-            self.request,
-            route_to_uuid(route),
-        ]
+    def _log_request(self, req_handler, method, logger=None):
+        logger = logger or self.logger
+        logger.debug(f"Request ({method}): {req_handler!r}")
 
 
 class BaseSplitAlignWorker(BaseWorker):
@@ -239,9 +216,8 @@ class BaseSplitAlignWorker(BaseWorker):
 
         assert self._lock is not None, "Lock not assigned"
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
         def route_with_single_stream(route):
             streams = set()
 
@@ -249,6 +225,11 @@ class BaseSplitAlignWorker(BaseWorker):
                 streams.add(se.id())
 
             return len(streams) == 1
+
+        # context logging
+        logger = self.logger
+        if context:
+            logger = make_context_logger(self._logger, *context)
 
         with ThreadPoolExecutor(max_workers=1) as executor:
             assert route_with_single_stream(
@@ -273,6 +254,7 @@ class BaseSplitAlignWorker(BaseWorker):
                     req_method=req_method,
                     buf=buf,
                     splitting_factor=self.config["splitting_factor"],
+                    logger=logger,
                     **req_kwargs,
                 )
 
@@ -292,8 +274,12 @@ class BaseSplitAlignWorker(BaseWorker):
         req_method,
         buf,
         splitting_factor,
+        logger=None,
         **req_kwargs,
     ):
+        if logger is None:
+            logger = self.logger
+
         for se in stream_epochs:
             req_handler = self.REQUEST_HANDLER_CLS(
                 url=url,
@@ -304,7 +290,7 @@ class BaseSplitAlignWorker(BaseWorker):
             req_handler.format = self.format
             req = getattr(req_handler, req_method.lower())(self._session)
 
-            self._log_request(req_handler, req_method)
+            self._log_request(req_handler, req_method, logger=logger)
             resp_status = None
             try:
                 async with req(**req_kwargs) as resp:
@@ -317,12 +303,12 @@ class BaseSplitAlignWorker(BaseWorker):
                         f"resp.url={resp.url}, resp.headers={resp.headers}"
                     )
                     if resp_status == 200:
-                        self.logger.debug(msg)
-                        await self._buffer_response(resp, buf)
+                        logger.debug(msg)
+                        await self._buffer_response(resp, buf, logger=logger)
                     elif resp_status in FDSNWS_NO_CONTENT_CODES:
-                        self.logger.info(msg)
+                        logger.info(msg)
                     else:
-                        await self._handle_error(msg=msg)
+                        await self._handle_error(msg=msg, logger=logger)
                         break
 
             except aiohttp.ClientResponseError as err:
@@ -342,11 +328,12 @@ class BaseSplitAlignWorker(BaseWorker):
                         req_method=req_method,
                         req_kwargs=req_kwargs,
                         buf=buf,
+                        logger=logger,
                     )
                 elif resp_status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
+                    logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg, logger=logger)
                     break
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
@@ -355,7 +342,7 @@ class BaseSplitAlignWorker(BaseWorker):
                     f"Error while executing request: error={type(err)}, "
                     f"req_handler={req_handler!r}, method={req_method}"
                 )
-                await self._handle_error(msg=msg)
+                await self._handle_error(msg=msg, logger=logger)
                 break
 
             finally:
@@ -364,7 +351,7 @@ class BaseSplitAlignWorker(BaseWorker):
                         req_handler.url, resp_status
                     )
 
-    async def _handle_413(self, url, stream_epoch, **kwargs):
+    async def _handle_413(self, url, stream_epoch, logger=None, **kwargs):
 
         assert (
             "splitting_factor" in kwargs
@@ -376,6 +363,7 @@ class BaseSplitAlignWorker(BaseWorker):
         splitting_factor = kwargs["splitting_factor"]
         buf = kwargs["buf"]
         req_kwargs = kwargs["req_kwargs"]
+        logger = logger or self.logger
 
         splitted = sorted(
             _split_stream_epoch(
@@ -390,7 +378,7 @@ class BaseSplitAlignWorker(BaseWorker):
         for i in range(len(splitted)):
             self._stream_epochs.insert(i + idx, splitted[i])
 
-        self.logger.debug(
+        logger.debug(
             f"Splitting {stream_epoch!r} "
             f"(splitting_factor={splitting_factor}). "
             f"Stream epochs after splitting: {self._stream_epochs!r}"
@@ -402,10 +390,11 @@ class BaseSplitAlignWorker(BaseWorker):
             req_method=kwargs["req_method"],
             buf=buf,
             splitting_factor=splitting_factor,
+            logger=logger,
             **req_kwargs,
         )
 
-    async def _buffer_response(self, resp, buf):
+    async def _buffer_response(self, resp, buf, logger):
         """
         Template coro.
         """
@@ -433,20 +422,13 @@ class NetworkLevelMixin:
     """
 
     async def _fetch(
-        self,
-        route,
-        parser_cb=None,
-        req_method="GET",
-        parent_ctx=None,
-        **kwargs,
+        self, route, parser_cb=None, req_method="GET", context=None, **kwargs,
     ):
         parser_cb = _coroutine_or_raise(parser_cb)
         # context logging
         logger = self.logger
-        if parent_ctx is not None:
-            logger = make_context_logger(
-                self._logger, *parent_ctx, route_to_uuid(route)
-            )
+        if context is not None:
+            logger = make_context_logger(self._logger, *context)
 
         req_handler = self.REQUEST_HANDLER_CLS(
             **route._asdict(),
@@ -457,7 +439,7 @@ class NetworkLevelMixin:
 
         req = getattr(req_handler, req_method.lower())(self._session)
 
-        self._log_request(req_handler, req_method)
+        self._log_request(req_handler, req_method, logger=logger)
         resp_status = None
 
         try:
@@ -479,7 +461,6 @@ class NetworkLevelMixin:
                     return route, None
 
                 logger.debug(msg)
-
                 if parser_cb is None:
                     return route, await resp.read()
 
@@ -495,7 +476,7 @@ class NetworkLevelMixin:
             )
 
             if resp_status == 413:
-                await self._handle_413()
+                await self._handle_413(logger=logger)
             elif resp_status in FDSNWS_NO_CONTENT_CODES:
                 logger.info(msg)
             else:

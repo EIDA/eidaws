@@ -149,7 +149,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
         self._mseed_record_size = None
         self._read_method = "readexactly"
 
-    async def _buffer_response(self, resp, buf):
+    async def _buffer_response(self, resp, buf, logger):
         last_record = None
         await buf.seek(0, 2)
         if await buf.tell():
@@ -169,7 +169,7 @@ class _DataselectWorker(BaseSplitAlignWorker):
                     self._chunk_size
                 )
             except asyncio.TimeoutError as err:
-                self.logger.warning(f"Socket read timeout: {type(err)}")
+                logger.warning(f"Socket read timeout: {type(err)}")
                 break
 
             if not chunk:
@@ -183,10 +183,10 @@ class _DataselectWorker(BaseSplitAlignWorker):
                 except MiniseedParsingError as err:
                     fallback = self.config["fallback_mseed_record_size"]
                     if not fallback:
-                        self.logger.warning(f"{err}; stop reading")
+                        logger.warning(f"{err}; stop reading")
                         break
 
-                    self.logger.info(
+                    logger.info(
                         f"{err}; using fallback miniseed record size: "
                         f"{fallback} bytes"
                     )

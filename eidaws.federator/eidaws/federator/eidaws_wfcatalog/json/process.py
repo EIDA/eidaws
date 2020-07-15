@@ -36,7 +36,7 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
 
     _CHUNK_SIZE = 8192
 
-    async def _buffer_response(self, resp, buf):
+    async def _buffer_response(self, resp, buf, logger):
         last_obj = None
         last_obj_length = 0
 
@@ -73,7 +73,7 @@ class _WFCatalogWorker(BaseSplitAlignWorker):
             try:
                 chunk = await resp.content.read(self._chunk_size)
             except asyncio.TimeoutError as err:
-                self.logger.warning(f"Socket read timeout: {type(err)}")
+                logger.warning(f"Socket read timeout: {type(err)}")
                 break
 
             if not chunk:

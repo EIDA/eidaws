@@ -5,12 +5,11 @@ from eidaws.federator.utils.httperror import FDSNHTTPError
 from eidaws.federator.utils.process import group_routes_by, SortedResponse
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
-    with_context_logging,
     with_exception_handling,
     BaseWorker,
     NetworkLevelMixin,
 )
-from eidaws.utils.misc import Route
+from eidaws.utils.misc import make_context_logger, Route
 from eidaws.utils.sncl import none_as_max, max_as_none, StreamEpoch
 
 
@@ -27,25 +26,33 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
 
         self._buf = {}
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, net, priority, req_method="GET", **req_kwargs):
+    async def run(
+        self,
+        route,
+        net,
+        priority,
+        req_method="GET",
+        context=None,
+        **req_kwargs,
+    ):
+        # context logging
+        logger = self.logger
+        if context:
+            logger = make_context_logger(self._logger, *context)
 
         self.logger.debug(f"Fetching data for network: {net}")
-        job_ctx = self.create_job_context(route)
-
         # granular request strategy
         tasks = [
             self._fetch(
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                parent_ctx=job_ctx,
+                context=self.create_job_context(route, _route),
                 **req_kwargs,
             )
             for _route in route
         ]
-
         results = await asyncio.gather(*tasks, return_exceptions=False)
 
         for _route, data in results:
@@ -150,12 +157,16 @@ class AvailabilityRequestProcessor(SortedResponse):
         _sorted = sorted(grouped_routes)
         for priority, net in enumerate(_sorted):
             _routes = grouped_routes[net]
-
+            ctx = self.create_job_context(_routes)
             self.logger.debug(
-                f"Creating job: priority={priority}, network={net}, "
-                f"route={_routes!r}"
+                f"Creating job: context={ctx!r}, priority={priority}, "
+                f"network={net!r}, route={_routes!r}"
             )
-
             await pool.submit(
-                _routes, net, priority, req_method=req_method, **req_kwargs,
+                _routes,
+                net,
+                priority,
+                req_method=req_method,
+                context=ctx,
+                **req_kwargs,
             )

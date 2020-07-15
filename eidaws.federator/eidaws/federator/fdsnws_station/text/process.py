@@ -10,10 +10,10 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
-    with_context_logging,
     with_exception_handling,
     BaseWorker,
 )
+from eidaws.utils.misc import make_context_logger
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
@@ -28,9 +28,13 @@ class _StationTextWorker(BaseWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
+        # context logging
+        logger = self.logger
+        if context:
+            logger = make_context_logger(self._logger, *context)
+
         req_handler = self.REQUEST_HANDLER_CLS(
             **route._asdict(),
             query_params=self.query_params,
@@ -40,7 +44,7 @@ class _StationTextWorker(BaseWorker):
         req_handler.format = self.format
         req = getattr(req_handler, req_method.lower())(self._session)
 
-        self._log_request(req_handler, req_method)
+        self._log_request(req_handler, req_method, logger=logger)
         resp_status = None
         try:
             async with req(**req_kwargs) as resp:
@@ -53,7 +57,7 @@ class _StationTextWorker(BaseWorker):
                     f"resp.url={resp.url}, resp.headers={resp.headers}"
                 )
                 if resp_status == 200:
-                    self.logger.debug(msg)
+                    logger.debug(msg)
                     # XXX(damb): Read the entire response into memory
                     text = await resp.read()
                     # strip header
@@ -63,9 +67,9 @@ class _StationTextWorker(BaseWorker):
                             await self._drain.drain(data)
 
                 elif resp_status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
+                    logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg)
+                    await self._handle_error(msg=msg, logger=logger)
 
         except aiohttp.ClientResponseError as err:
             resp_status = err.status
@@ -79,9 +83,9 @@ class _StationTextWorker(BaseWorker):
             if resp_status == 413:
                 await self._handle_413()
             elif resp_status in FDSNWS_NO_CONTENT_CODES:
-                self.logger.info(msg)
+                logger.info(msg)
             else:
-                await self._handle_error(msg=msg)
+                await self._handle_error(msg=msg, logger=logger)
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             resp_status = 503
@@ -89,7 +93,7 @@ class _StationTextWorker(BaseWorker):
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg)
+            await self._handle_error(msg=msg, logger=logger)
 
         finally:
             if resp_status is not None:
