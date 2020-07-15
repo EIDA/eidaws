@@ -65,6 +65,17 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
 
         logger.debug(f"Fetching data for network: {net}")
 
+        # TODO(damb): Currently, limiting the number of concurrent connection
+        # is guaranteed by sharing an aiohttp.TCPConnector instance. Though,
+        # instead of limiting the connection based on a HTTP connection pool it
+        # would be better to limit the overall number of tasks in order to keep
+        # the memory footprint low. -> Create bound number of tasks by means of
+        # globally sharing an task pool. Similar to
+        # https://docs.aiohttp.org/en/stable/client_reference.html#
+        # aiohttp.TCPConnector,
+        # to be able to limit task creation on a) overall and b) on a per host
+        # basis.
+
         # granular request strategy
         tasks = [
             self._fetch(
