@@ -75,13 +75,7 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
         if resp is None:
             return None
 
-        try:
-            data = await resp.read()
-        except asyncio.TimeoutError as err:
-            self.logger.warning(f"Socket read timeout: {type(err)}")
-            return None
-        else:
-            return self._load(data)
+        return self._load(await resp.read())
 
     def _load(self, data, **kwargs):
         raise NotImplementedError

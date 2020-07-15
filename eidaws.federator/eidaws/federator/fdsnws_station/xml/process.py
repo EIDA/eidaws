@@ -108,15 +108,10 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         if resp is None:
             return None
 
-        try:
-            ifd = io.BytesIO(await resp.read())
-        except asyncio.TimeoutError as err:
-            self.logger.warning(f"Socket read timeout: {type(err)}")
-            return None
-        else:
-            # TODO(damb): Check if there is a non-blocking alternative
-            # implementation
-            return etree.parse(ifd).getroot()
+        ifd = io.BytesIO(await resp.read())
+        # TODO(damb): Check if there is a non-blocking alternative
+        # implementation
+        return etree.parse(ifd).getroot()
 
     def _merge_net_element(self, net_element, level):
         """
