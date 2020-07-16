@@ -170,7 +170,7 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     async def run(self, route, req_method="GET", context=None, **req_kwargs):
         raise NotImplementedError
 
-    async def _handle_error(self, error=None, context=None, **kwargs):
+    async def handle_error(self, error=None, context=None, **kwargs):
         context = context or {}
         logger = context.get("logger", self._logger)
 
@@ -178,7 +178,7 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         if msg is not None:
             logger.warning(str(msg))
 
-    async def _handle_413(
+    async def handle_413(
         self, url=None, stream_epoch=None, context=None, **kwargs
     ):
         raise WorkerError("HTTP code 413 handling not implemented.")
@@ -312,7 +312,7 @@ class BaseSplitAlignWorker(BaseWorker):
                     elif resp_status in FDSNWS_NO_CONTENT_CODES:
                         logger.info(msg)
                     else:
-                        await self._handle_error(msg=msg, context=context)
+                        await self.handle_error(msg=msg, context=context)
                         break
 
             except aiohttp.ClientResponseError as err:
@@ -325,7 +325,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 )
 
                 if resp_status == 413:
-                    await self._handle_413(
+                    await self.handle_413(
                         url,
                         se,
                         splitting_factor=splitting_factor,
@@ -337,7 +337,7 @@ class BaseSplitAlignWorker(BaseWorker):
                 elif resp_status in FDSNWS_NO_CONTENT_CODES:
                     logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg, context=context)
+                    await self.handle_error(msg=msg, context=context)
                     break
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as err:
@@ -346,7 +346,7 @@ class BaseSplitAlignWorker(BaseWorker):
                     f"Error while executing request: error={type(err)}, "
                     f"req_handler={req_handler!r}, method={req_method}"
                 )
-                await self._handle_error(msg=msg, context=context)
+                await self.handle_error(msg=msg, context=context)
                 break
 
             finally:
@@ -355,7 +355,7 @@ class BaseSplitAlignWorker(BaseWorker):
                         req_handler.url, resp_status
                     )
 
-    async def _handle_413(self, url, stream_epoch, context=None, **kwargs):
+    async def handle_413(self, url, stream_epoch, context=None, **kwargs):
 
         assert (
             "splitting_factor" in kwargs
@@ -465,7 +465,7 @@ class NetworkLevelMixin:
                     if resp_status in FDSNWS_NO_CONTENT_CODES:
                         logger.info(msg)
                     else:
-                        await self._handle_error(msg=msg, context=context)
+                        await self.handle_error(msg=msg, context=context)
 
                     return route, None
 
@@ -485,11 +485,11 @@ class NetworkLevelMixin:
             )
 
             if resp_status == 413:
-                await self._handle_413(context=context)
+                await self.handle_413(context=context)
             elif resp_status in FDSNWS_NO_CONTENT_CODES:
                 logger.info(msg)
             else:
-                await self._handle_error(msg=msg, context=context)
+                await self.handle_error(msg=msg, context=context)
 
             return route, None
 
@@ -498,7 +498,7 @@ class NetworkLevelMixin:
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg, context=context)
+            await self.handle_error(msg=msg, context=context)
 
             resp_status = 503
             return route, None

@@ -72,7 +72,7 @@ class _StationTextWorker(BaseWorker):
                 elif resp_status in FDSNWS_NO_CONTENT_CODES:
                     logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg, context=context)
+                    await self.handle_error(msg=msg, context=context)
 
         except aiohttp.ClientResponseError as err:
             resp_status = err.status
@@ -84,11 +84,11 @@ class _StationTextWorker(BaseWorker):
             )
 
             if resp_status == 413:
-                await self._handle_413()
+                await self.handle_413()
             elif resp_status in FDSNWS_NO_CONTENT_CODES:
                 logger.info(msg)
             else:
-                await self._handle_error(msg=msg, context=context)
+                await self.handle_error(msg=msg, context=context)
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             resp_status = 503
@@ -96,7 +96,7 @@ class _StationTextWorker(BaseWorker):
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg, context=context)
+            await self.handle_error(msg=msg, context=context)
 
         finally:
             if resp_status is not None:
