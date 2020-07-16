@@ -10,10 +10,10 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
-    with_context_logging,
     with_exception_handling,
     BaseWorker,
 )
+from eidaws.utils.misc import make_context_logger
 from eidaws.utils.settings import FDSNWS_NO_CONTENT_CODES
 
 
@@ -28,81 +28,81 @@ class _StationTextWorker(BaseWorker):
 
     LOGGER = ".".join([FED_BASE_ID, SERVICE_ID, "worker"])
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
+        # context logging
+        try:
+            logger = make_context_logger(self._logger, *context["logger_ctx"])
+        except (TypeError, KeyError):
+            logger = self.logger
+        finally:
+            context["logger"] = logger
+
         req_handler = self.REQUEST_HANDLER_CLS(
             **route._asdict(),
             query_params=self.query_params,
             headers=self.request_headers,
         )
-        req_handler.format = self.format
 
+        req_handler.format = self.format
         req = getattr(req_handler, req_method.lower())(self._session)
 
-        self._log_request(req_handler, req_method)
+        self._log_request(req_handler, req_method, logger=logger)
         resp_status = None
         try:
-            resp = await req(**req_kwargs)
+            async with req(**req_kwargs) as resp:
+                resp.raise_for_status()
+
+                resp_status = resp.status
+                msg = (
+                    f"Response: {resp.reason}: resp.status={resp_status}, "
+                    f"resp.request_info={resp.request_info}, "
+                    f"resp.url={resp.url}, resp.headers={resp.headers}"
+                )
+                if resp_status == 200:
+                    logger.debug(msg)
+                    # XXX(damb): Read the entire response into memory
+                    text = await resp.read()
+                    # strip header
+                    data = text[(text.find(b"\n") + 1) :]
+                    if data:
+                        async with self._lock:
+                            await self._drain.drain(data)
+
+                elif resp_status in FDSNWS_NO_CONTENT_CODES:
+                    logger.info(msg)
+                else:
+                    await self.handle_error(msg=msg, context=context)
+
+        except aiohttp.ClientResponseError as err:
+            resp_status = err.status
+            msg = (
+                f"Error while executing request: {err.message}: "
+                f"error={type(err)}, resp.status={resp_status}, "
+                f"resp.request_info={err.request_info}, "
+                f"resp.headers={err.headers}"
+            )
+
+            if resp_status == 413:
+                await self.handle_413()
+            elif resp_status in FDSNWS_NO_CONTENT_CODES:
+                logger.info(msg)
+            else:
+                await self.handle_error(msg=msg, context=context)
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            resp_status = 503
             msg = (
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg)
-            resp_status = 503
+            await self.handle_error(msg=msg, context=context)
 
-        else:
-
-            data = await self._parse_resp(resp)
-
-            if data is not None:
-                async with self._lock:
-                    await self._drain.drain(data)
-
-            resp_status = resp.status
         finally:
             if resp_status is not None:
                 await self.update_cretry_budget(req_handler.url, resp_status)
 
             await self.finalize()
-
-    async def _parse_resp(self, resp):
-        msg = (
-            f"Response: {resp.reason}: resp.status={resp.status}, "
-            f"resp.request_info={resp.request_info}, "
-            f"resp.url={resp.url}, resp.headers={resp.headers}"
-        )
-
-        try:
-            resp.raise_for_status()
-        except aiohttp.ClientResponseError:
-            if resp.status == 413:
-                await self._handle_413()
-            else:
-                await self._handle_error(msg=msg)
-
-            return None
-        else:
-            if resp.status != 200:
-                if resp.status in FDSNWS_NO_CONTENT_CODES:
-                    self.logger.info(msg)
-                else:
-                    await self._handle_error(msg=msg)
-
-                return None
-            else:
-                self.logger.debug(msg)
-
-        # XXX(damb): Read the entire response into memory
-        try:
-            text = await resp.read()
-        except asyncio.TimeoutError as err:
-            self.logger.warning(f"Socket read timeout: {type(err)}")
-            return None
-        else:
-            # strip header
-            return text[(text.find(b"\n") + 1) :]
 
 
 class StationTextRequestProcessor(UnsortedResponse):

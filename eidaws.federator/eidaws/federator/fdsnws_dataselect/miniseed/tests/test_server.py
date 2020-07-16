@@ -209,7 +209,7 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        config_dict = server_config(self.get_config)
+        config_dict = server_config(self.get_config, **{"pool_size": 1})
         endpoint_request_method = self.lookup_config(
             "endpoint_request_method", config_dict
         )
@@ -308,7 +308,7 @@ class TestFDSNDataselectServer(
             ]
         }
 
-        config_dict = server_config(self.get_config)
+        config_dict = server_config(self.get_config, **{"pool_size": 1})
         endpoint_request_method = self.lookup_config(
             "endpoint_request_method", config_dict
         )
@@ -554,7 +554,7 @@ class TestFDSNDataselectServer(
             ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-20",),
         ],
     )
-    async def test_split_with_overlap(
+    async def test_split_multi_with_overlap(
         self,
         server_config,
         tester,

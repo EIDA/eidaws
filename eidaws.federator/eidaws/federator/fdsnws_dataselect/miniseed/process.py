@@ -13,6 +13,7 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.process import UnsortedResponse
 from eidaws.federator.utils.worker import (
+    with_exception_handling,
     BaseSplitAlignWorker,
     WorkerError,
 )
@@ -139,22 +140,36 @@ class _DataselectWorker(BaseSplitAlignWorker):
     # record_size
     _CHUNK_SIZE = MINIMUM_RECORD_LENGTH
 
-    def __init__(
-        self, request, session, drain, lock=None, **kwargs,
-    ):
-        super().__init__(
-            request, session, drain, lock=lock, **kwargs,
+    @with_exception_handling(ignore_runtime_exception=True)
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
+        context = context or {}
+        context.setdefault("mseed_record_size", None)
+
+        await super().run(
+            route, req_method=req_method, context=context, **req_kwargs
         )
 
-        self._mseed_record_size = None
-        self._read_method = "readexactly"
+    async def _buffer_response(self, resp, buf, context, **kwargs):
+        logger = context.get("logger", self.logger)
 
-    async def _buffer_response(self, resp, buf):
+        async def _read(resp, chunk_size):
+            try:
+                chunk = await resp.content.readexactly(chunk_size)
+            except asyncio.IncompleteReadError as err:
+                if 0 != (len(err.partial) % chunk_size):
+                    logger.info(
+                        f"Chunk not a multiple of {chunk_size} bytes: {err}"
+                    )
+
+                chunk = err.partial
+
+            return chunk
+
         last_record = None
         await buf.seek(0, 2)
         if await buf.tell():
             try:
-                await buf.seek(-self._mseed_record_size, 2)
+                await buf.seek(-context["mseed_record_size"], 2)
             except OSError as err:
                 if err.errno == errno.EINVAL:
                     await buf.seek(0)
@@ -164,50 +179,51 @@ class _DataselectWorker(BaseSplitAlignWorker):
             last_record = await buf.read()
 
         while True:
-            try:
-                chunk = await getattr(resp.content, self._read_method)(
-                    self._chunk_size
-                )
-            except asyncio.TimeoutError as err:
-                self.logger.warning(f"Socket read timeout: {type(err)}")
-                break
 
+            chunk = await _read(resp, context["chunk_size"])
             if not chunk:
                 break
 
-            if not self._mseed_record_size:
+            if not context["mseed_record_size"]:
                 try:
-                    self._mseed_record_size = _get_mseed_record_size(
+                    context["mseed_record_size"] = _get_mseed_record_size(
                         io.BytesIO(chunk)
                     )
                 except MiniseedParsingError as err:
                     fallback = self.config["fallback_mseed_record_size"]
                     if not fallback:
-                        self.logger.warning(f"{err}; stop reading")
+                        logger.warning(f"{err}; stop reading")
                         break
 
-                    self.logger.info(
+                    logger.info(
                         f"{err}; using fallback miniseed record size: "
                         f"{fallback} bytes"
                     )
-                    self._mseed_record_size = fallback
+                    context["mseed_record_size"] = fallback
                 finally:
-                    if self._mseed_record_size:
+                    if context["mseed_record_size"]:
+                        # read remaining part of record
+                        remaining = (
+                            context["mseed_record_size"]
+                            - context["chunk_size"]
+                        )
+                        logger.debug(
+                            f"Reading remaining {remaining} bytes of record "
+                            "(miniseed record size "
+                            f"{context['mseed_record_size']} bytes) ..."
+                        )
+                        if 0 < remaining:
+                            chunk += await _read(resp, remaining)
+
                         # align chunk_size with mseed record_size
-                        self._chunk_size = self._mseed_record_size
-                        self._read_method = "read"
+                        context["chunk_size"] = context["mseed_record_size"]
 
             if last_record is not None:
                 if last_record in chunk:
-                    chunk = chunk[self._mseed_record_size :]
+                    chunk = chunk[context["mseed_record_size"] :]
                 last_record = None
 
             await buf.write(chunk)
-
-    async def finalize(self):
-        self._mseed_record_size = None
-        self._chunk_size = self._CHUNK_SIZE
-        self._read_method = "readexactly"
 
 
 class DataselectRequestProcessor(UnsortedResponse):

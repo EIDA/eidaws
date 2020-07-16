@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import aioredis
+import asyncio
 import collections
 import inspect
 import logging
@@ -26,6 +27,18 @@ from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
 
 
+def _coroutine_or_raise(obj):
+    """Makes sure an object is callable if it is not ``None``. If not
+    a coroutine, a ``ValueError`` is raised.
+    """
+    if obj and not any(
+        [asyncio.iscoroutine(obj), asyncio.iscoroutinefunction(obj)]
+    ):
+
+        raise ValueError(f"{obj!r} is not a coroutine.")
+    return obj
+
+
 def _serialize_query_params(query_params, serializer=None):
     if serializer is None:
         return query_params
@@ -33,7 +46,6 @@ def _serialize_query_params(query_params, serializer=None):
     if inspect.isclass(serializer):
         serializer = serializer()
     return serializer.dump(query_params)
-
 
 class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
@@ -232,3 +244,6 @@ class HelperPOSTRequest:
 def route_to_uuid(route):
     h = md5(str(route).encode("utf-8"))
     return uuid.UUID(bytes=h.digest())
+
+def create_job_context(request, *routes):
+    return [request] + [route_to_uuid(route) for route in routes]

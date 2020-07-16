@@ -14,10 +14,13 @@ from cached_property import cached_property
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.mixin import ClientRetryBudgetMixin, ConfigMixin
-from eidaws.federator.utils.misc import _serialize_query_params
+from eidaws.federator.utils.misc import (
+    _coroutine_or_raise,
+    _serialize_query_params,
+)
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
-from eidaws.federator.utils.misc import route_to_uuid
+from eidaws.federator.utils.misc import create_job_context
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.misc import (
     _callable_or_raise,
@@ -66,28 +69,6 @@ def with_exception_handling(ignore_runtime_exception=False):
                         )
                     )
                 )
-
-        return wrapper
-
-    return decorator
-
-
-def with_context_logging():
-    """
-    Method decorator for :py:func:`BaseWorker.run` coros providing providing
-    context logging facilities.
-    """
-
-    def decorator(coro):
-        @functools.wraps(coro)
-        async def wrapper(self, *args, **kwargs):
-            try:
-                ctx_args = self.create_job_context(args[0])
-            except IndexError:
-                ctx_args = [self.request]
-
-            self.logger = make_context_logger(self._logger, *ctx_args)
-            await coro(self, *args, **kwargs)
 
         return wrapper
 
@@ -186,17 +167,20 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         headers["X-Forwarded-For"] = self.request.remote
         return headers
 
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
         raise NotImplementedError
 
-    async def _handle_error(self, error=None, logger=None, **kwargs):
-        logger = logger or self.logger
-        msg = kwargs.get("msg", error)
+    async def handle_error(self, error=None, context=None, **kwargs):
+        context = context or {}
+        logger = context.get("logger", self._logger)
 
+        msg = kwargs.get("msg", error)
         if msg is not None:
             logger.warning(str(msg))
 
-    async def _handle_413(self, url=None, stream_epoch=None, **kwargs):
+    async def handle_413(
+        self, url=None, stream_epoch=None, context=None, **kwargs
+    ):
         raise WorkerError("HTTP code 413 handling not implemented.")
 
     async def finalize(self):
@@ -204,14 +188,12 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         Template coro intented to be called when finializing a job.
         """
 
-    def _log_request(self, req_handler, method):
-        self.logger.debug(f"Request ({method}): {req_handler!r}")
+    def create_job_context(self, *routes):
+        return create_job_context(self.request, *routes)
 
-    def create_job_context(self, route):
-        return [
-            self.request,
-            route_to_uuid(route),
-        ]
+    def _log_request(self, req_handler, method, logger=None):
+        logger = logger or self.logger
+        logger.debug(f"Request ({method}): {req_handler!r}")
 
 
 class BaseSplitAlignWorker(BaseWorker):
@@ -231,14 +213,10 @@ class BaseSplitAlignWorker(BaseWorker):
 
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
 
-        self._chunk_size = self._CHUNK_SIZE
-        self._stream_epochs = []
-
         assert self._lock is not None, "Lock not assigned"
 
-    @with_context_logging()
     @with_exception_handling(ignore_runtime_exception=True)
-    async def run(self, route, req_method="GET", **req_kwargs):
+    async def run(self, route, req_method="GET", context=None, **req_kwargs):
         def route_with_single_stream(route):
             streams = set()
 
@@ -246,6 +224,21 @@ class BaseSplitAlignWorker(BaseWorker):
                 streams.add(se.id())
 
             return len(streams) == 1
+
+        url = route.url
+        _sorted = sorted(route.stream_epochs)
+
+        context = context or {}
+        context["chunk_size"] = self._CHUNK_SIZE
+        context["stream_epochs_record"] = copy.deepcopy(_sorted)
+
+        # context logging
+        try:
+            logger = make_context_logger(self._logger, *context["logger_ctx"])
+        except (TypeError, KeyError):
+            logger = self.logger
+        finally:
+            context["logger"] = logger
 
         with ThreadPoolExecutor(max_workers=1) as executor:
             assert route_with_single_stream(
@@ -260,24 +253,21 @@ class BaseSplitAlignWorker(BaseWorker):
                 executor=executor,
             ) as buf:
 
-                url = route.url
-                _sorted = sorted(route.stream_epochs)
-                self._stream_epochs = copy.deepcopy(_sorted)
-
                 await self._run(
                     url,
                     _sorted,
                     req_method=req_method,
                     buf=buf,
                     splitting_factor=self.config["splitting_factor"],
+                    context=context,
                     **req_kwargs,
                 )
 
                 if await buf.tell():
                     async with self._lock:
-                        append = True if self._drain.prepared else False
+                        append = self._drain.prepared or False
                         await self._flush(
-                            buf, self._drain, append=append,
+                            buf, self._drain, context, append=append,
                         )
 
         await self.finalize()
@@ -289,10 +279,12 @@ class BaseSplitAlignWorker(BaseWorker):
         req_method,
         buf,
         splitting_factor,
+        context,
         **req_kwargs,
     ):
-        for se in stream_epochs:
+        logger = context.get("logger") or self.logger
 
+        for se in stream_epochs:
             req_handler = self.REQUEST_HANDLER_CLS(
                 url=url,
                 stream_epochs=[se],
@@ -300,57 +292,70 @@ class BaseSplitAlignWorker(BaseWorker):
                 headers=self.request_headers,
             )
             req_handler.format = self.format
-
             req = getattr(req_handler, req_method.lower())(self._session)
-            self._log_request(req_handler, req_method)
+
+            self._log_request(req_handler, req_method, logger=logger)
+            resp_status = None
             try:
-                resp = await req(**req_kwargs)
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                self.logger.warning(
-                    f"Error while executing request: error={type(err)}, "
-                    f"req_handler={req_handler!r}, method={req_method}"
+                async with req(**req_kwargs) as resp:
+                    resp.raise_for_status()
+
+                    resp_status = resp.status
+                    msg = (
+                        f"Response: {resp.reason}: resp.status={resp_status}, "
+                        f"resp.request_info={resp.request_info}, "
+                        f"resp.url={resp.url}, resp.headers={resp.headers}"
+                    )
+                    if resp_status == 200:
+                        logger.debug(msg)
+                        await self._buffer_response(resp, buf, context=context)
+                    elif resp_status in FDSNWS_NO_CONTENT_CODES:
+                        logger.info(msg)
+                    else:
+                        await self.handle_error(msg=msg, context=context)
+                        break
+
+            except aiohttp.ClientResponseError as err:
+                resp_status = err.status
+                msg = (
+                    f"Error while executing request: {err.message}: "
+                    f"error={type(err)}, resp.status={resp_status}, "
+                    f"resp.request_info={err.request_info}, "
+                    f"resp.headers={err.headers}"
                 )
 
-                await self.update_cretry_budget(req_handler.url, 503)
-                break
-
-            msg = (
-                f"Response: {resp.reason}: resp.status={resp.status}, "
-                f"resp.request_info={resp.request_info}, "
-                f"resp.url={resp.url}, resp.headers={resp.headers}"
-            )
-
-            try:
-                resp.raise_for_status()
-            except aiohttp.ClientResponseError:
-                if resp.status == 413:
-                    await self._handle_413(
+                if resp_status == 413:
+                    await self.handle_413(
                         url,
                         se,
                         splitting_factor=splitting_factor,
                         req_method=req_method,
                         req_kwargs=req_kwargs,
                         buf=buf,
+                        context=context,
                     )
-                    continue
+                elif resp_status in FDSNWS_NO_CONTENT_CODES:
+                    logger.info(msg)
                 else:
-                    await self._handle_error(msg=msg)
+                    await self.handle_error(msg=msg, context=context)
                     break
-            else:
-                if resp.status != 200:
-                    if resp.status in FDSNWS_NO_CONTENT_CODES:
-                        self.logger.info(msg)
-                        continue
-                    else:
-                        await self._handle_error(msg=msg)
-                        break
+
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                resp_status = 503
+                msg = (
+                    f"Error while executing request: error={type(err)}, "
+                    f"req_handler={req_handler!r}, method={req_method}"
+                )
+                await self.handle_error(msg=msg, context=context)
+                break
+
             finally:
-                await self.update_cretry_budget(req_handler.url, resp.status)
+                if resp_status is not None:
+                    await self.update_cretry_budget(
+                        req_handler.url, resp_status
+                    )
 
-            self.logger.debug(msg)
-            await self._buffer_response(resp, buf)
-
-    async def _handle_413(self, url, stream_epoch, **kwargs):
+    async def handle_413(self, url, stream_epoch, context=None, **kwargs):
 
         assert (
             "splitting_factor" in kwargs
@@ -363,6 +368,10 @@ class BaseSplitAlignWorker(BaseWorker):
         buf = kwargs["buf"]
         req_kwargs = kwargs["req_kwargs"]
 
+        context = context or {}
+        logger = context.get("logger", self._logger)
+        stream_epochs_record = context.get("stream_epochs_record")
+
         splitted = sorted(
             _split_stream_epoch(
                 stream_epoch,
@@ -370,17 +379,18 @@ class BaseSplitAlignWorker(BaseWorker):
                 default_endtime=self._endtime,
             )
         )
-        # keep track of stream epochs attempting to download
-        idx = self._stream_epochs.index(stream_epoch)
-        self._stream_epochs.pop(idx)
-        for i in range(len(splitted)):
-            self._stream_epochs.insert(i + idx, splitted[i])
+        if stream_epochs_record:
+            # keep track of stream epochs attempting to download
+            idx = stream_epochs_record.index(stream_epoch)
+            stream_epochs_record.pop(idx)
+            for i in range(len(splitted)):
+                stream_epochs_record.insert(i + idx, splitted[i])
 
-        self.logger.debug(
-            f"Splitting {stream_epoch!r} "
-            f"(splitting_factor={splitting_factor}). "
-            f"Stream epochs after splitting: {self._stream_epochs!r}"
-        )
+            logger.debug(
+                f"Splitting {stream_epoch!r} "
+                f"(splitting_factor={splitting_factor}). "
+                f"Stream epochs after splitting: {stream_epochs_record!r}"
+            )
 
         await self._run(
             url,
@@ -388,23 +398,24 @@ class BaseSplitAlignWorker(BaseWorker):
             req_method=kwargs["req_method"],
             buf=buf,
             splitting_factor=splitting_factor,
+            context=context,
             **req_kwargs,
         )
 
-    async def _buffer_response(self, resp, buf):
+    async def _buffer_response(self, resp, buf, context, **kwargs):
         """
         Template coro.
         """
         raise NotImplementedError
 
-    async def _flush(self, buf, drain, append=True):
+    async def _flush(self, buf, drain, context, append=True):
         """
         Write ``buf`` to ``drain``.
         """
         await buf.seek(0)
 
         while True:
-            chunk = await buf.read(self._chunk_size)
+            chunk = await buf.read(context.get("chunk_size", -1))
 
             if not chunk:
                 break
@@ -418,13 +429,15 @@ class NetworkLevelMixin:
     level granularity
     """
 
-    async def _fetch(self, route, req_method="GET", parent_ctx=None, **kwargs):
+    async def _fetch(
+        self, route, parser_cb=None, req_method="GET", context=None, **kwargs,
+    ):
+        parser_cb = _coroutine_or_raise(parser_cb)
         # context logging
-        logger = self.logger
-        if parent_ctx is not None:
-            logger = make_context_logger(
-                self._logger, *parent_ctx, route_to_uuid(route)
-            )
+        try:
+            logger = make_context_logger(self._logger, *context["logger_ctx"])
+        except (TypeError, KeyError):
+            logger = self.logger
 
         req_handler = self.REQUEST_HANDLER_CLS(
             **route._asdict(),
@@ -434,44 +447,61 @@ class NetworkLevelMixin:
         req_handler.format = self.format
 
         req = getattr(req_handler, req_method.lower())(self._session)
-        self._log_request(req_handler, req_method)
+
+        self._log_request(req_handler, req_method, logger=logger)
+        resp_status = None
+
         try:
-            resp = await req(**kwargs)
+            async with req(**kwargs) as resp:
+                resp_status = resp.status
+                resp.raise_for_status()
+
+                msg = (
+                    f"Response: {resp.reason}: resp.status={resp_status}, "
+                    f"resp.request_info={resp.request_info}, "
+                    f"resp.url={resp.url}, resp.headers={resp.headers}"
+                )
+                if resp_status != 200:
+                    if resp_status in FDSNWS_NO_CONTENT_CODES:
+                        logger.info(msg)
+                    else:
+                        await self.handle_error(msg=msg, context=context)
+
+                    return route, None
+
+                logger.debug(msg)
+                if parser_cb is None:
+                    return route, await resp.read()
+
+                return route, await parser_cb(resp)
+
+        except aiohttp.ClientResponseError as err:
+            resp_status = err.status
+            msg = (
+                f"Error while executing request: {err.message}: "
+                f"error={type(err)}, resp.status={resp_status}, "
+                f"resp.request_info={err.request_info}, "
+                f"resp.headers={err.headers}"
+            )
+
+            if resp_status == 413:
+                await self.handle_413(context=context)
+            elif resp_status in FDSNWS_NO_CONTENT_CODES:
+                logger.info(msg)
+            else:
+                await self.handle_error(msg=msg, context=context)
+
+            return route, None
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             msg = (
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
-            await self._handle_error(msg=msg, logger=logger)
-            await self.update_cretry_budget(req_handler.url, 503)
+            await self.handle_error(msg=msg, context=context)
 
+            resp_status = 503
             return route, None
-
-        msg = (
-            f"Response: {resp.reason}: resp.status={resp.status}, "
-            f"resp.request_info={resp.request_info}, "
-            f"resp.url={resp.url}, resp.headers={resp.headers}"
-        )
-
-        try:
-            resp.raise_for_status()
-        except aiohttp.ClientResponseError:
-            if resp.status == 413:
-                await self._handle_413()
-            else:
-                await self._handle_error(msg=msg, logger=logger)
-
-            return route, None
-        else:
-            if resp.status != 200:
-                if resp.status in FDSNWS_NO_CONTENT_CODES:
-                    logger.info(msg)
-                else:
-                    await self._handle_error(msg=msg, logger=logger)
-
-                return route, None
-
-        logger.debug(msg)
-
-        await self.update_cretry_budget(req_handler.url, resp.status)
-        return route, resp
+        finally:
+            if resp_status is not None:
+                await self.update_cretry_budget(req_handler.url, resp_status)

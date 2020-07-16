@@ -13,6 +13,7 @@ from aiohttp import web
 
 from eidaws.federator.settings import FED_BASE_ID
 from eidaws.federator.utils.httperror import FDSNHTTPError
+from eidaws.federator.utils.misc import create_job_context
 from eidaws.federator.utils.mixin import (
     CachingMixin,
     ClientRetryBudgetMixin,
@@ -23,7 +24,11 @@ from eidaws.federator.utils.request import RoutingRequestHandler
 from eidaws.federator.utils.worker import ReponseDrain, QueueDrain
 from eidaws.federator.version import __version__
 from eidaws.utils.error import ErrorWithTraceback
-from eidaws.utils.misc import get_req_config, make_context_logger, Route
+from eidaws.utils.misc import (
+    get_req_config,
+    make_context_logger,
+    Route,
+)
 from eidaws.utils.settings import (
     FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
     FDSNWS_NO_CONTENT_CODES,
@@ -333,6 +338,9 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             # TODO(damb): Finalization prevents access logs being output
             await asyncio.shield(self.finalize())
 
+    def create_job_context(self, *routes):
+        return create_job_context(self.request, *routes)
+
     def make_stream_response(self, *args, **kwargs):
         """
         Factory for a :py:class:`aiohttp.web.StreamResponse`.
@@ -538,8 +546,12 @@ class UnsortedResponse(BaseRequestProcessor):
         Dispatch jobs onto ``pool``.
         """
         for route in routes:
+            ctx = {"logger_ctx": self.create_job_context(route)}
+            self.logger.debug(
+                f"Creating job: context={ctx!r}, route={route!r}"
+            )
             await pool.submit(
-                route, req_method=req_method, **req_kwargs,
+                route, req_method=req_method, context=ctx, **req_kwargs,
             )
 
     async def _make_response(
