@@ -172,7 +172,7 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
 
     async def handle_error(self, error=None, context=None, **kwargs):
         context = context or {}
-        logger = context.get("logger", self._logger)
+        logger = context.get("logger", self.logger)
 
         msg = kwargs.get("msg", error)
         if msg is not None:

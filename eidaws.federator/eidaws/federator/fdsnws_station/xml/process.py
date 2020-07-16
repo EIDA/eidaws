@@ -57,6 +57,8 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
             logger = make_context_logger(self._logger, *context["logger_ctx"])
         except (TypeError, KeyError):
             logger = self.logger
+        finally:
+            context["logger"] = logger
 
         logger.debug(f"Fetching data for network: {net!r}")
 
