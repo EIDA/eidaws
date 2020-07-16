@@ -99,7 +99,8 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
 
         for (net_element, sta_elements,) in context["buffer"].values():
             serialized = self._serialize_net_element(net_element, sta_elements)
-            await self._drain.drain(serialized)
+            async with self._lock:
+                await self._drain.drain(serialized)
 
         await self.finalize()
 
