@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import functools
 import sys
 
 from eidaws.federator.eidaws_wfcatalog.json import SERVICE_ID, create_app
@@ -11,11 +12,14 @@ from eidaws.federator.settings import (
 from eidaws.federator.utils.app import (
     _main,
     config as default_config,
-    config_schema as default_config_schema,
+)
+from eidaws.federator.utils.cli import (
+    build_parser,
+    abs_path,
+    between,
+    positive_int,
 )
 
-
-PROG = "eida-federator-wfcatalog-json"
 
 DEFAULT_CONFIG = default_config()
 DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
@@ -24,28 +28,45 @@ DEFAULT_CONFIG.setdefault(
 )
 DEFAULT_CONFIG.setdefault("splitting_factor", FED_DEFAULT_SPLITTING_FACTOR)
 
-config_schema = default_config_schema
-config_schema["properties"]["tempdir"] = {
-    "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^/"}]
-}
-config_schema["properties"]["buffer_rollover_size"] = {
-    "type": "integer",
-    "minimum": 0,
-}
-config_schema["properties"]["splitting_factor"] = {
-    "type": "integer",
-    "minimum": 2,
-}
-
 
 def main(argv=sys.argv[1:]):
+
+    parser = build_parser(SERVICE_ID, prog="eida-federator-wfcatalog-json")
+    parser.add_argument(
+        "--tempdir",
+        dest="tempdir",
+        type=abs_path,
+        default=FED_DEFAULT_TMPDIR,
+        metavar="PATH",
+        help="Absolute path to a temporary directory where buffers are "
+        "stored. If not specified the value is determined as described "
+        "under https://docs.python.org/3/library/tempfile.html#tempfile."
+        "gettempdir.",
+    )
+    parser.add_argument(
+        "--buffer-rollover-size",
+        dest="buffer_rollover_size",
+        type=positive_int,
+        default=FED_DEFAULT_BUFFER_ROLLOVER_SIZE,
+        metavar="BYTES",
+        help="Defines when data is buffered on disk. If 0, data is never "
+        "buffered on disk i.e. buffers are exclusively kept in memory. "
+        "Buffering is using an approach based on spooled temporary files "
+        "(https://docs.python.org/3/library/tempfile.html#tempfile."
+        "SpooledTemporaryFile) (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--splitting-factor",
+        dest="splitting_factor",
+        metavar='NUM',
+        type=functools.partial(between, num_type=int, minimum=2),
+        default=FED_DEFAULT_SPLITTING_FACTOR,
+        help="Splitting factor when performing splitting and aligning for "
+        "large requests (default: %(default)s).",
+    )
+
     _main(
-        SERVICE_ID,
-        create_app,
-        prog=PROG,
-        argv=argv,
-        default_config=DEFAULT_CONFIG,
-        config_schema=config_schema,
+        SERVICE_ID, create_app, parser, argv=argv,
     )
 
 

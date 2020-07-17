@@ -3,25 +3,17 @@
 import sys
 
 from eidaws.federator.fdsnws_station.xml import SERVICE_ID, create_app
-from eidaws.federator.utils.app import (
-    _main,
-    config as default_config,
-    config_schema as default_config_schema,
-)
+from eidaws.federator.utils.app import _main, config as default_config
+from eidaws.federator.utils.cli import build_parser
 
 
-PROG = "eida-federator-station-xml"
 DEFAULT_CONFIG = default_config()
 
 
 def main(argv=sys.argv[1:]):
+    parser = build_parser(SERVICE_ID, prog="eida-federator-station-xml")
     _main(
-        SERVICE_ID,
-        create_app,
-        prog=PROG,
-        argv=argv,
-        default_config=DEFAULT_CONFIG,
-        config_schema=default_config_schema,
+        SERVICE_ID, create_app, parser, argv=argv,
     )
 
 

@@ -47,11 +47,8 @@ from eidaws.stationlite.settings import (
     STL_HARVEST_DEFAULT_URL_DB,
 )
 from eidaws.stationlite.version import __version__
-from eidaws.utils.app import (
-    AppError,
-    CustomParser,
-)
-from eidaws.utils.config import InterpolatingYAMLConfigFileParser
+from eidaws.utils.app import AppError
+from eidaws.utils.cli import CustomParser, InterpolatingYAMLConfigFileParser
 from eidaws.utils.error import Error, ExitCodes
 from eidaws.utils.misc import real_file_path
 from eidaws.utils.settings import (

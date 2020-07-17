@@ -22,6 +22,7 @@ _DEPS = [
     "marshmallow==3.2.1",
     "python-dateutil>=2.6.1",
     "webargs==5.5.2",
+    "PyYAML>=5.3",
 ]
 
 setup(

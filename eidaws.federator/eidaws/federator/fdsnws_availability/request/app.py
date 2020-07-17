@@ -3,25 +3,19 @@
 import sys
 
 from eidaws.federator.fdsnws_availability.request import SERVICE_ID, create_app
-from eidaws.federator.utils.app import (
-    _main,
-    config as default_config,
-    config_schema as default_config_schema,
-)
+from eidaws.federator.utils.app import _main, config as default_config
+from eidaws.federator.utils.cli import build_parser
 
 
-PROG = "eida-federator-availability-request"
 DEFAULT_CONFIG = default_config()
 
 
 def main(argv=sys.argv[1:]):
+    parser = build_parser(
+        SERVICE_ID, prog="eida-federator-availability-request"
+    )
     _main(
-        SERVICE_ID,
-        create_app,
-        prog=PROG,
-        argv=argv,
-        default_config=DEFAULT_CONFIG,
-        config_schema=default_config_schema,
+        SERVICE_ID, create_app, parser, argv=argv,
     )
 
 
