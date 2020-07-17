@@ -11,37 +11,26 @@ from eidaws.federator.settings import (
     FED_DEFAULT_SPLITTING_FACTOR,
     FED_DEFAULT_FALLBACK_MSEED_RECORD_SIZE,
 )
-from eidaws.federator.utils.app import (
-    _main,
-    config as default_config,
-)
+from eidaws.federator.utils.app import _main
 from eidaws.federator.utils.cli import (
-    build_parser,
+    build_parser as _build_parser,
     abs_path,
     between,
     positive_int,
 )
+from eidaws.utils.cli import InterpolatingYAMLConfigFileParser
 
 
-DEFAULT_CONFIG = default_config()
-DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
-DEFAULT_CONFIG.setdefault(
-    "buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE
-)
-DEFAULT_CONFIG.setdefault("splitting_factor", FED_DEFAULT_SPLITTING_FACTOR)
-DEFAULT_CONFIG.setdefault(
-    "fallback_mseed_record_size", FED_DEFAULT_FALLBACK_MSEED_RECORD_SIZE
-)
-
-
-def main(argv=sys.argv[1:]):
+def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):
     def fallback_mseed_record_size(num):
         if 0 != (positive_int(num) % 64):
             raise argparse.ArgumentTypeError("Not a multiple of 64 bytes.")
         return num
 
-    parser = build_parser(
-        SERVICE_ID, prog="eida-federator-dataselect-miniseed"
+    parser = _build_parser(
+        SERVICE_ID,
+        prog="eida-federator-dataselect-miniseed",
+        config_file_parser_class=config_file_parser_class,
     )
     parser.add_argument(
         "--tempdir",
@@ -86,6 +75,14 @@ def main(argv=sys.argv[1:]):
         "in case of blockette 1000 missing. Valid values are a multiple of 64 "
         "bytes (default: %(default)s).",
     )
+
+    return parser
+
+
+parser = build_parser()
+
+
+def main(argv=sys.argv[1:]):
 
     _main(
         SERVICE_ID, create_app, parser, argv=argv,

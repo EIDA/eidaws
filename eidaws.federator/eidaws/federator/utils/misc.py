@@ -46,10 +46,6 @@ class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
 
 
-def get_config(service_id, arg_dict={}):
-    return {"config": {service_id: arg_dict}}
-
-
 def setup_logger(service_id, path_logging_conf=None, capture_warnings=False):
     """
     Initialize the logger of the application.

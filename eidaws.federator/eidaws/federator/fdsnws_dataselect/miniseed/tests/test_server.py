@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import copy
 import functools
 import pytest
 
 from aiohttp import web
 
 from eidaws.federator.fdsnws_dataselect.miniseed import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_dataselect.miniseed.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_dataselect.miniseed.app import build_parser
 from eidaws.federator.fdsnws_dataselect.miniseed.route import (
     FED_DATASELECT_PATH_QUERY,
 )
-from eidaws.federator.utils.misc import get_config
 from eidaws.federator.utils.pytest_plugin import (
     fdsnws_dataselect_content_type,
     fdsnws_error_content_type,
@@ -29,6 +27,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestRoutingMixin,
     _TestServerBase,
 )
+from eidaws.utils.cli import NullConfigFileParser
 from eidaws.utils.settings import FDSNWS_DATASELECT_PATH_QUERY
 
 
@@ -67,10 +66,13 @@ class TestFDSNDataselectServer(
 
     @staticmethod
     def get_config(**kwargs):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        # get default configuration from parser
+        args = build_parser(
+            config_file_parser_class=NullConfigFileParser
+        ).parse_args(args=[])
+        config_dict = vars(args)
         config_dict.update(kwargs)
-
-        return get_config(SERVICE_ID, defaults=config_dict)
+        return config_dict
 
     @classmethod
     def create_app(cls, config_dict=None):

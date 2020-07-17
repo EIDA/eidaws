@@ -14,7 +14,7 @@ class _TestServerBase:
 
     @classmethod
     def lookup_config(cls, key, config_dict):
-        return config_dict["config"][cls.SERVICE_ID][key]
+        return config_dict[key]
 
 
 class _TestRoutingMixin:

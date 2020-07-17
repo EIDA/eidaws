@@ -9,29 +9,22 @@ from eidaws.federator.settings import (
     FED_DEFAULT_BUFFER_ROLLOVER_SIZE,
     FED_DEFAULT_SPLITTING_FACTOR,
 )
-from eidaws.federator.utils.app import (
-    _main,
-    config as default_config,
-)
+from eidaws.federator.utils.app import _main
 from eidaws.federator.utils.cli import (
-    build_parser,
+    build_parser as _build_parser,
     abs_path,
     between,
     positive_int,
 )
+from eidaws.utils.cli import InterpolatingYAMLConfigFileParser
 
 
-DEFAULT_CONFIG = default_config()
-DEFAULT_CONFIG.setdefault("tempdir", FED_DEFAULT_TMPDIR)
-DEFAULT_CONFIG.setdefault(
-    "buffer_rollover_size", FED_DEFAULT_BUFFER_ROLLOVER_SIZE
-)
-DEFAULT_CONFIG.setdefault("splitting_factor", FED_DEFAULT_SPLITTING_FACTOR)
-
-
-def main(argv=sys.argv[1:]):
-
-    parser = build_parser(SERVICE_ID, prog="eida-federator-wfcatalog-json")
+def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):
+    parser = _build_parser(
+        SERVICE_ID,
+        prog="eida-federator-wfcatalog-json",
+        config_file_parser_class=config_file_parser_class,
+    )
     parser.add_argument(
         "--tempdir",
         dest="tempdir",
@@ -58,12 +51,20 @@ def main(argv=sys.argv[1:]):
     parser.add_argument(
         "--splitting-factor",
         dest="splitting_factor",
-        metavar='NUM',
+        metavar="NUM",
         type=functools.partial(between, num_type=int, minimum=2),
         default=FED_DEFAULT_SPLITTING_FACTOR,
         help="Splitting factor when performing splitting and aligning for "
         "large requests (default: %(default)s).",
     )
+
+    return parser
+
+
+parser = build_parser()
+
+
+def main(argv=sys.argv[1:]):
 
     _main(
         SERVICE_ID, create_app, parser, argv=argv,

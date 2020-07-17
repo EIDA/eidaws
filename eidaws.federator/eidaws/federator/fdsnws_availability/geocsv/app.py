@@ -3,15 +3,23 @@
 import sys
 
 from eidaws.federator.fdsnws_availability.geocsv import SERVICE_ID, create_app
-from eidaws.federator.utils.app import _main, config as default_config
-from eidaws.federator.utils.cli import build_parser
+from eidaws.federator.utils.app import _main
+from eidaws.federator.utils.cli import build_parser as _build_parser
+from eidaws.utils.cli import InterpolatingYAMLConfigFileParser
 
 
-DEFAULT_CONFIG = default_config()
+def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):
+    return _build_parser(
+        SERVICE_ID,
+        prog="eida-federator-availability-geocsv",
+        config_file_parser_class=config_file_parser_class,
+    )
+
+
+parser = build_parser()
 
 
 def main(argv=sys.argv[1:]):
-    parser = build_parser(SERVICE_ID, prog="eida-federator-availability-geocsv")
     _main(
         SERVICE_ID, create_app, parser, argv=argv,
     )

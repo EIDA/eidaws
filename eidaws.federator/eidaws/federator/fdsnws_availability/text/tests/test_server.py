@@ -1,16 +1,12 @@
-import copy
 import functools
 import pytest
 
-from aiohttp import web
-
 from eidaws.federator.fdsnws_availability.text import create_app, SERVICE_ID
-from eidaws.federator.fdsnws_availability.text.app import DEFAULT_CONFIG
+from eidaws.federator.fdsnws_availability.text.app import build_parser
 from eidaws.federator.fdsnws_availability.text.route import (
     FED_AVAILABILITY_TEXT_PATH_EXTENT,
     FED_AVAILABILITY_TEXT_PATH_QUERY,
 )
-from eidaws.federator.utils.misc import get_config
 from eidaws.federator.fdsnws_availability.tests.server_mixin import (
     _TestAvailabilityExtentMixin,
     _TestAvailabilityQueryMixin,
@@ -33,6 +29,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestRoutingMixin,
     _TestServerBase,
 )
+from eidaws.utils.cli import NullConfigFileParser
 from eidaws.utils.settings import (
     FDSNWS_AVAILABILITY_PATH_EXTENT,
     FDSNWS_AVAILABILITY_PATH_QUERY,
@@ -53,12 +50,17 @@ def content_tester(load_data):
 
 
 class _TestAvailabilityTextServerMixin:
+    _DEFAULT_SERVER_CONFIG = {}
+
     @staticmethod
     def get_config(**kwargs):
-        config_dict = copy.deepcopy(DEFAULT_CONFIG)
+        # get default configuration from parser
+        args = build_parser(
+            config_file_parser_class=NullConfigFileParser
+        ).parse_args(args=[])
+        config_dict = vars(args)
         config_dict.update(kwargs)
-
-        return get_config(SERVICE_ID, defaults=config_dict)
+        return config_dict
 
     @classmethod
     def create_app(cls, config_dict=None):
