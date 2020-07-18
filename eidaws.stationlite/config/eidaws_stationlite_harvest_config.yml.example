@@ -1,5 +1,18 @@
 ---
-# eidaws.stationlite.harvest configuration
+# eidaws-stationlite-harvest configuration
+#
+# When parsing configuration from the configuration files the following files
+# are taken into account (bottom-up precedence):
+#
+# - /etc/eidaws/eidaws_config.yml
+# - /etc/eidaws/eidaws_stationlite_config.yml
+# - /etc/eidaws/eidaws_stationlite_harvest_config.yml
+# - ~/.eidaws/eidaws_config.yml
+# - ~/.eidaws/eidaws_stationlite_config.yml
+# - ~/.eidaws/eidaws_stationlite_harvest_config.yml
+#
+# Besides, configuration options given on the application's CLI override
+# options specified within configuration files.
 #
 # Note, that environment varibles are interpolated while parsing the
 # configuration file. The syntax is similar to the one provided within

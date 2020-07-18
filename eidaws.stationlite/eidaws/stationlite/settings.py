@@ -9,9 +9,9 @@ STL_DEFAULT_CONFIG_FILES = [
     "/etc/eidaws/eidaws_config.yml",
     "/etc/eidaws/eidaws_stationlite_config.yml",
     "/etc/eidaws/eidaws_stationlite_server_config.yml",
-    "~/.eidaws_config.yml",
-    "~/.eidaws_stationlite_config.yml",
-    "~/.eidaws_stationlite_server_config.yml",
+    "~/.eidaws/eidaws_config.yml",
+    "~/.eidaws/eidaws_stationlite_config.yml",
+    "~/.eidaws/eidaws_stationlite_server_config.yml",
 ]
 
 STL_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
@@ -23,9 +23,9 @@ STL_HARVEST_DEFAULT_CONFIG_FILES = [
     "/etc/eidaws/eidaws_config.yml",
     "/etc/eidaws/eidaws_stationlite_config.yml",
     "/etc/eidaws/eidaws_stationlite_harvest_config.yml",
-    "~/.eidaws_config.yml",
-    "~/.eidaws_stationlite_config.yml",
-    "~/.eidaws_stationlite_harvest_config.yml",
+    "~/.eidaws/eidaws_config.yml",
+    "~/.eidaws/eidaws_stationlite_config.yml",
+    "~/.eidaws/eidaws_stationlite_harvest_config.yml",
 ]
 
 STL_HARVEST_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"

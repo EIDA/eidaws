@@ -8,15 +8,15 @@ def _make_fed_path(base_fed_path, query_format, version="1"):
 def make_config_file_paths(service_id):
     ns = service_id.split(".")
     template_etc = "/etc/eidaws/eidaws_federator_{}_config.yml"
-    template_home = "~/.eidaws_federator_{}_config.yml"
+    template_home = "~/.eidaws/eidaws_federator_{}_config.yml"
 
     return [
         "/etc/eidaws/eidaws_config.yml",
         "/etc/eidaws/eidaws_federator_config.yml",
         template_etc.format(ns[1]),
         template_etc.format("_".join(ns[1:])),
-        "~/.eidaws_config.yml",
-        "~/.eidaws_federator_config.yml",
+        "~/.eidaws/eidaws_config.yml",
+        "~/.eidaws/eidaws_federator_config.yml",
         template_home.format(ns[1]),
         template_home.format("_".join(ns[1:])),
     ]
