@@ -75,20 +75,21 @@ Configuration
 The service is configured by means of a `YAML
 <https://en.wikipedia.org/wiki/YAML>`_ configuration file. An exemplary fully
 documented configuration file is provided under
-``eidaws.endpoint_proxy/config/eidaws_config.yml.example``. In order to change the default
-configuration make a copy of the example configuration with e.g.
+``eidaws.endpoint_proxy/config/eidaws_proxy_config.yml.example``. In order to
+change the default configuration make a copy of the example configuration with
+e.g.
 
 .. code::
 
-  $ cp -v eidaws.endpoint_proxy/config/eidaws_config.yml.example \
-    eidaws.endpoint_proxy/config/eidaws_config.yml
+  $ cp -v eidaws.endpoint_proxy/config/eidaws_proxy_config.yml.example \
+    eidaws.endpoint_proxy/config/eidaws_proxy_config.yml
 
 and adopt the file according to your needs. Then start the application with
 the ``-c|--config`` flag e.g.
 
 .. code::
 
-  $ eida-endpoint-proxy -c eidaws.endpoint_proxy/config/eidaws_config.yml
+  $ eida-endpoint-proxy -c eidaws.endpoint_proxy/config/eidaws_proxy_config.yml
 
 
 Logging

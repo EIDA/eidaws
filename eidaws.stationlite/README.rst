@@ -69,6 +69,28 @@ application. For further details on how to use the harvesting application,
 simply invoke ``eida-stationlite-harvest -h``.
 
 
+**Configuration**:
+
+Besides of specifying configuration options at the application's CLI, the
+application also may be configuration by means of a configuration file. An
+exemplary fully documented configuration file is provided under
+``eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml.example``. In
+order to change the default configuration simply make a copy of the example
+configuration with e.g.
+
+.. code::
+
+  $ cp -v eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml.example \
+    eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml
+
+After you've made your changes, invoke the application with
+
+.. code::
+
+   $ eida-stationlite-harvest \
+    -c eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml
+
+
 Webservice
 ==========
 
@@ -87,20 +109,21 @@ For additional details execute ``flask run -h``.
 The service application can be configured by means of a `YAML
 <https://en.wikipedia.org/wiki/YAML>`_ configuration file. An exemplary fully
 documented configuration file is provided under
-``eidaws.stationlite/config/eidaws_config.yml.example``. In order to change the
-configuration make a copy of the example configuration with e.g.
+``eidaws.stationlite/config/eidaws_stationlite_server_config.yml.example``. In
+order to change the configuration make a copy of the example configuration with
+e.g.
 
 .. code::
 
-  $ cp -v eidaws.stationlite/config/eidaws_config.yml.example \
-    eidaws.stationlite/config/eidaws_config.yml
+  $ cp -v eidaws.stationlite/config/eidaws_stationlite_server_config.yml.example \
+    eidaws.stationlite/config/eidaws_stationlite_server_config.yml
 
 and adjust the configuration according to your needs. Then invoke the
 corresponding service application with
 
 .. code::
 
-   $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_config.yml \
+   $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_stationlite_server_config.yml \
      FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
 
 Logging

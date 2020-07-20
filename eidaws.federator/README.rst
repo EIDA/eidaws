@@ -301,22 +301,25 @@ Configuration
 =============
 
 Federated resource service applications can be configured by means of a `YAML
-<https://en.wikipedia.org/wiki/YAML>`_ configuration file. An exemplary fully
-documented configuration file is provided under
-``eidaws.federator/config/eidaws_config.yml.example``. In order to change the default
-configuration make a copy of the example configuration with e.g.
+<https://en.wikipedia.org/wiki/YAML>`_ configuration file. Exemplary fully
+documented configuration files are provided under
+``eidaws.federator/config/eidaws_federator_*_config.yml.example``. In order to
+change the default configuration make a copy of the corresponding example
+configuration with e.g.
 
 .. code::
 
-  $ cp -v eidaws.federator/config/eidaws_config.yml.example \
-    eidaws.federator/config/eidaws_config.yml
+  $ cp -v \
+    eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml.example \
+    eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml
 
 and adopt the file according to your needs. Then invoke the corresponding
 service application with the ``-c|--config`` flag e.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json -c eidaws.federator/config/eidaws_config.yml
+  $ eida-federator-wfcatalog-json \
+    -c eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml
 
 
 Logging
