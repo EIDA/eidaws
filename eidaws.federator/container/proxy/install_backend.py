@@ -14,10 +14,10 @@ def main():
     PATH_TMP = Path("/tmp")
     PATH_NGINX_CONFD = Path("/etc/nginx/conf.d")
     PATH_RUNIT_SERVICE = Path("/etc/service")
-    PATH_EIDAWS_ENDPOINT_PROXY_CONF = Path("/etc/eidaws-endpoint-proxy")
+    PATH_EIDAWS_ENDPOINT_PROXY_CONF = Path("/etc/eidaws")
     PATH_VENV = Path("/var/www/eidaws-endpoint-proxy/venv/")
     BACKEND_MAP_CONF = "backend.map.conf"
-    EIDAWS_CONFIG_YML_TEMPLATE = "eidaws_config.yml.template"
+    EIDAWS_CONFIG_YML_TEMPLATE = "eidaws_proxy_config.yml.template"
 
     template_map = {
         r"\{\{CONNECTION_LIMIT\}\}": ("connection_limit", 10),
@@ -56,7 +56,7 @@ def main():
         hostname, port = config["proxy_netloc"].split(":")
         path_config = (
             PATH_EIDAWS_ENDPOINT_PROXY_CONF
-            / f"eidaws_config_{config['fqdn']}.yml"
+            / f"eidaws_proxy_{config['fqdn']}_config.yml"
         )
 
         with open(service_dir / "run", "w") as ofd:

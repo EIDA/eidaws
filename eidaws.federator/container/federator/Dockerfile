@@ -46,7 +46,7 @@ RUN mkdir /etc/service/nginx && \
 
 # Install backend services
 RUN mkdir -p /var/www/eidaws-federator /run/eidaws-federator \
-  /etc/eidaws-federator /usr/local/src /var/log/eidaws-federator && \
+  /etc/eidaws /usr/local/src /var/log/eidaws-federator && \
   chown www-data:www-data /run/eidaws-federator
 COPY . /usr/local/src/eidaws
 
@@ -58,8 +58,8 @@ RUN python3.7 -m venv /var/www/eidaws-federator/venv && \
   pip install -e /usr/local/src/eidaws/eidaws.federator && deactivate"
 
 # Backend service configuration files
-COPY $DIR_CONTAINERFILE/eidaws_config.yml \
-  $DIR_CONTAINERFILE/logging.conf /etc/eidaws-federator/
+COPY $DIR_CONTAINERFILE/*.yml \
+  $DIR_CONTAINERFILE/logging.conf /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-federator.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-federator.conf
 

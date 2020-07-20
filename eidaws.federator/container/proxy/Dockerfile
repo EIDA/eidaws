@@ -54,12 +54,12 @@ RUN python3.7 -m venv /var/www/eidaws-endpoint-proxy/venv && \
   pip install -e /usr/local/src/eidaws/eidaws.endpoint_proxy && deactivate"
 
 # Backend service configuration files
-COPY $DIR_CONTAINERFILE/logging.conf /etc/eidaws-endpoint-proxy/
+COPY $DIR_CONTAINERFILE/logging.conf /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-endpoint-proxy.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-endpoint-proxy.conf
 
 # Add proxy backend services with installation script
-COPY $DIR_CONTAINERFILE/eidaws_config.yml.template \
+COPY $DIR_CONTAINERFILE/eidaws_proxy_config.yml.template \
   $DIR_CONTAINERFILE/install_backend.py \
   $DIR_CONTAINERFILE/eidaws-endpoint.json /tmp/
 RUN chmod +x /tmp/install_backend.py && \
@@ -70,4 +70,3 @@ EXPOSE 8090
 
 # Cleanup (baseimage recommended)
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-

@@ -3,6 +3,22 @@
 # For general configuration options see the exemplary
 # eidaws_federator_config.yml.example template configuration file.
 #
+# ----
+# Maximum per stream epoch duration in days before returning a HTTP 413
+# (Request too large) response.
+# Allowed values: None or int (days)
+# Default: None
+#
+max-stream-epoch-duration: 35
+#
+# ----
+# Maximum total stream epoch duration in days before returning a HTTP 413
+# (Request too large) response.
+# Allowed values: None or int (days)
+# Default: None
+#
+max-stream-epoch-duration-total: 1000
+#
 # -----------------------------------------------------------------------------
 # Additional configuration options for the eida-federator-dataselect-miniseed
 # application which does implement HTTP 413 (Request too large) response
@@ -13,7 +29,7 @@
 # Allowed values: None or absolute path
 # Default: None
 #
-# tempdir:
+tempdir: /tmp
 #
 # ----
 # Data is buffered using an approach based on spooled temporary files
@@ -22,7 +38,7 @@
 # when data is buffered on disk. If 0, data is never buffered on disk.
 # Default: 0
 #
-# buffer-rollover-size: 0
+buffer-rollover-size: 2097152  # 2MB
 #
 # ----
 # Splitting factor when performing splitting and aligning for large
@@ -42,6 +58,6 @@
 # parameter is set to 0. Valid values are a multiple of 64 bytes.
 # Default: 0
 #
-# fallback-miniseed-record-size: 0
+fallback-miniseed-record-size: 512
 #
 ...

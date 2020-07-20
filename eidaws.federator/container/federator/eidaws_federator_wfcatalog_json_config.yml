@@ -3,8 +3,23 @@
 # For general configuration options see the exemplary
 # eidaws_federator_config.yml.example template configuration file.
 #
+# ----
+# Request method used when performing endpoint requests.
+# Allowed values: 'GET' or 'POST'
+# Default: 'GET'
+#
+endpoint-request-method: 'POST'
+#
+# ----
+# Maximum total stream epoch duration in days before returning a HTTP 413
+# (Request too large) response.
+# Allowed values: None or int (days)
+# Default: None
+#
+max-stream-epoch-duration-total: 330000
+#
 # -----------------------------------------------------------------------------
-# Additional configuration options for the eida-federator-dataselect-miniseed
+# Additional configuration options for the eida-federator-wfcatalog-json
 # application which does implement HTTP 413 (Request too large) response
 # handling i.e. splitting and aligning facilities.
 #
@@ -13,7 +28,7 @@
 # Allowed values: None or absolute path
 # Default: None
 #
-# tempdir:
+tempdir: /tmp
 #
 # ----
 # Data is buffered using an approach based on spooled temporary files
@@ -22,7 +37,7 @@
 # when data is buffered on disk. If 0, data is never buffered on disk.
 # Default: 0
 #
-# buffer-rollover-size: 0
+buffer-rollover-size: 2097152  # 2MB
 #
 # ----
 # Splitting factor when performing splitting and aligning for large
@@ -30,18 +45,5 @@
 # Default: 2
 #
 # splitting-factor: 2
-#
-#
-# -----------------------------------------------------------------------------
-# Additional configuration options for the eida-federator-dataselect-miniseed
-# implementation.
-#
-# ----
-# Fallback miniseed record size in bytes in case blockette 1000 was not
-# found. The miniseed data is considered as invalid if the configuration
-# parameter is set to 0. Valid values are a multiple of 64 bytes.
-# Default: 0
-#
-# fallback-miniseed-record-size: 0
 #
 ...

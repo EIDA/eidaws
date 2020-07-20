@@ -22,40 +22,40 @@
 # -----------------------------------------------------------------------------
 # List of URLs to eidaws-routing localconfig configurations to be harvested.
 #
-# urls-localconfig:
-#   # ODC
-#   - http://www.orfeus-eu.org/eidaws/routing/1/localconfig
-#   # GFZ
-#   - http://geofon.gfz-potsdam.de/eidaws/routing/1/localconfig
-#   # RESIF
-#   - http://ws.resif.fr/eida_routing.xml
-#   # INGV
-#   - http://webservices.ingv.it/eidaws/routing/1/localconfig
-#   # ETHZ
-#   - http://eida.ethz.ch/eidaws/routing/1/localconfig
-#   # BGR
-#   - http://eida.bgr.de/eidaws/routing/1/localconfig
-#   # NIEP
-#   - http://eida-routing.infp.ro/eidaws/routing/1/localconfig
-#   # KOERI
-#   - http://eida.koeri.boun.edu.tr/eidaws/routing/1/localconfig
-#   # LMU
-#   - http://erde.geophysik.uni-muenchen.de/eidaws/routing/1/localconfig
-#   # NOA
-#   - http://eida.gein.noa.gr/eidaws/routing/1/localconfig
-#   # UIB
-#   - http://eida.geo.uib.no/eidaws/routing.xml
-#   # ICGC
-#   - http://ws.icgc.cat/eidaws/routing/1/localconfig
+urls-localconfig:
+  # ODC
+  - http://www.orfeus-eu.org/eidaws/routing/1/localconfig
+  # GFZ
+  - http://geofon.gfz-potsdam.de/eidaws/routing/1/localconfig
+  # RESIF
+  - http://ws.resif.fr/eida_routing.xml
+  # INGV
+  - http://webservices.ingv.it/eidaws/routing/1/localconfig
+  # ETHZ
+  - http://eida.ethz.ch/eidaws/routing/1/localconfig
+  # BGR
+  - http://eida.bgr.de/eidaws/routing/1/localconfig
+  # NIEP
+  - http://eida-routing.infp.ro/eidaws/routing/1/localconfig
+  # KOERI
+  - http://eida.koeri.boun.edu.tr/eidaws/routing/1/localconfig
+  # LMU
+  - http://erde.geophysik.uni-muenchen.de/eidaws/routing/1/localconfig
+  # NOA
+  - http://eida.gein.noa.gr/eidaws/routing/1/localconfig
+  # UIB
+  - http://eida.geo.uib.no/eidaws/routing.xml
+  # ICGC
+  - http://ws.icgc.cat/eidaws/routing/1/localconfig
 #
 # ----
 # List of service resources being harvested.
 #
-# services:
+services:
 #   - availability
-#   - dataselect
-#   - station
-#   - wfcatalog
+  - dataselect
+  - station
+  - wfcatalog
 #
 # ----
 # Perform a strict validaation of channel epochs to use the correct
@@ -87,19 +87,20 @@
 # further details see also:
 # https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
 #
-# database: postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@localhost:5432/stationlite
+database: postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@${POSTGRES_HOST:-localhost}:5432/${POSTGRES_DB:-stationlite}
+#
 #
 # ----
 # Absolute path to a process ID locking file in order to prevent from having
 # multiple harvesting processes running concurrently.
 #
-# pid-file: "/var/tmp/eida-stationlite-harvest.pid"
+pid-file: "/var/tmp/eida-stationlite-harvest.pid"
 #
 # ----
 # Absolute path to a logging configuration file. The file must follow the format
 # defined in
 # https://docs.python.org/3/library/logging.config.html#logging-config-fileformat.
 #
-# logging-conf: ${HOME}/work/projects/eidaws/eidaws.stationlite/config/logging.conf
+logging-conf: /etc/eidaws/logging-harvest.conf
 #
 ...
