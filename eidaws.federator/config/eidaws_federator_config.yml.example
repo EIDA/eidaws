@@ -192,14 +192,14 @@
 # Allowed values: None or float (seconds)
 # Default: 2
 #
-# endpoint-timeout-sock-connect: 2
+# endpoint-timeout-socket-connect: 2
 #
 # ----
 # A timeout for reading a portion of data from a peer.
 # Allowed values: None or float (seconds)
 # Default: 30
 #
-# endpoint-timeout-sock-read: 30
+# endpoint-timeout-socket-read: 30
 
 # ----
 # Retry-budget related configuration options
