@@ -15,10 +15,12 @@ from eidaws.federator.utils.app import _main
 from eidaws.federator.utils.cli import (
     build_parser as _build_parser,
     abs_path,
+)
+from eidaws.utils.cli import (
     between,
     positive_int,
+    InterpolatingYAMLConfigFileParser,
 )
-from eidaws.utils.cli import InterpolatingYAMLConfigFileParser
 
 
 def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):

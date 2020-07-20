@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import pathlib
 
 
 PROXY_BASE_ID = "eidaws.endpoint_proxy"
 
 # ----------------------------------------------------------------------------
-PROXY_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
-PROXY_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
+PROXY_DEFAULT_CONFIG_FILES = [
+    "/etc/eidaws/eidaws_config.yml",
+    "/etc/eidaws/eidaws_proxy_config.yml",
+    "~/.eidaws/eidaws_config.yml",
+    "~/.eidaws/eidaws_proxy_config.yml",
+]
 
 PROXY_DEFAULT_HOSTNAME = "localhost"
 PROXY_DEFAULT_PORT = 8080

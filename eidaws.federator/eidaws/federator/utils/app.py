@@ -32,7 +32,6 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     def make_server_config(service_id, arg_dict):
         return {"config": {service_id: arg_dict}}
 
-    server_config = make_server_config(service_id, config_dict)
     if config_dict["unix_path"] is not None:
         # ignore hostname:port
         config_dict["hostname"] = config_dict["port"] = None
@@ -58,6 +57,7 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
     for fn in on_startup:
         app.on_startup.append(fn)
 
+    server_config = make_server_config(service_id, config_dict)
     for k, v in server_config.items():
         app[k] = v
 

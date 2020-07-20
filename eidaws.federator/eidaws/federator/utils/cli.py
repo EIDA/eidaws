@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import functools
 import json
 import os
 import re
@@ -47,42 +46,21 @@ from eidaws.federator.settings import (
     make_config_file_paths,
 )
 from eidaws.federator.version import __version__
-from eidaws.utils.cli import CustomParser, InterpolatingYAMLConfigFileParser
+from eidaws.utils.cli import (
+    positive_int,
+    positive_int_exclusive,
+    positive_int_or_none,
+    positive_float_or_none,
+    percent,
+    port,
+    CustomParser,
+    InterpolatingYAMLConfigFileParser,
+)
 from eidaws.utils.misc import real_file_path
 
 
 meta_keys = {"__cwd__", "__path__"}
 config_read_mode = "fr"
-
-
-def between(num, num_type=int, minimum=None, maximum=None):
-    try:
-        num = num_type(num)
-        if minimum is not None and num < minimum:
-            raise ValueError
-        if maximum is not None and num > maximum:
-            raise ValueError
-    except ValueError:
-        raise argparse.ArgumentError(f"Invalid {num_type.__name__}: {num}")
-
-    return num
-
-
-def positive_num_or_none(num, num_type=int):
-    if num is None:
-        return None
-    return between(num, num_type, minimum=0)
-
-
-positive_int = functools.partial(between, num_type=int, minimum=0)
-positive_int_exclusive = functools.partial(between, num_type=int, minimum=1)
-positive_float = functools.partial(between, num_type=float, minimum=0)
-positive_int_or_none = functools.partial(positive_num_or_none, num_type=int)
-positive_float_or_none = functools.partial(
-    positive_num_or_none, num_type=float
-)
-percent = functools.partial(between, num_type=float, minimum=0, maximum=100)
-port = functools.partial(between, num_type=int, minimum=1, maximum=65535)
 
 
 def abs_path(path):
