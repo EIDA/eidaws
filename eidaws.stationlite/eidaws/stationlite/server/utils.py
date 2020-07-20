@@ -41,7 +41,7 @@ def setup_logger(app, logger=STL_BASE_ID, capture_warnings=False):
     """
     logging.basicConfig(level=logging.WARNING)
 
-    path_logging_conf = app.config.get("PATH_LOGGING_CONF")
+    path_logging_conf = app.config.get("LOGGING_CONF")
     if path_logging_conf is not None:
         try:
             logging.config.fileConfig(path_logging_conf)
