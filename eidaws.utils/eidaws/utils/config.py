@@ -33,7 +33,7 @@ class Interpolator:
 
 
 def interpolate_environment_variables(
-    config, section, environment, converter=None
+    config, environment, section=None, converter=None
 ):
     interpolator = Interpolator(TemplateWithDefaults, environment)
 
@@ -48,9 +48,16 @@ def interpolate_environment_variables(
             for key, val in (config_dict or {}).items()
         )
 
+    if section:
+        return dict(
+            (name, process_item(name, config_dict or {}))
+            for name, config_dict in config.items()
+        )
+
+    # flat configuration
     return dict(
-        (name, process_item(name, config_dict or {}))
-        for name, config_dict in config.items()
+        (key, interpolate_value(None, key, val, None, interpolator, converter))
+        for key, val in config.items()
     )
 
 

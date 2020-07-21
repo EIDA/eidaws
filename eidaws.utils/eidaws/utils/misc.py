@@ -62,7 +62,7 @@ def real_file_path(path):
     """
     path = realpath(path)
     if not os.path.isfile(path):
-        raise argparse.ArgumentTypeError
+        raise argparse.ArgumentTypeError(f"Invalid file path: {path!r}")
     return path
 
 

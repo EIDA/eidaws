@@ -26,9 +26,9 @@ class RedirectView(web.View):
     @property
     def client_timeout(self):
         return aiohttp.ClientTimeout(
-            connect=self.config["endpoint_timeout_connect"],
-            sock_connect=self.config["endpoint_timeout_sock_connect"],
-            sock_read=self.config["endpoint_timeout_sock_read"],
+            connect=self.config["timeout_connect"],
+            sock_connect=self.config["timeout_sock_connect"],
+            sock_read=self.config["timeout_sock_read"],
         )
 
     async def get(self):
@@ -36,16 +36,13 @@ class RedirectView(web.View):
         return await self._redirect(
             self.request,
             connector=self.request.config_dict[PROXY_BASE_ID][
-                "endpoint_http_conn_pool"
+                "http_conn_pool"
             ],
         )
 
     post = get
 
     async def _redirect(self, request, connector):
-
-        headers = request.headers
-        body = await request.read()
 
         if request.host in (
             socket.getfqdn(),
@@ -63,9 +60,13 @@ class RedirectView(web.View):
             f"path={request.path!r}, query_string={request.query_string!r}, "
             f"headers={request.headers!r}, remote={request.remote!r}"
         )
+
+        req_headers = request.headers
+        body = await request.read()
+
         # modify headers
         if self.config["num_forwarded"]:
-            req_headers = copy.deepcopy(dict(headers))
+            req_headers = copy.deepcopy(dict(req_headers))
             req_headers["X-Forwarded-For"] = request.remote
 
             self.logger.debug(

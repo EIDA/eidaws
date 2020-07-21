@@ -2,19 +2,14 @@
 
 import aioredis
 import asyncio
-import collections
 import inspect
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
 import uuid
-import warnings
-import yaml
 
 from aiohttp import web, TCPConnector
-from collections import ChainMap
 from hashlib import md5
-from jsonschema import validate, ValidationError
 
 from eidaws.federator.settings import (
     FED_BASE_ID,
@@ -23,7 +18,6 @@ from eidaws.federator.settings import (
 )
 from eidaws.federator.utils.cache import Cache
 from eidaws.federator.utils.stats import ResponseCodeStats
-from eidaws.utils.app import ConfigurationError
 from eidaws.utils.error import ErrorWithTraceback
 
 
@@ -47,60 +41,9 @@ def _serialize_query_params(query_params, serializer=None):
         serializer = serializer()
     return serializer.dump(query_params)
 
+
 class RedisError(ErrorWithTraceback):
     """Base Redis error ({})"""
-
-
-def get_config(
-    service_id, path_config=None, cli_config={}, defaults={}, json_schema=None
-):
-
-    user_config = {FED_BASE_ID: {}}
-
-    if path_config is None:
-        assert defaults, "Using empty default configuration not supported."
-
-        return {"config": {service_id: defaults}}
-
-    try:
-        with open(path_config) as ifd:
-            _user_config = yaml.safe_load(ifd)
-
-        if _user_config is not None and isinstance(
-            _user_config.get(FED_BASE_ID),
-            (collections.abc.Mapping, collections.abc.MutableMapping),
-        ):
-            user_config = _user_config
-
-    except yaml.YAMLError as err:
-        warnings.warn(f"Exception while parsing configuration file: {err}")
-    except FileNotFoundError as err:
-        warnings.warn(f"Configuration file not found ({err}). Using defaults.")
-
-    user_config[FED_BASE_ID].setdefault(service_id, {})
-    user_config[FED_BASE_ID].setdefault("common", {})
-
-    config_dict = {
-        "config": {
-            service_id: ChainMap(
-                cli_config,
-                user_config[FED_BASE_ID][service_id],
-                user_config[FED_BASE_ID]["common"],
-                defaults,
-            )
-        }
-    }
-
-    if json_schema is not None:
-        try:
-            validate(
-                instance=dict(config_dict["config"][service_id]),
-                schema=json_schema,
-            )
-        except ValidationError as err:
-            raise ConfigurationError(str(err))
-
-    return config_dict
 
 
 def setup_logger(service_id, path_logging_conf=None, capture_warnings=False):
@@ -244,6 +187,7 @@ class HelperPOSTRequest:
 def route_to_uuid(route):
     h = md5(str(route).encode("utf-8"))
     return uuid.UUID(bytes=h.digest())
+
 
 def create_job_context(request, *routes):
     return [request] + [route_to_uuid(route) for route in routes]

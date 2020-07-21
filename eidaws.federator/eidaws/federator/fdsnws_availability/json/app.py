@@ -3,25 +3,25 @@
 import sys
 
 from eidaws.federator.fdsnws_availability.json import SERVICE_ID, create_app
-from eidaws.federator.utils.app import (
-    _main,
-    config as default_config,
-    config_schema as default_config_schema,
-)
+from eidaws.federator.utils.app import _main
+from eidaws.federator.utils.cli import build_parser as _build_parser
+from eidaws.utils.cli import InterpolatingYAMLConfigFileParser
 
 
-PROG = "eida-federator-availability-json"
-DEFAULT_CONFIG = default_config()
+def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):
+    return _build_parser(
+        SERVICE_ID,
+        prog="eida-federator-availability-json",
+        config_file_parser_class=config_file_parser_class,
+    )
+
+
+parser = build_parser()
 
 
 def main(argv=sys.argv[1:]):
     _main(
-        SERVICE_ID,
-        create_app,
-        prog=PROG,
-        argv=argv,
-        default_config=DEFAULT_CONFIG,
-        config_schema=default_config_schema,
+        SERVICE_ID, create_app, parser, argv=argv,
     )
 
 

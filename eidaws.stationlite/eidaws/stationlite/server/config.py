@@ -15,7 +15,7 @@ from eidaws.stationlite.settings import STL_BASE_ID
 class Config:
     DEBUG = False
     PROPAGATE_EXCEPTIONS = True
-    PATH_LOGGING_CONF = None
+    LOGGING_CONF = None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     @property
@@ -37,7 +37,7 @@ def stl_path(*args):
 class ConversionMap(_ConversionMap):
     MAP = {
         stl_path("ENV"): to_str,
-        stl_path("PATH_LOGGING_CONF"): to_str,
+        stl_path("LOGGING_CONF"): to_str,
         stl_path("DEBUG"): to_boolean,
         stl_path("PROPAGATE_EXCEPTIONS"): to_boolean,
         stl_path("SQLALCHEMY_TRACK_MODIFICATIONS"): to_boolean,

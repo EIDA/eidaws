@@ -17,10 +17,12 @@ _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "General purpose utilities for EIDA webservices"
 _VERSION = get_version(os.path.join("eidaws", "utils", "__init__.py"))
 _DEPS = [
+    "ConfigArgParse>=1.2.3",
     "intervaltree>=3.0.2",
     "marshmallow==3.2.1",
     "python-dateutil>=2.6.1",
     "webargs==5.5.2",
+    "PyYAML>=5.3",
 ]
 
 setup(

@@ -9,31 +9,31 @@ from eidaws.endpoint_proxy.middleware import (
 from eidaws.endpoint_proxy.remote import XForwardedRelaxed
 from eidaws.endpoint_proxy.route import setup_routes
 from eidaws.endpoint_proxy.settings import PROXY_BASE_ID
-from eidaws.endpoint_proxy.utils import setup_endpoint_http_conn_pool
+from eidaws.endpoint_proxy.utils import setup_http_conn_pool
 
 
 def create_app(config_dict):
+    def make_server_config(arg_dict):
+        return {PROXY_BASE_ID: {"config": arg_dict}}
 
-    config = config_dict[PROXY_BASE_ID]["config"]
-
-    if config["unix_path"] is not None:
+    if config_dict["unix_path"] is not None:
         # ignore hostname:port
-        config["hostname"] = config["port"] = None
+        config_dict["hostname"] = config_dict["port"] = None
 
     app = web.Application(
         middlewares=[
             before_request,
             exception_handling_middleware,
-            XForwardedRelaxed(num=config["num_forwarded"]).middleware,
+            XForwardedRelaxed(num=config_dict["num_forwarded"]).middleware,
         ]
     )
 
     # populate application with config
-    for k, v in config_dict.items():
+    server_config = make_server_config(config_dict)
+    for k, v in server_config.items():
         app[k] = v
 
     setup_routes(app)
-
-    setup_endpoint_http_conn_pool(app)
+    setup_http_conn_pool(app)
 
     return app

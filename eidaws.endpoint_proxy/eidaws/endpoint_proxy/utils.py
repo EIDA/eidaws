@@ -59,16 +59,16 @@ def get_config(path_config=None, cli_config={}, defaults={}, json_schema=None):
     return config_dict
 
 
-def setup_endpoint_http_conn_pool(app):
+def setup_http_conn_pool(app):
 
     config = app[PROXY_BASE_ID]["config"]
-    conn = TCPConnector(limit=config["endpoint_connection_limit"],)
+    conn = TCPConnector(limit=config["connection_limit"],)
 
     async def close_endpoint_http_conn_pool(app):
         await conn.close()
 
     app.on_cleanup.append(close_endpoint_http_conn_pool)
-    app[PROXY_BASE_ID]["endpoint_http_conn_pool"] = conn
+    app[PROXY_BASE_ID]["http_conn_pool"] = conn
     return conn
 
 

@@ -4,7 +4,6 @@ import os
 import errno
 from flask import Config as _Config, Flask
 
-from eidaws.stationlite.settings import STL_BASE_ID
 from eidaws.utils.config import interpolate_environment_variables
 
 
@@ -53,14 +52,8 @@ class Config(_Config):
 
         if interpolate:
             obj = interpolate_environment_variables(
-                obj, STL_BASE_ID, os.environ, converter
+                obj, os.environ, section=None, converter=converter
             )
-            try:
-                obj = obj[STL_BASE_ID]
-            except KeyError:
-                if silent:
-                    obj = {}
-                raise
 
         return self.from_mapping(obj)
 

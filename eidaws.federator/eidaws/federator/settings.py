@@ -1,11 +1,25 @@
 # -*- coding: utf-8 -*-
 
-import pathlib
 
-
-# ----------------------------------------------------------------------------
 def _make_fed_path(base_fed_path, query_format, version="1"):
     return "/".join([base_fed_path, query_format, version])
+
+
+def make_config_file_paths(service_id):
+    ns = service_id.split(".")
+    template_etc = "/etc/eidaws/eidaws_federator_{}_config.yml"
+    template_home = "~/.eidaws/eidaws_federator_{}_config.yml"
+
+    return [
+        "/etc/eidaws/eidaws_config.yml",
+        "/etc/eidaws/eidaws_federator_config.yml",
+        template_etc.format(ns[1]),
+        template_etc.format("_".join(ns[1:])),
+        "~/.eidaws/eidaws_config.yml",
+        "~/.eidaws/eidaws_federator_config.yml",
+        template_home.format(ns[1]),
+        template_home.format("_".join(ns[1:])),
+    ]
 
 
 FED_BASE_ID = "eidaws.federator"
@@ -63,9 +77,6 @@ FED_CONTENT_TYPE_WADL = "application/xml"
 
 
 # ----------------------------------------------------------------------------
-FED_DEFAULT_CONFIG_BASEDIR = pathlib.Path(__file__).parent.parent.parent
-FED_DEFAULT_CONFIG_FILE = "eidaws_config.yml"
-
 FED_DEFAULT_HOSTNAME = "localhost"
 FED_DEFAULT_PORT = 8080
 FED_DEFAULT_UNIX_PATH = None
@@ -77,9 +88,9 @@ FED_DEFAULT_ROUTING_CONN_LIMIT = 100
 # NOTE(damb): Current number of EIDA DCs is 12.
 FED_DEFAULT_ENDPOINT_CONN_LIMIT = 120
 FED_DEFAULT_ENDPOINT_CONN_LIMIT_PER_HOST = 10
-FED_DEFAULT_TIMEOUT_CONNECT = None
-FED_DEFAULT_TIMEOUT_SOCK_CONNECT = 2
-FED_DEFAULT_TIMEOUT_SOCK_READ = 30
+FED_DEFAULT_ENDPOINT_TIMEOUT_CONNECT = None
+FED_DEFAULT_ENDPOINT_TIMEOUT_SOCK_CONNECT = 2
+FED_DEFAULT_ENDPOINT_TIMEOUT_SOCK_READ = 30
 FED_DEFAULT_NETLOC_PROXY = None
 FED_DEFAULT_NUM_FORWARDED = 0
 
@@ -91,7 +102,7 @@ FED_DEFAULT_REDIS_POOL_TIMEOUT = None
 FED_DEFAULT_POOL_SIZE = None
 
 # Default request method for endpoint requests
-FED_DEFAULT_REQUEST_METHOD = "GET"
+FED_DEFAULT_ENDPOINT_REQUEST_METHOD = "GET"
 # Per client retry-budget cut-off error ratio in percent before requests to
 # endpoints are being dropped.
 FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES = 1.0

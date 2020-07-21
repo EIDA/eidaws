@@ -16,8 +16,7 @@ for i in `seq -w ${instances}`; \
     echo -e "#!/bin/sh\n"\
 "exec /sbin/setuser www-data "\
 "${PATH_VENV}/bin/${service} -U /run/eidaws-federator/${service}-${i}.sock "\
-"-c /etc/eidaws-federator/eidaws_config.yml 2>&1" >> \
-    "${runit_service_dir}/run" && \
+"2>&1" >> "${runit_service_dir}/run" && \
     chmod +x "${runit_service_dir}/run"; \
     # create upstream template
     echo "  server unix:/run/eidaws-federator/${service}-${i}.sock "\

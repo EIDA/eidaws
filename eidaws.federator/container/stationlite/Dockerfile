@@ -15,7 +15,7 @@ FROM docker.io/phusion/baseimage:0.11
 
 ARG DIR_CONTAINERFILE=eidaws.federator/container/stationlite
 
-ENV EIDAWS_STATIONLITE_SETTINGS=/etc/eidaws-stationlite/eidaws_config.yml
+ENV EIDAWS_STATIONLITE_SETTINGS=/etc/eidaws/eidaws_stationlite_server_config.yml
 ENV FLASK_APP=/usr/local/src/eidaws/eidaws.stationlite/eidaws/stationlite/server/
 
 # Add label metadata
@@ -36,7 +36,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
                                        libapache2-mod-wsgi-py3
 
 # Install backend services
-RUN mkdir -p /var/www/eidaws-stationlite /etc/eidaws-stationlite \
+RUN mkdir -p /var/www/eidaws-stationlite /etc/eidaws \
   /usr/local/src /var/log/eidaws-stationlite
 COPY . /usr/local/src/eidaws
 
@@ -50,7 +50,7 @@ RUN virtualenv -p $(which python3.6) /var/www/eidaws-stationlite/venv && \
 
 # Copy eidaws-stationlite(-harvest) configuration files
 COPY $DIR_CONTAINERFILE/*.yml $DIR_CONTAINERFILE/logging*.conf \
-  $DIR_CONTAINERFILE/env /etc/eidaws-stationlite/
+  $DIR_CONTAINERFILE/env /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-stationlite.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-stationlite.conf
 COPY $DIR_CONTAINERFILE/apache.syslog-ng.conf /etc/syslog-ng/conf.d/apache.conf
@@ -62,7 +62,7 @@ COPY $DIR_CONTAINERFILE/httpd.conf /etc/apache2/sites-available/
 COPY $DIR_CONTAINERFILE/*.wsgi /var/www/eidaws-stationlite/
 
 # Give read permissions
-RUN chmod +r /etc/eidaws-stationlite/* \
+RUN chmod +r /etc/eidaws/* \
   /var/www/eidaws-stationlite/*.wsgi
 
 # Enable the supplied WSGI modules
@@ -74,8 +74,8 @@ RUN mkdir /etc/service/apache2 && \
 	chmod +x /etc/service/apache2/run
 
 # Add the harvesting cronjob (once per day)
-RUN sed -e 's/^/export /' -i /etc/eidaws-stationlite/env
-RUN echo "0 1 * * * root . /etc/eidaws-stationlite/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest --config /etc/eidaws-stationlite/harvest_config.yml" >> /etc/crontab
+RUN sed -e 's/^/export /' -i /etc/eidaws/env
+RUN echo "0 1 * * * root . /etc/eidaws/env; /var/www/eidaws-stationlite/venv/bin/eida-stationlite-harvest" >> /etc/crontab
 
 # Expose HTTP default port
 EXPOSE 8089
