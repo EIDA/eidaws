@@ -113,7 +113,10 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         ifd = io.BytesIO(await resp.read())
         # TODO(damb): Check if there is a non-blocking alternative
         # implementation
-        return etree.parse(ifd).getroot()
+        try:
+            return etree.parse(ifd).getroot()
+        except etree.XMLSyntaxError:
+            return None
 
     def _merge_net_element(self, net_element, level, context):
         """
