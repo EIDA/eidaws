@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: FDSN Dataselect Web Service
+  description: >-
+    API documentation of the FDSNWS Dataselect service which allows requesting
+    waveform data.
+  termsOfService: https://www.orfeus-eu.org/data/eida/webservices/
+  version: 1.0.0
+servers:
+  - url: http://eida-federator.ethz.ch/fdsnws/dataselect/1
+tags:
+- name: Dataselect
+externalDocs:
+  description: API Documentation
+  url: http://www.fdsn.org/webservices/fdsnws-dataselect-1.1.pdf
+paths:
+  /query:
+    get:
+      tags:
+        - Dataselect
+      summary: Query waveform data
+      parameters:
+        - name: starttime
+          in: query
+          description: use iso8601 fromat
+          schema:
+            type: string
+        - name: endtime
+          in: query
+          description: use iso8601 format
+          schema:
+            type: string
+        - name: network
+          in: query
+          description: (SEED Identifier) SEED Network code
+          example: NL
+          schema:
+            type: string
+        - name: station
+          in: query
+          description: (SEED Identifier) SEED Station code
+          example: HGN
+          schema:
+            type: string
+        - name: location
+          in: query
+          description: (SEED Identifier) SEED Location code. Use -- for blank location
+            identifiers
+          example: 00
+          schema:
+            type: string
+        - name: channel
+          in: query
+          description: (SEED Identifier) SEED Channel code
+          example: BHZ
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            default: miniseed
+            enum:
+              - miniseed
+        - name: nodata
+          in: query
+          schema:
+            type: integer
+            default: 204
+            enum:
+              - 204
+              - 404
+      responses:
+        '200':
+          description: >-
+            The request was succesfull and has returned the data in a mseed
+            file.
+          content:
+            application/vnd.fdsn.mseed:
+              schema:
+                type: string
+                format: binary
+        '204':
+          description: The request returns no content.
+          content: {}
+        '400':
+          description: 'The request was bad, check the filled in parameters.'
+          content: {}
+        '401':
+          description: The request requires user authentication.
+          content: {}
+        '403':
+          description: >-
+            Forbidden: The server understood the request, but is refusing to
+            fulfill it.
+          content: {}
+        '404':
+          description: >-
+            Not Found: The server has not found anything matching the
+            Request-URL.
+          content: {}
+        '413':
+          description: >-
+            Request Entity Too Large: the request entity is larger than the
+            server is willing or able to process.
+          content: {}
+        '414':
+          description: >-
+            Request-URL Too Long: The request-URL is longer than the server is
+            willing to interpret.
+          content: {}
+        '500':
+          description: >-
+            Internal Server Error: The server encountered an unexpected
+            condition which prevented it from fulfilling the request.
+          content: {}
+        '503':
+          description: >-
+            Service Unavailable: The server is currently unable to handle the
+            request due to a temporary overloading or maintenance of the server.
+          content: {}
+    post:
+      tags:
+        - Dataselect
+      summary: Query waveform data
+      description: >-
+        A plain-text file containing a selection list can be sent to the
+        service. The contents of this message may contain multiple streams and
+        traces to be downloaded. Each line must contain the SEED stream
+        identifiers delimited by a space, followed by the trace starttime and
+        endtime. Empty fields are marked by an asterisk.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  description: >-
+                    A plain-text file containing a selection list can be sent to
+                    the service. The contents of this message may contain
+                    multiple streams and traces to be downloaded.  Each line
+                    must contain the SEED stream identifiers delimited by a
+                    space, followed by the trace starttime and endtime. Empty
+                    fields are marked by an asterisk.
+                  format: binary
+        required: true
+      responses:
+        '200':
+          description: >-
+            The request was succesfull and has returned the data in a miniSEED
+            file.
+          content:
+            application/mseed:
+              schema:
+                type: string
+                format: binary
+        '204':
+          description: The request returns no content.
+          content: {}
+        '400':
+          description: 'The request was bad, check the filled in parameters.'
+          content: {}
+        '401':
+          description: The request requires user authentication.
+          content: {}
+        '403':
+          description: >-
+            Forbidden: The server understood the request, but is refusing to
+            fulfill it.
+          content: {}
+        '404':
+          description: >-
+            Not Found: The server has not found anything matching the
+            Request-URL.
+          content: {}
+        '413':
+          description: >-
+            Request Entity Too Large: the request entity is larger than the
+            server is willing or able to process.
+          content: {}
+        '414':
+          description: >-
+            Request-URL Too Long: The request-URL is longer than the server is
+            willing to interpret.
+          content: {}
+        '500':
+          description: >-
+            Internal Server Error: The server encountered an unexpected
+            condition which prevented it from fulfilling the request.
+          content: {}
+        '503':
+          description: >-
+            Service Unavailable: The server is currently unable to handle the
+            request due to a temporary overloading or maintenance of the server.
+          content: {}
+  /version:
+    get:
+      tags:
+        - Dataselect
+      summary: Request the service version
+      responses:
+        '200':
+          description: Returns the service version.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /application.wadl:
+    get:
+      tags:
+        - Dataselect
+      summary: The application documentation in a .wadl file.
+      responses:
+        '200':
+          description: >-
+            The documentation of the dataselect application will be returned in
+            a *.wadl format.
+          content:
+            application/xml:
+              schema:
+                type: string
+components: {}
