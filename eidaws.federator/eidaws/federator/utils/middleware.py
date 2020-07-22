@@ -47,6 +47,7 @@ async def exception_handling_middleware(request, handler):
     except (
         web.HTTPNotFound,
         web.HTTPForbidden,
+        web.HTTPMethodNotAllowed,
         asyncio.CancelledError,
         FDSNHTTPError,
     ) as err:
