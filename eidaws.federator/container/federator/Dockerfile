@@ -62,6 +62,8 @@ COPY $DIR_CONTAINERFILE/*.yml \
   $DIR_CONTAINERFILE/logging.conf /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-federator.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-federator.conf
+COPY $DIR_CONTAINERFILE/eidaws-federator.logrotate.conf \
+  /etc/logrotate.d/eidaws-federator
 
 # Add backend services with installation script
 COPY $DIR_CONTAINERFILE/*.template $DIR_CONTAINERFILE/install_backend.sh /tmp/

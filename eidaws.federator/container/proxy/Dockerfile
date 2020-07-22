@@ -57,6 +57,8 @@ RUN python3.7 -m venv /var/www/eidaws-endpoint-proxy/venv && \
 COPY $DIR_CONTAINERFILE/logging.conf /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-endpoint-proxy.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-endpoint-proxy.conf
+COPY $DIR_CONTAINERFILE/eidaws-endpoint-proxy.logrotate.conf \
+  /etc/logrotate.d/eidaws-endpoint-proxy
 
 # Add proxy backend services with installation script
 COPY $DIR_CONTAINERFILE/eidaws_proxy_config.yml.template \

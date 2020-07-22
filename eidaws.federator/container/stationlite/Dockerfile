@@ -53,6 +53,8 @@ COPY $DIR_CONTAINERFILE/*.yml $DIR_CONTAINERFILE/logging*.conf \
   $DIR_CONTAINERFILE/env /etc/eidaws/
 COPY $DIR_CONTAINERFILE/eidaws-stationlite.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-stationlite.conf
+COPY $DIR_CONTAINERFILE/eidaws-stationlite.logrotate.conf \
+  /etc/logrotate.d/eidaws-stationlite
 COPY $DIR_CONTAINERFILE/apache.syslog-ng.conf /etc/syslog-ng/conf.d/apache.conf
 
 # Copy Apache configuration configuration
