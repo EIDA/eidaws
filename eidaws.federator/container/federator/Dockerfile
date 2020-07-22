@@ -38,6 +38,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # Configure nginx
 ADD $DIR_CONTAINERFILE/conf.d /etc/nginx/conf.d
 COPY $DIR_CONTAINERFILE/nginx.conf /etc/nginx
+COPY $DIR_CONTAINERFILE/index.html /var/www/html
 
 # Add the nginx service
 RUN mkdir /etc/service/nginx && \
