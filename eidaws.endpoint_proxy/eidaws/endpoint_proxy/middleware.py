@@ -41,6 +41,7 @@ async def exception_handling_middleware(request, handler):
         return await handler(request)
     except (
         web.HTTPBadRequest,
+        web.HTTPNoContent,
         web.HTTPNotFound,
         web.HTTPForbidden,
         web.HTTPRequestEntityTooLarge,
