@@ -25,7 +25,8 @@ from eidaws.utils.cli import (
 
 def build_parser(config_file_parser_class=InterpolatingYAMLConfigFileParser):
     def fallback_mseed_record_size(num):
-        if 0 != (positive_int(num) % 64):
+        num = positive_int(num)
+        if 0 != (num % 64):
             raise argparse.ArgumentTypeError("Not a multiple of 64 bytes.")
         return num
 
