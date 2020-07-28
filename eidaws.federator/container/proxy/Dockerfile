@@ -59,6 +59,7 @@ COPY $DIR_CONTAINERFILE/eidaws-endpoint-proxy.syslog-ng.conf \
   /etc/syslog-ng/conf.d/eidaws-endpoint-proxy.conf
 COPY $DIR_CONTAINERFILE/eidaws-endpoint-proxy.logrotate.conf \
   /etc/logrotate.d/eidaws-endpoint-proxy
+RUN chmod 644 /etc/logrotate.d/eidaws-endpoint-proxy
 
 # Add proxy backend services with installation script
 COPY $DIR_CONTAINERFILE/eidaws_proxy_config.yml.template \
