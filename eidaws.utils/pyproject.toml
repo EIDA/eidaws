@@ -1,0 +1,5 @@
+[build-system]
+# Minimum requirements for the build system to execute.
+# see PEP518: https://www.python.org/dev/peps/pep-0518/
+requires = ["setuptools >= 40.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
