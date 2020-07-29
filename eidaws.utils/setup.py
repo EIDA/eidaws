@@ -11,7 +11,6 @@ def get_version(filename):
     return metadata["version"]
 
 
-_NAME = "eidaws.utils"
 _AUTHOR = "Daniel Armbruster"
 _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "General purpose utilities for EIDA webservices"
@@ -26,7 +25,7 @@ _DEPS = [
 ]
 
 setup(
-    name=_NAME,
+    name="eidaws_utils",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
@@ -47,8 +46,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Scientific/Engineering",
     ],
-    namespace_packages=["eidaws"],
-    packages=[_NAME],
+    packages=["eidaws.utils"],
     zip_safe=False,
     install_requires=_DEPS,
     setup_requires=["pytest-runner"],

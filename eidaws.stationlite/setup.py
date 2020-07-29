@@ -11,7 +11,6 @@ def get_version(filename):
     return metadata["version"]
 
 
-_NAME = "eidaws.stationlite"
 _AUTHOR = "Daniel Armbruster"
 _AUTHOR_EMAIL = "daniel.armbruster@sed.ethz.ch"
 _DESCRIPTION = "Alternative routing webservice for EIDA"
@@ -39,7 +38,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name=_NAME,
+    name="eidaws_stationlite",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
@@ -60,8 +59,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Scientific/Engineering",
     ],
-    namespace_packages=["eidaws"],
-    packages=[_NAME],
+    packages=["eidaws.stationlite"],
     zip_safe=False,
     entry_points=_ENTRY_POINTS,
     install_requires=_DEPS,
