@@ -113,10 +113,14 @@ class RedirectView(web.View):
             raise web.HTTPGatewayTimeout(text=f"ERROR: {str(type(err))}\n")
 
         except aiohttp.ClientError as err:
-            self.logger.warning(
+            msg = (
                 f"Error while executing request: error={type(err)}, "
                 f"url={request.url!r}, method={request.method!r}"
             )
+            if isinstance(err, aiohttp.ClientOSError):
+                msg += f", errno={err.errno}"
+
+            self.logger.warning(msg)
             raise web.HTTPServiceUnavailable(text=f"ERROR: {str(type(err))}\n")
         else:
             return proxied_response

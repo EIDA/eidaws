@@ -346,6 +346,8 @@ class BaseSplitAlignWorker(BaseWorker):
                     f"Error while executing request: error={type(err)}, "
                     f"req_handler={req_handler!r}, method={req_method}"
                 )
+                if isinstance(err, aiohttp.ClientOSError):
+                    msg += f", errno={err.errno}"
                 await self.handle_error(msg=msg, context=context)
                 break
 
@@ -498,6 +500,8 @@ class NetworkLevelMixin:
                 f"Error while executing request: error={type(err)}, "
                 f"req_handler={req_handler!r}, method={req_method}"
             )
+            if isinstance(err, aiohttp.ClientOSError):
+                msg += f", errno={err.errno}"
             await self.handle_error(msg=msg, context=context)
 
             resp_status = 503
