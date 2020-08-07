@@ -84,6 +84,20 @@ class RedirectView(web.View):
                 async with session.request(
                     request.method, request.url, data=body,
                 ) as resp:
+
+                    # XXX(damb): Workaround since aiohttp seems to always set
+                    # the Transfer-Encoding header field which violates RFC7329
+                    # see also:
+                    # https://tools.ietf.org/html/rfc7230#section-3.3.1
+                    if (
+                        resp.status == 204
+                        or (resp.status >= 100 and resp.status <= 199)
+                        or request.method == "CONNECT"
+                    ):
+                        return web.Response(
+                            headers=resp.headers, status=resp.status
+                        )
+
                     proxied_response = web.StreamResponse(
                         headers=resp.headers, status=resp.status
                     )
@@ -99,6 +113,7 @@ class RedirectView(web.View):
                         await proxied_response.write(data)
 
                     await proxied_response.write_eof()
+                    return proxied_response
 
         except ConnectionResetError as err:
             self.logger.warning(f"Connection reset by peer: {err}")
@@ -122,5 +137,3 @@ class RedirectView(web.View):
 
             self.logger.warning(msg)
             raise web.HTTPServiceUnavailable(text=f"ERROR: {str(type(err))}\n")
-        else:
-            return proxied_response
