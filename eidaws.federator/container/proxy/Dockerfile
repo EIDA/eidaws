@@ -41,7 +41,7 @@ RUN mkdir /etc/service/nginx && \
 
 # Install backend services
 RUN mkdir -p /var/www/eidaws-endpoint-proxy /run/eidaws-endpoint-proxy \
-  /etc/eidaws-endpoint-proxy /usr/local/src \
+  /etc/eidaws /usr/local/src \
   /var/log/eidaws-endpoint-proxy && \
   chown www-data:www-data /run/eidaws-endpoint-proxy
 COPY . /usr/local/src/eidaws
