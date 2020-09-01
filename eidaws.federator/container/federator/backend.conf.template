@@ -8,6 +8,10 @@ upstream {{SERVICE_ID}} {
   # fail_timeout=0 means we always retry an upstream even if it failed
   # to return a good HTTP response
 
+  # activate the cache for connections to upstream servers (connections per
+  # worker process)
+  keepalive 16;
+
   # Unix domain servers
   {{UNIX_SERVERS}}
 
