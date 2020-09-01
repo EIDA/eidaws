@@ -85,6 +85,11 @@ class RedirectView(web.View):
                     request.method, request.url, data=body,
                 ) as resp:
 
+                    self.logger.debug(
+                        f"Response: {resp.reason}: resp.status={resp.status}, "
+                        f"resp.request_info={resp.request_info}, "
+                        f"resp.url={resp.url}, resp.headers={resp.headers}"
+                    )
                     # XXX(damb): Workaround since aiohttp seems to always set
                     # the Transfer-Encoding header field which violates RFC7329
                     # see also:
