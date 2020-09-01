@@ -27,6 +27,11 @@ services:
     restart: always
     volumes:
       - type: volume
+        source: eidaws_endpoint_proxy_log
+        target: /var/log/eidaws-endpoint-proxy
+        volume:
+          nocopy: false
+      - type: volume
         source: eidaws_endpoint_proxy_cache
         target: /var/cache/nginx
         volume:
@@ -68,6 +73,7 @@ services:
 
 volumes:
   eidaws_federator_log:
+  eidaws_endpoint_proxy_log:
   eidaws_endpoint_proxy_cache:
   eidaws_stationlite_log:
   eidaws_stationlite_pgdata:
