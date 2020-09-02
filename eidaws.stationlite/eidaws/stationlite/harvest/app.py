@@ -1202,7 +1202,7 @@ class VNetHarvester(Harvester):
 
         if stream_epochs:
             self.logger.warning(
-                "Found overlapping orm.StreamEpoch objects {stream_epochs}"
+                f"Found overlapping orm.StreamEpoch objects: {stream_epochs}"
             )
 
         for se in stream_epochs:
