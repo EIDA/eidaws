@@ -181,7 +181,7 @@ class RoutingRequestHandler(RequestHandlerBase):
 
     @property
     def payload_get(self):
-        qp = deepcopy(self._query_params)
+        qp = {p: f"{v}" for p, v in self._query_params.items()}
         qp.update(_query_params_from_stream_epochs(self._stream_epochs))
         return qp
 
@@ -245,7 +245,7 @@ class FdsnRequestHandler(RequestHandlerBase):
 
     @property
     def payload_get(self):
-        qp = deepcopy(self._query_params)
+        qp = {p: f"{v}" for p, v in self._query_params.items()}
         qp.update(_query_params_from_stream_epochs(self._stream_epochs))
         return qp
 
