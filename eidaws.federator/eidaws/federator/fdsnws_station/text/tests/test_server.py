@@ -523,6 +523,83 @@ class TestFDSNStationTextServer(
             (
                 "GET",
                 {
+                    "minlat": "57.0",
+                    "maxlat": "57.13",
+                    "minlon": "12",
+                    "maxlat": "13",
+                    "level": "station",
+                    "format": "text",
+                },
+            ),
+        ],
+    )
+    async def test_geographic_rectangular(
+        self,
+        server_config,
+        tester,
+        eidaws_routing_path_query,
+        fdsnws_station_text_content_type,
+        load_data,
+        method,
+        params_or_data,
+    ):
+        mocked_routing = {
+            "localhost": [
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=200,
+                        text=(
+                            "http://geofon.gfz-potsdam.de/fdsnws/station/1/query\n"
+                            "UP FABU * * 2012-07-31T00:00:00\n"
+                        ),
+                    ),
+                )
+            ]
+        }
+
+        config_dict = server_config(self.get_config)
+        endpoint_request_method = self.lookup_config(
+            "endpoint_request_method", config_dict
+        )
+        mocked_endpoints = {
+            "geofon.gfz-potsdam.de": [
+                (
+                    self.PATH_RESOURCE,
+                    endpoint_request_method,
+                    web.Response(
+                        status=200,
+                        text=load_data(
+                            "UP.FABU.....station",
+                            reader="read_text",
+                        ),
+                    ),
+                ),
+            ],
+        }
+
+        expected = {
+            "status": 200,
+            "content_type": fdsnws_station_text_content_type,
+            "result": "UP.FABU.....station",
+        }
+        await tester(
+            self.FED_PATH_RESOURCE,
+            method,
+            params_or_data,
+            self.create_app(config_dict=config_dict),
+            mocked_routing,
+            mocked_endpoints,
+            expected,
+        )
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "GET",
+                {
                     "net": "NL",
                     "start": "2013-11-10",
                     "end": "2013-11-11",
