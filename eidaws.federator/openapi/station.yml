@@ -166,7 +166,7 @@ paths:
       responses:
         '200':
           description: >-
-            The request was succesfull and has returned plain text in xml
+            The request was successful and has returned plain text in xml
             format.
           content:
             application/xml:
@@ -239,8 +239,8 @@ paths:
       responses:
         '200':
           description: >-
-            The request was succesfull and has returned plain text in xml
-            format.
+            The request was successful and has returned plain text in the
+            requested format.
           content:
             application/xml:
               schema:
