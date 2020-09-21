@@ -22,14 +22,18 @@ paths:
       parameters:
         - name: starttime
           in: query
-          description: use iso8601 fromat
+          description: ISO8601
+          example: '2020-01-01'
           schema:
             type: string
+            format: date-time
         - name: endtime
           in: query
-          description: use iso8601 format
+          example: '2020-01-02T00:06:00'
+          description: ISO8601
           schema:
             type: string
+            format: date-time
         - name: network
           in: query
           description: (SEED Identifier) SEED Network code
@@ -44,9 +48,10 @@ paths:
             type: string
         - name: location
           in: query
-          description: (SEED Identifier) SEED Location code. Use -- for blank location
-            identifiers
-          example: 00
+          description: >-
+            (SEED Identifier) SEED Location code. Use -- for blank location
+            identifiers.
+          example: '00'
           schema:
             type: string
         - name: channel
@@ -76,10 +81,7 @@ paths:
             The request was succesfull and has returned the data in a mseed
             file.
           content:
-            application/vnd.fdsn.mseed:
-              schema:
-                type: string
-                format: binary
+            application/vnd.fdsn.mseed: {}
         '204':
           description: The request returns no content.
           content: {}
@@ -153,10 +155,7 @@ paths:
             The request was succesfull and has returned the data in a miniSEED
             file.
           content:
-            application/mseed:
-              schema:
-                type: string
-                format: binary
+            application/mseed: {}
         '204':
           description: The request returns no content.
           content: {}
@@ -205,9 +204,7 @@ paths:
         '200':
           description: Returns the service version.
           content:
-            text/plain:
-              schema:
-                type: string
+            text/plain: {}
   /application.wadl:
     get:
       tags:
@@ -219,7 +216,5 @@ paths:
             The documentation of the dataselect application will be returned in
             a *.wadl format.
           content:
-            application/xml:
-              schema:
-                type: string
+            application/xml: {}
 components: {}

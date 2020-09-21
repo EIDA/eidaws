@@ -22,16 +22,14 @@ paths:
       parameters:
         - name: starttime
           in: query
-          description: ISO8601 fromatted.
+          description: ISO8601
+          example: '2020-01-01'
           schema:
             type: string
             format: date-time
         - name: endtime
           in: query
-          description: ISO8601 formatted.
-          schema:
-            type: string
-            format: date-time
+          example: '2020-01-02T00:06:00'
         - name: network
           in: query
           description: (SEED Identifier) SEED Network code
@@ -48,7 +46,7 @@ paths:
           in: query
           description: >-
             (SEED Identifier) SEED Location code. Use -- for blank location
-            identifiers
+            identifiers.
           example: 00
           schema:
             type: string
@@ -85,60 +83,52 @@ paths:
         - name: minlatitude
           in: query
           description: 'Southern boundary'
-          example: 15.5
           schema:
             type: number
             format: float
-            default: -90
+            default: -90.0
         - name: maxlatitude
           in: query
           description: 'Nothern boundary'
-          example: 25.0
           schema:
             type: number
             format: float
-            default: 90
+            default: 90.0
         - name: minlongitude
           in: query
           description: 'Western boundary'
-          example: -170.0
           schema:
             type: number
             format: float
-            default: 90
+            default: -180.0
         - name: maxlongitude
           in: query
           description: 'Eastern boundary'
-          example: 170.0
           schema:
             type: number
             format: float
-            default: 90
+            default: 180.0
         - name: latitude
           in: query
           description: 'Central latitude point'
-          example: 35.0
           schema:
             type: number
             format: float
         - name: longitude
           in: query
           description: 'Nothern boundary'
-          example: 170.0
           schema:
             type: number
             format: float
         - name: maxradius
           in: query
           description: 'Western boundary'
-          example: 20.0
           schema:
             type: number
             format: float
         - name: minradius
           in: query
           description: 'Eastern boundary'
-          example: 19.0
           schema:
             type: number
             format: float
@@ -166,15 +156,11 @@ paths:
       responses:
         '200':
           description: >-
-            The request was successful and has returned plain text in xml
-            format.
+            The request was successful and has returned plain text in the
+            corresponding format.
           content:
-            application/xml:
-              schema:
-                type: string
-            text/plain:
-              schema:
-                type: string
+            application/xml: {}
+            text/plain: {}
         '204':
           description: The request returns no content.
           content: {}
@@ -242,12 +228,8 @@ paths:
             The request was successful and has returned plain text in the
             requested format.
           content:
-            application/xml:
-              schema:
-                type: string
-            text/plain:
-              schema:
-                type: string
+            application/xml: {}
+            text/plain: {}
         '204':
           description: The request returns no content.
           content: {}
@@ -296,9 +278,7 @@ paths:
         '200':
           description: Returns the application version.
           content:
-            text/plain:
-              schema:
-                type: string
+            text/plain: {}
   /application.wadl:
     get:
       tags:
@@ -310,7 +290,5 @@ paths:
             The documentation of the station application will be returned in a
             *.wadl format.
           content:
-            application/xml:
-              schema:
-                type: string
+            application/xml: {}
 components: {}
