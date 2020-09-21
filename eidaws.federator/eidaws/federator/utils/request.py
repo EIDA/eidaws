@@ -171,9 +171,7 @@ class RoutingRequestHandler(RequestHandlerBase):
 
     @property
     def payload_post(self):
-        data = "\n".join(
-            "{}={}".format(p, v) for p, v in self._query_params.items()
-        )
+        data = "\n".join(f"{p}={v}" for p, v in self._query_params.items())
 
         return "{}\n{}".format(
             data, _serialize_stream_epochs_post(self._stream_epochs)
@@ -235,9 +233,7 @@ class FdsnRequestHandler(RequestHandlerBase):
 
     @property
     def payload_post(self):
-        data = "\n".join(
-            "{}={}".format(p, v) for p, v in self._query_params.items()
-        )
+        data = "\n".join(f"{p}={v}" for p, v in self._query_params.items())
 
         return "{}\n{}".format(
             data, _serialize_stream_epochs_post(self._stream_epochs)
