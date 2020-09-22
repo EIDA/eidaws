@@ -29,6 +29,7 @@ paths:
             format: date-time
         - name: endtime
           in: query
+          description: ISO8601
           example: '2020-01-02T00:06:00'
           schema:
             type: string
@@ -61,25 +62,25 @@ paths:
             type: string
         - name: startbefore
           in: query
-          description: ISO8601 formatted.
+          description: ISO8601
           schema:
             type: string
             format: date-time
         - name: startafter
           in: query
-          description: ISO8601 formatted.
+          description: ISO8601
           schema:
             type: string
             format: date-time
         - name: endbefore
           in: query
-          description: ISO8601 formatted.
+          description: ISO8601
           schema:
             type: string
             format: date-time
         - name: endafter
           in: query
-          description: ISO8601 formatted.
+          description: ISO8601
           schema:
             type: string
             format: date-time
