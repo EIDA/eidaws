@@ -484,9 +484,7 @@ paths:
         '200':
           description: Returns the service version.
           content:
-            text/plain:
-              schema:
-                type: string
+            text/plain: {}
   /application.wadl:
     get:
       tags:
@@ -498,9 +496,7 @@ paths:
             The documentation of the dataselect application will be returned in
             a *.wadl format.
           content:
-            application/xml:
-              schema:
-                type: string
+            application/xml: {}
 components:
   schemas:
     WfCatalogResponseObject:
