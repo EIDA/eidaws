@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>eidaws-federator</title>
+<meta charset="utf-8"/>
+<style>
+  body {
+      width: 45em;
+      margin: 0 auto;
+      font-family: Tahoma, Verdana, Arial, sans-serif;
+  }
+  .path {
+    font-family: "Courier New", Courier, monospace;
+    width: 15em;
+    display:inline-block;
+  }
+</style>
+<script>
+  function fetchServiceVersion (basepath, id) {
+    var httpRequest;
+
+    function makeRequest() {
+      httpRequest = new XMLHttpRequest();
+      if (!httpRequest) {
+        return false;
+      }
+      httpRequest.onreadystatechange = printVersion;
+      httpRequest.open('GET', "http://eida-federator.ethz.ch" + basepath + "/version");
+      httpRequest.send();
+    }
+
+    function printVersion() {
+      try {
+        if (httpRequest.readyState === XMLHttpRequest.DONE) {
+          if (httpRequest.status === 200) {
+            document.getElementById(id).innerHTML = httpRequest.responseText;
+          } else {
+            document.getElementById(id).innerHTML = "Error: " + httpRequest.status;
+          }
+        }
+      } catch (e) {
+        document.getElementById(id).innerHTML = "Exception: " + e.description;
+      }
+    }
+
+    makeRequest();
+  }
+
+  fetchServiceVersion("/fdsnws/dataselect/1", "fdsnws-dataselect");
+  fetchServiceVersion("/fdsnws/station/1", "fdsnws-station");
+  fetchServiceVersion("/eidaws/wfcatalog/1", "eidaws-wfcatalog");
+</script>
+</head>
+<body>
+<h1>Welcome to eidaws-federator!</h1>
+<p>eidaws-federator is a federating API gateway of the <a
+  href="http://www.orfeus-eu.org/data/eida/">European Integrated Data Archive
+  (EIDA)</a>.</p>
+
+<p> Currently, the following service APIs are federated and exposed:
+<ul>
+<li><span class="path">/fdsnws/dataselect/1/</span> Version: <span id="fdsnws-dataselect"></span></li>
+<li><span class="path">/fdsnws/station/1/</span> Version: <span id="fdsnws-station"></span></li>
+<li><span class="path">/eidaws/wfcatalog/1/</span> Version: <span id="eidaws-wfcatalog"></span></li>
+</ul>
+</p>
+
+<p>For online documentation please refer to
+<a
+   href="http://www.orfeus-eu.org/data/eida/nodes/FEDERATOR/">www.orfeus-eu.org</a>.<br/><br/>
+<a href="https://swagger.io/tools/swagger-ui/">Swagger-UI</a> API documentation
+is available under <a
+href="http://eida-federator.ethz.ch/swagger/">eida-federator.ethz.ch/swagger/</a>.<br/><br/>
+If you experience any issues with requests to the service, you are encouraged
+to file a bug report at <a
+href="https://github.com/EIDA/userfeedback/issues">EIDA/userfeedback</a> using
+the template named <em>Federator</em> (preferred) or describe the issue in an
+e-mail to <a href="mailto:
+                   eida_maint@gfz-potsdam.de">eida_maint@gfz-potsdam.de</a>
+(alternative method).
+</p>
+</body>
+</html>

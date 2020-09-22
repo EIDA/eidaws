@@ -73,6 +73,8 @@ The deployment described includes containerized versions of
 * eidaws.stationlite_ deployed with `Apache2 <https://httpd.apache.org/>`_ +
   `mod_wsgi <https://modwsgi.readthedocs.io/en/develop/>`_; harvesting via
   ``cron`` powered by PostgreSQL_
+* `OpenAPI <https://swagger.io/specification/>`_ API documentation with
+  `Swagger-UI <https://swagger.io/tools/swagger-ui/>`_
 * Python3.6/3.7
 * Logging (syslog)
 

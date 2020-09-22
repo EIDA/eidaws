@@ -20,6 +20,20 @@ services:
     image: redis:5
     restart: always
 
+  # eidaws-federator Swagger-UI
+  federator-swaggerui:
+    container_name: eidaws-federator-swaggerui
+    image: swaggerapi/swagger-ui:v3.34.0
+    environment:
+      - "URLS=[{url:\"openapi/dataselect.yml\",name:\"fdsnws-dataselect\"},{url:\"openapi/station.yml\",name:\"fdsnws-station\"},{url:\"openapi/wfcatalog.yml\",name:\"eidaws-wfcatalog\"}]"
+      - BASE_URL=/swagger
+      - PORT=8082
+    volumes:
+      - ../openapi:/usr/share/nginx/html/openapi
+    restart: always
+    ports:
+      - "8082:8082"
+
   # eidaws-endpoint-proxy
   endpoint-proxy:
     container_name: eidaws-endpoint-proxy

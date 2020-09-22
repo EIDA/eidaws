@@ -1,0 +1,292 @@
+openapi: "3.0.3"
+info:
+  title: FDSN Station Web Service
+  description: >-
+    API documentation of the FDSNWS Station service which provides access to
+    inventory metadata.
+  termsOfService: https://www.orfeus-eu.org/data/eida/webservices/
+  version: 1.1.0
+servers:
+  - url: 'http://eida-federator.ethz.ch/fdsnws/station/1/'
+tags:
+  - name: Station
+externalDocs:
+  description: API Documentation
+  url: http://www.fdsn.org/webservices/fdsnws-station-1.1.pdf
+paths:
+  /query:
+    get:
+      tags:
+        - Station
+      summary: Query inventory metadata
+      parameters:
+        - name: starttime
+          in: query
+          description: ISO8601
+          example: '2020-01-01'
+          schema:
+            type: string
+            format: date-time
+        - name: endtime
+          in: query
+          example: '2020-01-02T00:06:00'
+        - name: network
+          in: query
+          description: (SEED Identifier) SEED Network code
+          example: NL
+          schema:
+            type: string
+        - name: station
+          in: query
+          description: (SEED Identifier) SEED Station code
+          example: HGN
+          schema:
+            type: string
+        - name: location
+          in: query
+          description: >-
+            (SEED Identifier) SEED Location code. Use -- for blank location
+            identifiers.
+          example: 00
+          schema:
+            type: string
+        - name: channel
+          in: query
+          description: (SEED Identifier) SEED Channel code
+          example: BHZ
+          schema:
+            type: string
+        - name: startbefore
+          in: query
+          description: ISO8601 formatted.
+          schema:
+            type: string
+            format: date-time
+        - name: startafter
+          in: query
+          description: ISO8601 formatted.
+          schema:
+            type: string
+            format: date-time
+        - name: endbefore
+          in: query
+          description: ISO8601 formatted.
+          schema:
+            type: string
+            format: date-time
+        - name: endafter
+          in: query
+          description: ISO8601 formatted.
+          schema:
+            type: string
+            format: date-time
+        - name: minlatitude
+          in: query
+          description: 'Southern boundary'
+          schema:
+            type: number
+            format: float
+            default: -90.0
+        - name: maxlatitude
+          in: query
+          description: 'Nothern boundary'
+          schema:
+            type: number
+            format: float
+            default: 90.0
+        - name: minlongitude
+          in: query
+          description: 'Western boundary'
+          schema:
+            type: number
+            format: float
+            default: -180.0
+        - name: maxlongitude
+          in: query
+          description: 'Eastern boundary'
+          schema:
+            type: number
+            format: float
+            default: 180.0
+        - name: latitude
+          in: query
+          description: 'Central latitude point'
+          schema:
+            type: number
+            format: float
+        - name: longitude
+          in: query
+          description: 'Nothern boundary'
+          schema:
+            type: number
+            format: float
+        - name: maxradius
+          in: query
+          description: 'Western boundary'
+          schema:
+            type: number
+            format: float
+        - name: minradius
+          in: query
+          description: 'Eastern boundary'
+          schema:
+            type: number
+            format: float
+        - name: level
+          in: query
+          description: 'Level of detail'
+          schema:
+            type: string
+            format: string
+            default: station
+            enum:
+              - network
+              - station
+              - channel
+              - response
+        - name: format
+          in: query
+          description: Response format
+          schema:
+            type: string
+            default: xml
+            enum:
+              - xml
+              - text
+      responses:
+        '200':
+          description: >-
+            The request was successful and has returned plain text in the
+            corresponding format.
+          content:
+            application/xml: {}
+            text/plain: {}
+        '204':
+          description: The request returns no content.
+          content: {}
+        '400':
+          description: 'The request was bad, check the filled in parameters.'
+          content: {}
+        '401':
+          description: The request requires user authentication.
+          content: {}
+        '403':
+          description: >-
+            Forbidden: 'The server understood the request, but is refusing to
+            fulfill it.'
+          content: {}
+        '404':
+          description: >-
+            Not Found: The server has not found anything matching the
+            Request-URL.
+          content: {}
+        '413':
+          description: >-
+            Request Entity Too Large: The request entity is larger than the
+            server is willing or able to process.
+          content: {}
+        '414':
+          description: >-
+            Request-URL Too Long: The request-URL is longer than the server is
+            willing to interpret.
+          content: {}
+        '500':
+          description: >-
+            Internal Server Error: The server encountered an unexpected
+            condition which prevented it from fulfilling the request.
+          content: {}
+        '503':
+          description: >-
+            Service Unavailable: The server is currently unable to handle the
+            request due to a temporary overloading or maintenance of the server.
+          content: {}
+    post:
+      tags:
+        - Station
+      summary: Query inventory metadata
+      description: >-
+        A plain-text file containing a selection list can be sent to the
+        service. The contents of this message may contain multiple streams and
+        traces to be downloaded. Option-value pairs are indicated once per
+        request at the top of the message followed by a number of lines that
+        contain SEED stream identifiers delimited by a space, followed by the
+        trace starttime and endtime. Empty fields are marked by an asterisk.
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              example: |
+                CH HASLI * BHZ 2020-01-01 2020-01-02
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: >-
+            The request was successful and has returned plain text in the
+            requested format.
+          content:
+            application/xml: {}
+            text/plain: {}
+        '204':
+          description: The request returns no content.
+          content: {}
+        '400':
+          description: 'The request was bad, check the filled in parameters.'
+          content: {}
+        '401':
+          description: The request requires user authentication.
+          content: {}
+        '403':
+          description: >-
+            Forbidden: The server understood the request, but is refusing to
+            fulfill it.
+          content: {}
+        '404':
+          description: >-
+            Not Found: The server has not found anything matching the
+            Request-URL.
+          content: {}
+        '413':
+          description: >-
+            Request Entity Too Large: The request entity is larger than the
+            server is willing or able to process.
+          content: {}
+        '414':
+          description: >-
+            Request-URL Too Long: The request-URL is longer than the server is
+            willing to interpret.
+          content: {}
+        '500':
+          description: >-
+            Internal Server Error: The server encountered an unexpected
+            condition which prevented it from fulfilling the request.
+          content: {}
+        '503':
+          description: >-
+            Service Unavailable: The server is currently unable to handle the
+            request due to a temporary overloading or maintenance of the server.
+          content: {}
+  /version:
+    get:
+      tags:
+        - Station
+      summary: Request the service version
+      responses:
+        '200':
+          description: Returns the application version.
+          content:
+            text/plain: {}
+  /application.wadl:
+    get:
+      tags:
+        - Station
+      summary: The application documentation in a .wadl file.
+      responses:
+        '200':
+          description: >-
+            The documentation of the station application will be returned in a
+            *.wadl format.
+          content:
+            application/xml: {}
+components: {}
