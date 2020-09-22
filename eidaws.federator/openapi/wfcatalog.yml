@@ -438,22 +438,14 @@ paths:
       summary: Query waveform metadata
       operationId: wfcatalogPostOpId
       requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              required:
-              - file
-              properties:
-                file:
-                  type: string
-                  description: A plain-text file containing a selection list can be
-                    sent to the service. The contents of this message may contain
-                    multiple streams and traces to be downloaded. Each line
-                    must contain the SEED stream identifiers delimited by a
-                    space, followed by the trace starttime and endtime. Empty
-                    fields are marked by an asterisk.
-                  format: binary
         required: true
+        content:
+          text/plain:
+            schema:
+              example: |
+                CH HASLI * BHZ 2020-01-01 2020-01-02
+              type: string
+              format: binary
       responses:
         200:
           description: Successful request, results follow

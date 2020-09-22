@@ -212,16 +212,14 @@ paths:
         contain SEED stream identifiers delimited by a space, followed by the
         trace starttime and endtime. Empty fields are marked by an asterisk.
       requestBody:
+        required: true
         content:
-          multipart/form-data:
+          text/plain:
             schema:
-              properties:
-                file:
-                  type: string
-                  description: >-
-                    Upload your plain text file here with the list of streams
-                    and traces to be downloaded.
-                  format: binary
+              example: |
+                CH HASLI * BHZ 2020-01-01 2020-01-02
+              type: string
+              format: binary
       responses:
         '200':
           description: >-
