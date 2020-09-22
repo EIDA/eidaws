@@ -7,7 +7,7 @@ info:
   termsOfService: https://www.orfeus-eu.org/data/eida/webservices/
   version: 1.1.0
 servers:
-  - url: 'http://eida-federator.ethz.ch/fdsnws/station/1/'
+  - url: http://eida-federator.ethz.ch/fdsnws/station/1
 tags:
   - name: Station
 externalDocs:
