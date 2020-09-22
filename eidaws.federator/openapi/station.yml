@@ -30,6 +30,9 @@ paths:
         - name: endtime
           in: query
           example: '2020-01-02T00:06:00'
+          schema:
+            type: string
+            format: date-time
         - name: network
           in: query
           description: (SEED Identifier) SEED Network code
