@@ -110,7 +110,10 @@ class FDSNWSParserMixin:
             check_param = line.split(FDSNWS_QUERY_VALUE_SEPARATOR_CHAR, 1)
             if len(check_param) == 2:
 
-                if not all(v.strip() for v in check_param):
+                if (
+                    not all(v.strip() for v in check_param)
+                    or FDSNWS_QUERY_VALUE_SEPARATOR_CHAR in check_param[1]
+                ):
                     raise ValidationError(f"Illegal POST line: {line!r}")
 
                 # add query params

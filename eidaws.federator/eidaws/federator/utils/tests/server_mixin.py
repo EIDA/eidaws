@@ -204,6 +204,7 @@ class _TestPostfileMixin:
         "data",
         [
             b"= =\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            b"foo= =\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
             b"foo: bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
             b"CH HASLI -- LHZ 2019-01-01",
         ],
