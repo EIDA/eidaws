@@ -7,6 +7,9 @@ import pytest
 from aiohttp import web
 from lxml import etree
 
+from eidaws.federator.fdsnws_station.tests.server_mixin import (
+    _TestCommonStationMixin,
+)
 from eidaws.federator.fdsnws_station.xml import create_app, SERVICE_ID
 from eidaws.federator.fdsnws_station.xml.app import build_parser
 from eidaws.federator.fdsnws_station.xml.route import (
@@ -73,6 +76,7 @@ def content_tester(xml_schema):
 
 class TestFDSNStationXMLServer(
     _TestCommonServerConfig,
+    _TestCommonStationMixin,
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,

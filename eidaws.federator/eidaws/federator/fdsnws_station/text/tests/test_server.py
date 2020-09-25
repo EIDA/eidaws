@@ -5,13 +5,13 @@ import pytest
 
 from aiohttp import web
 
+from eidaws.federator.fdsnws_station.tests.server_mixin import (
+    _TestCommonStationMixin,
+)
 from eidaws.federator.fdsnws_station.text import create_app, SERVICE_ID
 from eidaws.federator.fdsnws_station.text.app import build_parser
 from eidaws.federator.fdsnws_station.text.route import (
     FED_STATION_TEXT_PATH_QUERY,
-)
-from eidaws.federator.fdsnws_station.tests.server_mixin import (
-    _TestCommonStationMixin,
 )
 from eidaws.federator.utils.pytest_plugin import (
     eidaws_routing_path_query,
