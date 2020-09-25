@@ -6,7 +6,9 @@ from collections import namedtuple
 from webargs.core import ValidationError
 
 from eidaws.utils.settings import (
-    FDSNWS_QUERY_LIST_SEPARATOR_CHAR, FDSNWS_QUERY_VALUE_SEPARATOR_CHAR)
+    FDSNWS_QUERY_LIST_SEPARATOR_CHAR,
+    FDSNWS_QUERY_VALUE_SEPARATOR_CHAR,
+)
 
 
 class FDSNWSParserMixin:
@@ -31,6 +33,7 @@ class FDSNWSParserMixin:
         Keys automatically are merged. If necessary, parameters are
         demultiplexed.
         """
+
         def _get_values(keys, raw=False):
             """
             Look up :code:`keys` in :code:`arg_dict`.
@@ -48,40 +51,44 @@ class FDSNWSParserMixin:
             return None
 
         # preprocess the req.args multidict regarding SNCL parameters
-        networks = _get_values(('net', 'network')) or ['*']
+        networks = _get_values(("net", "network")) or ["*"]
         networks = set(networks)
-        if '*' in networks:
-            networks = ['*']
-        stations = _get_values(('sta', 'station')) or ['*']
+        if "*" in networks:
+            networks = ["*"]
+        stations = _get_values(("sta", "station")) or ["*"]
         stations = set(stations)
-        if '*' in stations:
-            stations = ['*']
-        locations = _get_values(('loc', 'location')) or ['*']
+        if "*" in stations:
+            stations = ["*"]
+        locations = _get_values(("loc", "location")) or ["*"]
         locations = set(locations)
-        if '*' in locations:
-            locations = ['*']
-        channels = _get_values(('cha', 'channel')) or ['*']
+        if "*" in locations:
+            locations = ["*"]
+        channels = _get_values(("cha", "channel")) or ["*"]
         channels = set(channels)
-        if '*' in channels:
-            channels = ['*']
+        if "*" in channels:
+            channels = ["*"]
 
         stream_epochs = []
         for prod in itertools.product(networks, stations, locations, channels):
-            stream_epochs.append({'net': prod[0],
-                                  'sta': prod[1],
-                                  'loc': prod[2],
-                                  'cha': prod[3]})
+            stream_epochs.append(
+                {
+                    "net": prod[0],
+                    "sta": prod[1],
+                    "loc": prod[2],
+                    "cha": prod[3],
+                }
+            )
         # add times
-        starttime = _get_values(('start', 'starttime'), raw=True)
+        starttime = _get_values(("start", "starttime"), raw=True)
         if starttime:
             for stream_epoch_dict in stream_epochs:
-                stream_epoch_dict['start'] = starttime
-        endtime = _get_values(('end', 'endtime'), raw=True)
+                stream_epoch_dict["start"] = starttime
+        endtime = _get_values(("end", "endtime"), raw=True)
         if endtime:
             for stream_epoch_dict in stream_epochs:
-                stream_epoch_dict['end'] = endtime
+                stream_epoch_dict["end"] = endtime
 
-        return {'stream_epochs': stream_epochs}
+        return {"stream_epochs": stream_epochs}
 
     @staticmethod
     def _parse_postfile(postfile):
@@ -94,11 +101,12 @@ class FDSNWSParserMixin:
         :rtype: dict
         """
         _StreamEpoch = namedtuple(
-            '_StreamEpoch', ['net', 'sta', 'loc', 'cha', 'start', 'end'])
+            "_StreamEpoch", ["net", "sta", "loc", "cha", "start", "end"]
+        )
 
         retval = {}
         stream_epochs = []
-        for line in postfile.split('\n'):
+        for line in postfile.split("\n"):
             check_param = line.split(FDSNWS_QUERY_VALUE_SEPARATOR_CHAR, 1)
             if len(check_param) == 2:
 
@@ -122,13 +130,14 @@ class FDSNWSParserMixin:
                         loc=stream_epoch[2],
                         cha=stream_epoch[3],
                         start=stream_epoch[4],
-                        end=stream_epoch[5])
+                        end=stream_epoch[5],
+                    )
                     stream_epochs.append(stream_epoch)
                 else:
                     raise ValidationError(f"Illegal POST line: {line!r}")
 
         # remove duplicates
         stream_epochs = list(set(stream_epochs))
-        retval['stream_epochs'] = [se._asdict() for se in stream_epochs]
+        retval["stream_epochs"] = [se._asdict() for se in stream_epochs]
 
         return retval
