@@ -5,6 +5,9 @@ import pytest
 
 from aiohttp import web
 
+from eidaws.federator.fdsnws_station.tests.server_mixin import (
+    _TestCommonStationMixin,
+)
 from eidaws.federator.fdsnws_station.text import create_app, SERVICE_ID
 from eidaws.federator.fdsnws_station.text.app import build_parser
 from eidaws.federator.fdsnws_station.text.route import (
@@ -42,6 +45,7 @@ def content_tester(load_data):
 
 class TestFDSNStationTextServer(
     _TestCommonServerConfig,
+    _TestCommonStationMixin,
     _TestCORSMixin,
     _TestKeywordParserMixin,
     _TestRoutingMixin,
@@ -526,7 +530,7 @@ class TestFDSNStationTextServer(
                     "minlat": "57.0",
                     "maxlat": "57.13",
                     "minlon": "12",
-                    "maxlat": "13",
+                    "maxlon": "13",
                     "level": "station",
                     "format": "text",
                 },
@@ -571,8 +575,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "UP.FABU.....station",
-                            reader="read_text",
+                            "UP.FABU.....station", reader="read_text",
                         ),
                     ),
                 ),
