@@ -31,6 +31,7 @@ from eidaws.federator.utils.tests.server_mixin import (
     _TestCommonServerConfig,
     _TestCORSMixin,
     _TestKeywordParserMixin,
+    _TestPostfileMixin,
     _TestRoutingMixin,
     _TestServerBase,
 )
@@ -95,6 +96,7 @@ class TestFDSNAvailabilityQueryServer(
     _TestCommonServerConfig,
     _TestCORSMixin,
     _TestKeywordParserMixin,
+    _TestPostfileMixin,
     _TestRoutingMixin,
     _TestAPIMixin,
     _TestAvailabilityQueryMixin,
@@ -140,6 +142,7 @@ class TestFDSNAvailabilityQueryServer(
 class TestFDSNAvailabilityExtentServer(
     _TestCORSMixin,
     _TestKeywordParserMixin,
+    _TestPostfileMixin,
     _TestRoutingMixin,
     _TestAPIMixin,
     _TestAvailabilityExtentMixin,

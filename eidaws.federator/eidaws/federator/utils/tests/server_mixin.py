@@ -194,6 +194,34 @@ class _TestRoutingMixin:
         faked_routing.assert_no_unused_routes()
 
 
+class _TestPostfileMixin:
+    """
+    HTTP POST request parser specific tests for test classes providing both the
+    property ``FED_PATH_RESOURCE`` and a ``create_app`` method.
+    """
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            b"= =\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            b"foo: bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            b"CH HASLI -- LHZ 2019-01-01",
+        ],
+    )
+    async def test_invalid_postfile(
+        self, make_federated_eida, fdsnws_error_content_type, data,
+    ):
+        client, _, _ = await make_federated_eida(self.create_app())
+        resp = await client.post(self.FED_PATH_RESOURCE, data=data)
+
+        assert resp.status == 400
+        assert f"Illegal POST line" in await resp.text()
+        assert (
+            "Content-Type" in resp.headers
+            and resp.headers["Content-Type"] == fdsnws_error_content_type
+        )
+
+
 class _TestKeywordParserMixin:
     """
     Keyword parser specific tests for test classes providing both the property
