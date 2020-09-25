@@ -100,15 +100,27 @@ class StationSchema(ServiceSchema):
         )
         circular_spatial = ("latitude", "longitude", "minradius", "maxradius")
 
-        if any(k in data for k in rectangular_spatial) and any(
-            k in data for k in circular_spatial
-        ):
+        has_rectangular_spatial = any(k in data for k in rectangular_spatial)
+        has_circular_spatial = any(k in data for k in circular_spatial)
+
+        if has_rectangular_spatial and has_circular_spatial:
             raise ValidationError(
                 "Bad Request: Both rectangular spatial and circular spatial"
                 + " parameters defined."
             )
-            # TODO(damb): check if min values are smaller than max values;
-            # no default values are set
+
+        if (
+            has_rectangular_spatial
+            and (
+                data.get("minlatitude", -90.0) >= data.get("maxlatitude", 90.0)
+                or data.get("minlongitude", -180.0)
+                >= data.get("maxlongitude", 180.0)
+            )
+        ) or (
+            has_circular_spatial
+            and (data.get("minradius", 0.0) >= data.get("maxradius", 180.0))
+        ):
+            raise ValidationError("Bad Request: Invalid spatial constraints.")
 
     class Meta:
         service = "station"
