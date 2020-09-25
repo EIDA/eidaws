@@ -3,6 +3,8 @@ import itertools
 
 from collections import namedtuple
 
+from webargs.core import ValidationError
+
 from eidaws.utils.settings import (
     FDSNWS_QUERY_LIST_SEPARATOR_CHAR, FDSNWS_QUERY_VALUE_SEPARATOR_CHAR)
 
@@ -97,14 +99,20 @@ class FDSNWSParserMixin:
         retval = {}
         stream_epochs = []
         for line in postfile.split('\n'):
-            check_param = line.split(FDSNWS_QUERY_VALUE_SEPARATOR_CHAR)
-            if (len(check_param) == 2 and not
-                    all(not v.strip() for v in check_param)):
+            check_param = line.split(FDSNWS_QUERY_VALUE_SEPARATOR_CHAR, 1)
+            if len(check_param) == 2:
+
+                if not all(v.strip() for v in check_param):
+                    raise ValidationError(f"Illegal POST line: {line!r}")
 
                 # add query params
                 retval[check_param[0].strip()] = check_param[1].strip()
-                # self.logger.debug('Query parameter: %s' % check_param)
+
             elif len(check_param) == 1:
+                # ignore empty lines
+                if not check_param[0].strip():
+                    continue
+
                 # parse StreamEpoch
                 stream_epoch = line.split()
                 if len(stream_epoch) == 6:
@@ -116,9 +124,8 @@ class FDSNWSParserMixin:
                         start=stream_epoch[4],
                         end=stream_epoch[5])
                     stream_epochs.append(stream_epoch)
-            else:
-                # self.logger.warn("Ignoring illegal POST line: %s" % line)
-                continue
+                else:
+                    raise ValidationError(f"Illegal POST line: {line!r}")
 
         # remove duplicates
         stream_epochs = list(set(stream_epochs))
