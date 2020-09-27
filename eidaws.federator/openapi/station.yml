@@ -114,25 +114,25 @@ paths:
             default: 180.0
         - name: latitude
           in: query
-          description: 'Central latitude point'
+          description: 'Central point'
           schema:
             type: number
             format: float
         - name: longitude
           in: query
-          description: 'Northern boundary'
+          description: 'Central point'
           schema:
             type: number
             format: float
         - name: maxradius
           in: query
-          description: 'Western boundary'
+          description: 'in degrees'
           schema:
             type: number
             format: float
         - name: minradius
           in: query
-          description: 'Eastern boundary'
+          description: 'in degrees'
           schema:
             type: number
             format: float
