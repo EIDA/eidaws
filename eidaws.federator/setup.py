@@ -29,7 +29,7 @@ _DEPS = [
     "jsonschema>=3.2.0",
     "lxml>=4.5.0",
     "pyyaml>=5.3",
-    "yarl>=1.4.2",
+    "yarl==1.5.1",
 ]
 _ENTRY_POINTS = {
     "console_scripts": [
