@@ -10,7 +10,7 @@
     },
     {
         "fqdn": "ws.resif.fr",
-        "proxy_netloc": "127.0.0.1:14002"
+        "proxy_netloc": "127.0.0.1:44002"
     },
     {
         "fqdn": "webservices.ingv.it",
