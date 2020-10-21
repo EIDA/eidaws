@@ -28,6 +28,7 @@ _DEPS = [
     "eidaws.utils==0.1",
     "jsonschema>=3.2.0",
     "lxml>=4.5.0",
+    "multidict>=4.5,<5.0",
     "pyyaml>=5.3",
     "yarl==1.5.1",
 ]
