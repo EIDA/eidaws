@@ -135,7 +135,7 @@ class RedirectView(web.View):
         except aiohttp.ClientError as err:
             msg = (
                 f"Error while executing request: error={type(err)}, "
-                f"url={request.url!r}, method={request.method!r}"
+                f"msg={err}, url={request.url!r}, method={request.method!r}"
             )
             if isinstance(err, aiohttp.ClientOSError):
                 msg += f", errno={err.errno}"
