@@ -25,7 +25,7 @@ _DEPS = [
 ]
 
 setup(
-    name="eidaws_utils",
+    name="eidaws.utils",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,

@@ -31,7 +31,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws_endpoint_proxy",
+    name="eidaws.endpoint_proxy",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,

@@ -70,7 +70,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws_federator",
+    name="eidaws.federator",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,

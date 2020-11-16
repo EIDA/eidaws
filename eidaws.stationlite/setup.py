@@ -38,7 +38,7 @@ _ENTRY_POINTS = {
 }
 
 setup(
-    name="eidaws_stationlite",
+    name="eidaws.stationlite",
     version=_VERSION,
     author=_AUTHOR,
     author_email=_AUTHOR_EMAIL,
