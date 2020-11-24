@@ -8,6 +8,7 @@ import collections
 import copy
 import datetime
 import functools
+import io
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
@@ -131,10 +132,18 @@ class Harvester:
 
     @cached_property
     def config(self):
-        # proxy for fetching the config from the EIDA node
-        req = functools.partial(requests.get, self.url)
-        with binary_request(req, timeout=60) as resp:
-            return resp
+        # proxy for fetching the config
+
+        if self.url.startswith("file"):
+            try:
+                with open(self.url[7:], "rb") as ifd:
+                    return io.BytesIO(ifd.read())
+            except OSError as err:
+                raise self.HarvesterError(err)
+        else:
+            req = functools.partial(requests.get, self.url)
+            with binary_request(req, timeout=60) as resp:
+                return resp
 
     @staticmethod
     def _update_lastseen(obj):
@@ -1470,9 +1479,15 @@ class StationLiteHarvestApp:
             return uri
 
         def _url(url):
-            parsed = urlparse(url, scheme="http",)
-            if not (all([parsed.scheme, parsed.netloc])):
-                raise argparse.ArgumentError(f"Invalid URL: {url!r}")
+            parsed = urlparse(url)
+            if "file" == parsed.scheme:
+                if parsed.netloc:
+                    raise argparse.ArgumentError(
+                        f"Invalid file URI: {url!r}, absolute file path required"
+                    )
+            else:
+                if not (all([parsed.scheme, parsed.netloc])):
+                    raise argparse.ArgumentError(f"Invalid URL: {url!r}")
 
             return urlunparse(parsed)
 
@@ -1590,7 +1605,9 @@ class StationLiteHarvestApp:
             type=_url,
             metavar="URL",
             nargs="+",
-            help=("URL to eidaws-routing localconfig configuration."),
+            help=(
+                "URL or file URI to eidaws-routing localconfig configuration."
+            ),
         )
         return parser
 
