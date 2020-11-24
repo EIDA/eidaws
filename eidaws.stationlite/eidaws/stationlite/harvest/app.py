@@ -1305,14 +1305,23 @@ class StationLiteHarvestApp:
 
             return positionals, remaining_args
 
-        def error_method(message):
-            pass
+        def error_method(message, orig_error_method=None):
+            # skip errors related to missing positional args
+            if (
+                not message.startswith(
+                    "the following arguments are required: "
+                )
+                and orig_error_method is not None
+            ):
+                orig_error_method(message)
 
         # XXX(damb): A dirty workaround is required in order to allow parsing
         # positional arguments from the configuration file.
         parser = self._build_parser()
         _error_method = parser.error
-        parser.error = error_method
+        parser.error = functools.partial(
+            error_method, orig_error_method=_error_method
+        )
         args, argv = parser.parse_known_args()
 
         parser.error = _error_method
