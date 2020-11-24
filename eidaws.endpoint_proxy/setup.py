@@ -23,6 +23,7 @@ _DEPS = [
     "brotlipy>=0.7.0",
     "cchardet>=2.1.5",
     "eidaws.utils==0.1",
+    "importlib_metadata==3.0.0;python_version<'3.8'",
     "jsonschema>=3.2.0",
     "pyyaml>=5.3",
 ]

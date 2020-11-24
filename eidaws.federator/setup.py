@@ -26,6 +26,7 @@ _DEPS = [
     "cached-property>=1.5.1",
     "cchardet>=2.1.5",
     "eidaws.utils==0.1",
+    "importlib_metadata==3.0.0;python_version<'3.8'",
     "jsonschema>=3.2.0",
     "lxml>=4.5.0",
     "multidict>=4.5,<5.0",
