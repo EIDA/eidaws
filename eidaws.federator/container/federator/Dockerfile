@@ -11,7 +11,7 @@
 # docker exec -it eidaws-federator /bin/bash
 
 # Base image
-FROM docker.io/phusion/baseimage:0.11
+FROM docker.io/phusion/baseimage:bionic-1.0.0
 
 ARG INSTANCES_DATASELECT_MINISEED=8
 ARG INSTANCES_STATION_TEXT=4

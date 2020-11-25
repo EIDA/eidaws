@@ -11,7 +11,7 @@
 # docker exec -it eidaws-stationlite /bin/bash
 
 # Base image
-FROM docker.io/phusion/baseimage:0.11
+FROM docker.io/phusion/baseimage:bionic-1.0.0
 
 ARG DIR_CONTAINERFILE=eidaws.federator/container/stationlite
 
