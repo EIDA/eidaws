@@ -308,6 +308,7 @@ class _TestCORSMixin:
         client, _, _ = await make_federated_eida(self.create_app())
 
         origin = "http://foo.example.com"
+        expose_headers = set(["Content-Length", "Date", "Server"])
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}
@@ -318,7 +319,8 @@ class _TestCORSMixin:
         assert resp.status == 400
         assert (
             "Access-Control-Expose-Headers" in resp.headers
-            and resp.headers["Access-Control-Expose-Headers"] == ""
+            and set(resp.headers["Access-Control-Expose-Headers"].split(","))
+            == expose_headers
         )
         assert (
             "Access-Control-Allow-Origin" in resp.headers
