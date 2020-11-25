@@ -1,0 +1,5 @@
+eidaws.federator/container/docker-compose.yml
+eidaws.federator/container/*/Dockerfile
+venv/
+cscope.*
+tags
