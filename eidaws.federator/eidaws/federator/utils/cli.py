@@ -398,8 +398,10 @@ def build_parser(
         type=percent,
         metavar="PERCENT",
         default=FED_DEFAULT_RETRY_BUDGET_CLIENT_THRES,
-        help="Threshold in percent before endpoint requests are dropped ("
-        "default: %(default)s).",
+        help="Threshold in percent before endpoint requests are dropped. If "
+        "set to 100 the budget is de-facto disabled i.e. endpoint requests "
+        "are performed without taking response code statistics into account "
+        "(default: %(default)s).",
     )
     parser.add_argument(
         "--retry-budget-ttl",

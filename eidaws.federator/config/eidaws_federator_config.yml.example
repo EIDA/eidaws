@@ -227,7 +227,9 @@
 # redis-pool-timeout:
 #
 # ----
-# Threshold in percent before endpoint requests are being dropped.
+# Threshold in percent before endpoint requests are being dropped. Setting this
+# value to 100 disables the retry budget i.e. endpoint requests are performed
+# without taking the retry budget into account.
 # Default: 1.0
 #
 # retry-budget-threshold: 1.0
