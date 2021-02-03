@@ -162,7 +162,7 @@ class ClientRetryBudgetMixin:
         ``url``.
 
         :param str url: URL indicating the response code time series to be
-            garbage collected
+            updated
         :param int code: HTTP status code to be appended
         """
         await self.stats_retry_budget_client.add(url, code)
