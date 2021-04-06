@@ -303,7 +303,7 @@ class RoutingHarvester(Harvester):
                     == 0
                 ):
                     # NOTE(damb): Skip routes which contain exclusively
-                    # 'priority == 2' services
+                    # 'priority != 1' services
                     continue
 
                 elif len(urls) > 1:
