@@ -216,10 +216,14 @@ class RoutingHarvester(Harvester):
                     f"Inventory integrity issue for {cha_epoch!r}"
                 )
 
-            if service_tag in (
-                "dataselect",
-                "availability",
-            ) and cha_epoch.restrictedstatus not in ("open", "closed"):
+            if (
+                service_tag
+                in (
+                    "dataselect",
+                    "availability",
+                )
+                and cha_epoch.restrictedstatus not in ("open", "closed")
+            ):
                 raise self.IntegrityError(
                     "Unable to handle restrictedStatus "
                     f"{cha_epoch.restrictedstatus!r} for "
@@ -227,7 +231,10 @@ class RoutingHarvester(Harvester):
                 )
 
         def autocorrect_url(url, service_tag, restricted_status):
-            if service_tag not in ("dataselect", "availability",):
+            if service_tag not in (
+                "dataselect",
+                "availability",
+            ):
                 return [url]
 
             # NOTE (damb): Always add .*/query / .*/queryauth path (w.r.t.
@@ -1427,7 +1434,8 @@ class StationLiteHarvestApp:
                     session = Session()
                     with db.session_guard(session) as _session:
                         num_removed_rows = db.clean(
-                            _session, self.config["truncate"],
+                            _session,
+                            self.config["truncate"],
                         )
                         self.logger.info(
                             f"Number of rows removed: {num_removed_rows}"
@@ -1526,7 +1534,9 @@ class StationLiteHarvestApp:
         )
         # optional arguments
         parser.add_argument(
-            "-V", action="version", version="%(prog)s version " + __version__,
+            "-V",
+            action="version",
+            version="%(prog)s version " + __version__,
         )
         parser.add_argument(
             "-S",
