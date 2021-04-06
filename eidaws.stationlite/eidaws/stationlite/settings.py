@@ -5,6 +5,13 @@ import os
 # ----------------------------------------------------------------------------
 STL_BASE_ID = "eidaws.stationlite"
 
+STL_SERVICES = [
+    "station",
+    "dataselect",
+    "availability",
+    "wfcatalog",
+]
+
 STL_DEFAULT_CONFIG_FILES = [
     "/etc/eidaws/eidaws_config.yml",
     "/etc/eidaws/eidaws_stationlite_config.yml",
@@ -29,12 +36,7 @@ STL_HARVEST_DEFAULT_CONFIG_FILES = [
 ]
 
 STL_HARVEST_DEFAULT_URL_DB = "postgresql://localhost:5432/stationlite"
-STL_HARVEST_DEFAULT_SERVICES = [
-    "station",
-    "dataselect",
-    "availability",
-    "wfcatalog",
-]
+STL_HARVEST_DEFAULT_SERVICES = STL_SERVICES
 STL_HARVEST_DEFAULT_PATH_PIDFILE = os.path.join(
     "/var/tmp", "eida-stationlite-harvest.pid"
 )

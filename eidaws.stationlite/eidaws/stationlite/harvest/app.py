@@ -35,6 +35,13 @@ from eidaws.stationlite.harvest.request import (
     RequestsError,
     NoContent,
 )
+from eidaws.stationlite.harvest.validate import (
+    _get_method_token,
+    validate_service,
+    validate_method_token,
+    validate_major_version,
+    ValidationError,
+)
 from eidaws.stationlite.settings import (
     STL_HARVEST_BASE_ID,
     STL_HARVEST_DEFAULT_CONFIG_FILES,
@@ -69,25 +76,6 @@ from eidaws.utils.settings import (
 from eidaws.utils.sncl import Stream, StreamEpoch
 
 
-def _get_method_token(url):
-    """
-    Utility function returning the method token from the URL's path.
-
-    :param str url: URL
-    :returns: Method token
-    :retval: str
-    """
-    token = urlparse(url).path.split("/")[-1]
-
-    try:
-        float(token)
-    except ValueError:
-        return None
-
-    return token
-
-
-# ----------------------------------------------------------------------------
 class NothingToDo(Error):
     """Nothing to do."""
 
@@ -320,7 +308,8 @@ class RoutingHarvester(Harvester):
                     f"{urls.pop()}?{query_params}&level=channel"
                 )
 
-                self._validate_url_path(_url_fdsn_station, "station")
+                validate_major_version(_url_fdsn_station, "station")
+                validate_method_token(_url_fdsn_station, "station")
 
                 # XXX(damb): For every single route resolve FDSN wildcards
                 # using the route's station service.
@@ -350,7 +339,7 @@ class RoutingHarvester(Harvester):
                     # only consider priority=1
                     priority = service_element.get("priority")
                     if not priority or int(priority) != 1:
-                        self.logger.info(
+                        self.logger.debug(
                             f"Skipping {service_element} due to priority "
                             f"{priority!r}."
                         )
@@ -418,12 +407,12 @@ class RoutingHarvester(Harvester):
                         endpoints = []
                         for url in endpoint_urls:
                             try:
-                                self._validate_url_path(
+                                validate_method_token(
                                     url,
                                     service_tag,
                                     restricted_status=cha_epoch.restrictedstatus,
                                 )
-                            except self.IntegrityError as err:
+                            except ValidationError as err:
                                 self.logger.warning(
                                     f"Skipping {cha_epoch} due to: {err}"
                                 )
