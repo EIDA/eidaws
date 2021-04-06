@@ -28,7 +28,7 @@ _DEPS = [
     "obspy>=1.2.1",
     "pyyaml>=5.3",
     "requests>=2.18.4",
-    "SQLAlchemy>=1.2.0",
+    "SQLAlchemy>=1.4.5",
 ]
 _EXTRAS = {"postgres": ["psycopg2"]}
 _ENTRY_POINTS = {

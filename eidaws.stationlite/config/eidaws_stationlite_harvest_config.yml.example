@@ -87,7 +87,7 @@
 # further details see also:
 # https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
 #
-# database: postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@localhost:5432/stationlite
+# database: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@localhost:5432/stationlite
 #
 # ----
 # Absolute path to a process ID locking file in order to prevent from having

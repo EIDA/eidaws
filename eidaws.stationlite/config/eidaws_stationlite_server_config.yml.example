@@ -25,7 +25,7 @@
 
 # Flask-SQLAlchemy specific configuration variables. For further details see:
 # https://flask-sqlalchemy.palletsprojects.com/en/2.x/config/
-# SQLALCHEMY_DATABASE_URI: postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@localhost:5432/stationlite
+# SQLALCHEMY_DATABASE_URI: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@localhost:5432/stationlite
 # SQLALCHEMY_ENGINE_OPTIONS:
 #   pool_size: 5
 # SQLALCHEMY_TRACK_NOTIFICATIONS: False

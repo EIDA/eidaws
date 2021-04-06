@@ -87,7 +87,7 @@ services:
 # further details see also:
 # https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls
 #
-database: postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@${POSTGRES_HOST:-localhost}:5432/${POSTGRES_DB:-stationlite}
+database: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@${POSTGRES_HOST:-localhost}:5432/${POSTGRES_DB:-stationlite}
 #
 #
 # ----
