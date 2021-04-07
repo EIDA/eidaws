@@ -152,6 +152,3 @@ In order to run the tests, invoke
 .. code::
 
   $ pytest eidaws.utils eidaws.stationlite
-
-
-
