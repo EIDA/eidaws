@@ -15,9 +15,8 @@ configuration option, it implements the `Leaky Bucket Algorithm
 an error to the client. Limited access to the proxied endpoint resource is granted
 by a configurable connection pool size.
 
-The service is intented to be used in conjunction with `eidaws-federator
-<https://docs.aiohttp.org/en/stable/>`_ and thus implements proxying the
-following resources:
+The service is intented to be used in conjunction with ``eidaws-federator`` and
+thus implements proxying the following resources:
 
 - ``/fdsnws/dataselect/1/query``
 - ``/fdsnws/station/1/query``
