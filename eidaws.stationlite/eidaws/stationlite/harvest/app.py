@@ -269,7 +269,7 @@ class RoutingHarvester(Harvester):
                 query_params = stream._as_query_string()
 
                 # extract fdsn-station service url for each route
-                urls = set(
+                urls_fdsn_station = set(
                     [
                         e.get("address")
                         for e in route_element.iter(
@@ -280,8 +280,8 @@ class RoutingHarvester(Harvester):
                 )
 
                 if (
-                    len(urls) == 0
                     and len(
+                    len(urls_fdsn_station) == 0
                         [
                             e
                             for e in route_element.iter()
@@ -294,18 +294,18 @@ class RoutingHarvester(Harvester):
                     # 'priority != 1' services
                     continue
 
-                elif len(urls) > 1:
+                elif len(urls_fdsn_station) > 1:
                     # NOTE(damb): Currently we cannot handle multiple
                     # fdsn-station urls i.e. for multiple routed epochs
                     raise self.IntegrityError(
                         (
                             "Missing <station></station> element for "
-                            f"{route_element} ({urls})."
+                            f"{route_element} ({urls_fdsn_station})."
                         )
                     )
 
                 _url_fdsn_station = (
-                    f"{urls.pop()}?{query_params}&level=channel"
+                    f"{urls_fdsn_station.pop()}?{query_params}&level=channel"
                 )
 
                 validate_major_version(_url_fdsn_station, "station")
