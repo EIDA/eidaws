@@ -1,4 +1,0 @@
-POSTGRES_USER=user
-POSTGRES_PASSWORD=pass
-POSTGRES_HOST=eidaws-stationlite-psql
-POSTGRES_DB=stationlite

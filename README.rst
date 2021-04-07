@@ -21,7 +21,9 @@ Packages are deployed as `Python namespace distributions
 installation instructions come along with the corresponding distributions.
 
 For production most of the services provide container files ready to be build
-and deployed.
+and deployed. For detailed information please refer to the
+`eidaws-federator-deployment
+<https://github.com/damb/eidaws-federator-deployment>`_ repository.
 
 Issues
 ======
