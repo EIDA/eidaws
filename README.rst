@@ -38,3 +38,9 @@ License
 Licensed under the the `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.en.html>`_.
 For more information see the `COPYING
 <https://github.com/damb/eidaws/tree/master/COPYING>`_ file.
+
+
+Contributions
+=============
+
+Contributions are very welcome. Made with :two_hearts:.
