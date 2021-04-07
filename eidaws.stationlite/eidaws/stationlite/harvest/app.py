@@ -280,8 +280,8 @@ class RoutingHarvester(Harvester):
                 )
 
                 if (
-                    and len(
                     len(urls_fdsn_station) == 0
+                    or len(
                         [
                             e
                             for e in route_element.iter()
