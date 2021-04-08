@@ -134,12 +134,36 @@ Running one of those application is as simple as e.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json
+  $ eida-federator-wfcatalog-json --serve-static
 
 
-Now the service should be up and running at ``localhost:8080``. Check out the
-`Configuration`_ section if you'd like to run the service on a different
-``hostname:port`` destination.
+Now the service should be up and running at ``localhost:8080``. Let's perform
+an exemplary request. E.g. in a second terminal window invoke
+
+.. code::
+
+  $ curl -v -o - "http://localhost:8080/fedws/wfcatalog/json/1/version"
+  *   Trying ::1:8080...
+  * Connected to localhost (::1) port 8080 (#0)
+  > GET /fedws/wfcatalog/json/1/version HTTP/1.1
+  > Host: localhost:8080
+  > User-Agent: curl/7.74.0
+  > Accept: */*
+  > 
+  * Mark bundle as not supporting multiuse
+  < HTTP/1.1 200 OK
+  < Content-Type: plain/text; charset=utf-8
+  < Last-Modified: Wed, 01 Jul 2020 15:40:53 GMT
+  < Content-Length: 5
+  < Accept-Ranges: bytes
+  < Date: Thu, 08 Apr 2021 13:32:19 GMT
+  < Server: Python/3.8 aiohttp/3.7.4.post0
+  < 
+  * Connection #0 to host localhost left intact
+  1.0.0
+
+Also, check out the `Configuration`_ section if you'd like to run the service
+on a different ``hostname:port`` destination.
 
 
 Additional information and help is provided when invoking the application with
