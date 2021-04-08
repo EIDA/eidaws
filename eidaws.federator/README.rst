@@ -100,14 +100,14 @@ Federated resources are implemented as standalone applications with respect to
 the resources' pathes. Thus, implementations of the following services are
 provided:
 
-- ``eidaws-wfcatalog-json`` (``/eidaws/wfcatalog/json/1``)
-- ``fdsnws-availability-geocsv`` (``/eidaws/availability/geocsv/1``)
-- ``fdsnws-availability-json`` (``/eidaws/availability/json/1``)
-- ``fdsnws-availability-request`` (``/eidaws/availability/request/1``)
-- ``fdsnws-availability-text`` (``/eidaws/availability/text/1``)
-- ``fdsnws-dataselect-miniseed`` (``/eidaws/dataselect/miniseed/1``)
-- ``fdsnws-station-xml`` (``/eidaws/station/xml/1``)
-- ``fdsnws-station-text``  (``/eidaws/station/text/1``)
+- ``eidaws-wfcatalog-json`` (``/fedws/wfcatalog/json/1``)
+- ``fdsnws-availability-geocsv`` (``/fedws/availability/geocsv/1``)
+- ``fdsnws-availability-json`` (``/fedws/availability/json/1``)
+- ``fdsnws-availability-request`` (``/fedws/availability/request/1``)
+- ``fdsnws-availability-text`` (``/fedws/availability/text/1``)
+- ``fdsnws-dataselect-miniseed`` (``/fedws/dataselect/miniseed/1``)
+- ``fdsnws-station-xml`` (``/fedws/station/xml/1``)
+- ``fdsnws-station-text``  (``/fedws/station/text/1``)
 
 .. note::
 
