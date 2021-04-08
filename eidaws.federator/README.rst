@@ -1,3 +1,5 @@
+.. _NGINX: http://nginx.org/
+
 =========================
 EIDA Federator webservice 
 =========================
