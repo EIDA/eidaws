@@ -33,7 +33,7 @@ Clone the repository:
 
 .. code::
 
-  $ git clone https://github.com/damb/eidaws.git && cd eidaws
+  $ git clone https://github.com/EIDA/eidaws.git && cd eidaws
 
 
 **Installation**:

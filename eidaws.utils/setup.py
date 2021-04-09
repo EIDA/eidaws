@@ -33,7 +33,7 @@ setup(
     long_description=open("README.rst").read(),
     license="GPLv3",
     keywords="seismology waveforms eida service",
-    url="https://github.com/damb/eidaws/eidaws.utils",
+    url="https://github.com/EIDA/eidaws/eidaws.utils",
     platforms=["Linux"],
     classifiers=[
         "Development Status :: 3 - Alpha",

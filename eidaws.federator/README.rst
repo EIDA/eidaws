@@ -48,7 +48,7 @@ Container
 ---------
 
 For a containerized deployment please refer to the `eidaws-federator-deployment
-<https://github.com/damb/eidaws-federator-deployment>`_ repository.
+<https://github.com/EIDA/eidaws-federator-deployment>`_ repository.
 
 
 Development
@@ -78,7 +78,7 @@ Clone the repository:
 
 .. code::
 
-  $ git clone https://github.com/damb/eidaws.git && cd eidaws
+  $ git clone https://github.com/EIDA/eidaws.git && cd eidaws
 
 
 **Installation**:
