@@ -23,13 +23,13 @@ installation instructions come along with the corresponding distributions.
 For production most of the services provide container files ready to be build
 and deployed. For detailed information please refer to the
 `eidaws-federator-deployment
-<https://github.com/damb/eidaws-federator-deployment>`_ repository.
+<https://github.com/EIDA/eidaws-federator-deployment>`_ repository.
 
 Issues
 ======
 
 Please report bugs, issues, feature requests, etc. on `GitHub
-<https://github.com/damb/eidaws/issues>`_.
+<https://github.com/EIDA/eidaws/issues>`_.
 
 
 License
@@ -37,7 +37,7 @@ License
 
 Licensed under the the `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.en.html>`_.
 For more information see the `COPYING
-<https://github.com/damb/eidaws/tree/master/COPYING>`_ file.
+<https://github.com/EIDA/eidaws/tree/master/COPYING>`_ file.
 
 
 Contributions

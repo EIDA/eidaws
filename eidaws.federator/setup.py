@@ -79,7 +79,7 @@ setup(
     long_description=open("README.rst").read(),
     license="GPLv3",
     keywords="seismology waveforms federation eida service",
-    url="https://github.com/damb/eidaws/eidaws.federator",
+    url="https://github.com/EIDA/eidaws/eidaws.federator",
     platforms=["Linux"],
     classifiers=[
         "Development Status :: 3 - Alpha",
