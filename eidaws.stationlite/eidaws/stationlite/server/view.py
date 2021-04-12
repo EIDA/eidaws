@@ -82,7 +82,8 @@ class StationLiteQueryResource(Resource):
         locations=("query",),
     )
     @with_strict_args(
-        (StreamEpochSchema, StationLiteSchema), locations=("query",),
+        (StreamEpochSchema, StationLiteSchema),
+        locations=("query",),
     )
     def get(self, args, stream_epochs):
         """
@@ -106,7 +107,10 @@ class StationLiteQueryResource(Resource):
         self.logger.debug(f"StationLiteSchema: {args}")
         self.logger.debug(f"StreamEpoch objects: {stream_epochs}")
 
-        payload = self._process_request(args, stream_epochs,)
+        payload = self._process_request(
+            args,
+            stream_epochs,
+        )
 
         if not payload:
             raise FDSNHTTPError.create(
@@ -183,5 +187,8 @@ class StationLiteQueryResource(Resource):
         # sort additionally by URL
         routes.sort()
 
-        ostream = OutputStream.create(args["format"], routes=routes,)
+        ostream = OutputStream.create(
+            args["format"],
+            routes=routes,
+        )
         return str(ostream)

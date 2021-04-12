@@ -8,6 +8,7 @@ class ExitCodes:
     """
     Enum for exit codes.
     """
+
     EXIT_SUCCESS = 0
     EXIT_WARNING = 1
     EXIT_ERROR = 2
@@ -35,4 +36,5 @@ class Error(Exception):
 
 class ErrorWithTraceback(Error):
     """Error with traceback."""
+
     traceback = True

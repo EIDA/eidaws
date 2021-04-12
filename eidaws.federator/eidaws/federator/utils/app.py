@@ -87,7 +87,10 @@ def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
 
 
 def _main(
-    service_id, app_factory, parser, argv=sys.argv[1:],
+    service_id,
+    app_factory,
+    parser,
+    argv=sys.argv[1:],
 ):
     args = parser.parse_args(args=argv)
     args = vars(args)
@@ -103,6 +106,9 @@ def _main(
     app = app_factory(config_dict=args)
     # run standalone app
     web.run_app(
-        app, host=args["hostname"], port=args["port"], path=args["unix_path"],
+        app,
+        host=args["hostname"],
+        port=args["port"],
+        path=args["unix_path"],
     )
     parser.exit(message="Stopped\n")

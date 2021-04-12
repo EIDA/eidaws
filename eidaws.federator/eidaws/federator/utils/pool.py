@@ -35,7 +35,10 @@ class Pool:
     LOGGER = FED_BASE_ID + ".pool"
 
     def __init__(
-        self, worker_coro=None, max_workers=None, timeout=None,
+        self,
+        worker_coro=None,
+        max_workers=None,
+        timeout=None,
     ):
 
         if max_workers is None:

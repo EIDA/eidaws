@@ -89,7 +89,10 @@ class AvailabilityRequestProcessor(_AvailabilityRequestProcessor):
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _AvailablityWorker(
-            self.request, session, drain, lock=lock,
+            self.request,
+            session,
+            drain,
+            lock=lock,
         )
 
 
@@ -98,7 +101,10 @@ class AvailabilityQueryRequestProcessor(AvailabilityRequestProcessor):
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _AvailablityQueryWorker(
-            self.request, session, drain, lock=lock,
+            self.request,
+            session,
+            drain,
+            lock=lock,
         )
 
 
@@ -107,5 +113,8 @@ class AvailabilityExtentRequestProcessor(AvailabilityRequestProcessor):
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
         return _AvailablityExtentWorker(
-            self.request, session, drain, lock=lock,
+            self.request,
+            session,
+            drain,
+            lock=lock,
         )

@@ -61,7 +61,9 @@ def AvailabilityQuerySchema(base_cls=_AvailabilitySchema):
         #     "latestupdate_desc",
         #     missing="nslc_time_quality_samplerate",
         # )
-        show = fields.Str(validate=validate.OneOf(["latestupdate"]),)
+        show = fields.Str(
+            validate=validate.OneOf(["latestupdate"]),
+        )
 
     return _AvailabilityQuerySchema
 

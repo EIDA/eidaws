@@ -13,21 +13,42 @@ class _TestCommonStationMixin:
     @pytest.mark.parametrize(
         "method,params_or_data",
         [
-            ("GET", {"minlat": "90"},),
-            ("POST", b"minlat=90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
-            ("GET", {"minlatitude": "90"},),
+            (
+                "GET",
+                {"minlat": "90"},
+            ),
+            (
+                "POST",
+                b"minlat=90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
+            (
+                "GET",
+                {"minlatitude": "90"},
+            ),
             (
                 "POST",
                 b"minlatitude=90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
             ),
-            ("GET", {"maxlat": "-90"},),
-            ("POST", b"maxlat=-90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
-            ("GET", {"maxlatitude": "-90"},),
+            (
+                "GET",
+                {"maxlat": "-90"},
+            ),
+            (
+                "POST",
+                b"maxlat=-90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
+            (
+                "GET",
+                {"maxlatitude": "-90"},
+            ),
             (
                 "POST",
                 b"maxlatitude=-90\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
             ),
-            ("GET", {"minlat": "1", "maxlat": "0"},),
+            (
+                "GET",
+                {"minlat": "1", "maxlat": "0"},
+            ),
             (
                 "POST",
                 b"minlat=1\nmaxlat=0\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
@@ -38,7 +59,10 @@ class _TestCommonStationMixin:
                 b"minradius=180.0\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
             ),
             ("GET", {"maxradius": "0"}),
-            ("POST", b"maxradius=0\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"maxradius=0\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_invalid_spatial_args(

@@ -23,7 +23,10 @@ def main(argv=None):
 
     # run standalone app
     web.run_app(
-        app, host=args["hostname"], port=args["port"], path=args["unix_path"],
+        app,
+        host=args["hostname"],
+        port=args["port"],
+        path=args["unix_path"],
     )
     parser.exit(message="Stopped\n")
 

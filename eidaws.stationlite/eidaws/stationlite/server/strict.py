@@ -15,7 +15,9 @@ def setup_keywordparser_error_handler(service_version=None):
     def handle_parser_error(error, req):
 
         raise FDSNHTTPError.create(
-            400, service_version=service_version, error_desc_long=str(error),
+            400,
+            service_version=service_version,
+            error_desc_long=str(error),
         )
 
     return handle_parser_error

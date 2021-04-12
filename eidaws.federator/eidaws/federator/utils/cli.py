@@ -76,7 +76,10 @@ def build_parser(
     config_file_parser_class=InterpolatingYAMLConfigFileParser,
 ):
     def url_routing(url):
-        parsed = urlparse(url, scheme="http",)
+        parsed = urlparse(
+            url,
+            scheme="http",
+        )
         if (
             not (all([parsed.scheme, parsed.netloc, parsed.path]))
             or parsed.path != "/eidaws/routing/1/query"
@@ -86,7 +89,10 @@ def build_parser(
         return urlunparse(parsed)
 
     def url_redis(url):
-        parsed = urlparse(url, scheme="redis",)
+        parsed = urlparse(
+            url,
+            scheme="redis",
+        )
         if (
             not all([parsed.scheme, parsed.netloc, parsed.port])
             and parsed.scheme != "redis"

@@ -82,7 +82,9 @@ class RedirectView(web.View):
                 auto_decompress=False,
             ) as session:
                 async with session.request(
-                    request.method, request.url, data=body,
+                    request.method,
+                    request.url,
+                    data=body,
                 ) as resp:
 
                     self.logger.debug(

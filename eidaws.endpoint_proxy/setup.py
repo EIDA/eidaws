@@ -41,7 +41,9 @@ setup(
     license="GPLv3",
     keywords="seismology waveforms proxy federation eida service",
     url="https://github.com/EIDA/eidaws/eidaws.endpoint_proxy",
-    platforms=["Linux",],
+    platforms=[
+        "Linux",
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
@@ -57,7 +59,9 @@ setup(
     zip_safe=False,
     entry_points=_ENTRY_POINTS,
     install_requires=_DEPS,
-    setup_requires=["pytest-runner",],
+    setup_requires=[
+        "pytest-runner",
+    ],
     tests_require=["pytest", "pytest-asyncio", "pytest-aiohttp"],
     python_requires="~=3.7",
 )

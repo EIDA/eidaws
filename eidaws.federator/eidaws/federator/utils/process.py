@@ -428,7 +428,10 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             await self.gc_cretry_budget(url)
 
     async def _emerge_routes(
-        self, text, post, default_endtime,
+        self,
+        text,
+        post,
+        default_endtime,
     ):
         """
         Default implementation parsing the routing service's output stream and
@@ -519,7 +522,8 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
                 # more cache hits (if eida-federator is coupled with
                 # HTTP caching proxy).
                 se = StreamEpoch.from_snclline(
-                    line, default_endtime=default_endtime if post else None,
+                    line,
+                    default_endtime=default_endtime if post else None,
                 )
 
                 stream_duration = se.duration
@@ -551,7 +555,10 @@ class UnsortedResponse(BaseRequestProcessor):
                 f"Creating job: context={ctx!r}, route={route!r}"
             )
             await pool.submit(
-                route, req_method=req_method, context=ctx, **req_kwargs,
+                route,
+                req_method=req_method,
+                context=ctx,
+                **req_kwargs,
             )
 
     async def _make_response(
@@ -567,7 +574,9 @@ class UnsortedResponse(BaseRequestProcessor):
 
         def make_worker(response, session, lock):
             drain = self._create_worker_drain(
-                self.request, response, self._prepare_response,
+                self.request,
+                response,
+                self._prepare_response,
             )
             return self._create_worker(self.request, session, drain, lock=lock)
 

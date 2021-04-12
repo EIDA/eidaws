@@ -134,7 +134,12 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
     LOGGER = FED_BASE_ID + ".worker"
 
     def __init__(
-        self, request, session, drain, lock=None, **kwargs,
+        self,
+        request,
+        session,
+        drain,
+        lock=None,
+        **kwargs,
     ):
         self.request = request
         self._session = session
@@ -205,10 +210,19 @@ class BaseSplitAlignWorker(BaseWorker):
     _CHUNK_SIZE = 4096
 
     def __init__(
-        self, request, session, drain, lock=None, **kwargs,
+        self,
+        request,
+        session,
+        drain,
+        lock=None,
+        **kwargs,
     ):
         super().__init__(
-            request, session, drain, lock=lock, **kwargs,
+            request,
+            session,
+            drain,
+            lock=lock,
+            **kwargs,
         )
 
         self._endtime = kwargs.get("endtime", datetime.datetime.utcnow())
@@ -267,7 +281,10 @@ class BaseSplitAlignWorker(BaseWorker):
                     async with self._lock:
                         append = self._drain.prepared or False
                         await self._flush(
-                            buf, self._drain, context, append=append,
+                            buf,
+                            self._drain,
+                            context,
+                            append=append,
                         )
 
         await self.finalize()
@@ -432,7 +449,12 @@ class NetworkLevelMixin:
     """
 
     async def _fetch(
-        self, route, parser_cb=None, req_method="GET", context=None, **kwargs,
+        self,
+        route,
+        parser_cb=None,
+        req_method="GET",
+        context=None,
+        **kwargs,
     ):
         parser_cb = _coroutine_or_raise(parser_cb)
         # context logging

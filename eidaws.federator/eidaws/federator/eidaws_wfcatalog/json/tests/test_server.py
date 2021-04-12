@@ -94,7 +94,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-03",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-03",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01 2020-01-03",
+            ),
         ],
     )
     async def test_single_stream_epoch(
@@ -353,7 +356,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-10",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01 2020-01-10",
+            ),
         ],
     )
     async def test_split_without_overlap(
@@ -441,7 +447,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-10",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-10",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01 2020-01-10",
+            ),
         ],
     )
     async def test_split_with_overlap(
@@ -529,7 +538,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-09",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-09",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01 2020-01-09",
+            ),
         ],
     )
     async def test_split_multi_with_overlap(
@@ -643,7 +655,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-03",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01 2020-01-03",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01 2020-01-03",
+            ),
         ],
     )
     async def test_cached(
@@ -749,7 +764,10 @@ class TestEIDAWFCatalogServer(
                     "end": "2020-01-01",
                 },
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-01",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-01",
+            ),
             (
                 "POST",
                 (
@@ -757,8 +775,14 @@ class TestEIDAWFCatalogServer(
                     f"{_day_after_tomorrow.isoformat()}"
                 ).encode("utf-8"),
             ),
-            ("POST", b"CH HASLI -- BHZ 2020-01-02 2020-01-01",),
-            ("POST", b"CH HASLI -- BHZ",),
+            (
+                "POST",
+                b"CH HASLI -- BHZ 2020-01-02 2020-01-01",
+            ),
+            (
+                "POST",
+                b"CH HASLI -- BHZ",
+            ),
         ],
     )
     async def test_parser_invalid(
@@ -769,7 +793,9 @@ class TestEIDAWFCatalogServer(
         params_or_data,
     ):
 
-        client, _, _ = await make_federated_eida(self.create_app(),)
+        client, _, _ = await make_federated_eida(
+            self.create_app(),
+        )
 
         method = method.lower()
         kwargs = {"params" if method == "get" else "data": params_or_data}

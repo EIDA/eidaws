@@ -13,7 +13,9 @@ def StationView(service_id, schema, processor_cls):
 
         def __init__(self, request):
             super().__init__(
-                request, schema=schema, processor_cls=processor_cls,
+                request,
+                schema=schema,
+                processor_cls=processor_cls,
             )
 
     return _StationView

@@ -120,7 +120,9 @@ def make_federated_eida(loop, aiohttp_client):
     created_apps = []
 
     async def _make_federated_eida(
-        app_factory, mocked_routing_config={}, mocked_endpoint_config={},
+        app_factory,
+        mocked_routing_config={},
+        mocked_endpoint_config={},
     ):
 
         assert len(mocked_routing_config.keys()) <= 1

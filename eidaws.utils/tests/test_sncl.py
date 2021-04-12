@@ -48,7 +48,10 @@ class TestStreamEpochsHandler:
                 ],
             ),
             (
-                {"start": None, "end": None,},
+                {
+                    "start": None,
+                    "end": None,
+                },
                 [
                     (
                         datetime.datetime(2018, 1, 1),
@@ -127,7 +130,9 @@ class TestStreamEpoch:
                         "endtime": datetime.datetime(2018, 1, 8),
                     },
                 ],
-                {"num": 2,},
+                {
+                    "num": 2,
+                },
             ),
             (
                 {"starttime": datetime.datetime(2018, 1, 1), "endtime": None},
@@ -166,7 +171,9 @@ class TestStreamEpoch:
                         "endtime": datetime.datetime(2018, 1, 8),
                     },
                 ],
-                {"num": 4,},
+                {
+                    "num": 4,
+                },
             ),
             (
                 {
@@ -187,7 +194,9 @@ class TestStreamEpoch:
                         "endtime": datetime.datetime(2018, 1, 4),
                     },
                 ],
-                {"num": 3,},
+                {
+                    "num": 3,
+                },
             ),
         ],
         ids=[

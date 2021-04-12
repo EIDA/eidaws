@@ -41,7 +41,9 @@ def get_config(path_config=None, cli_config={}, defaults={}, json_schema=None):
     config_dict = {
         PROXY_BASE_ID: {
             "config": collections.ChainMap(
-                cli_config, user_config[PROXY_BASE_ID], defaults,
+                cli_config,
+                user_config[PROXY_BASE_ID],
+                defaults,
             )
         }
     }
@@ -62,7 +64,9 @@ def get_config(path_config=None, cli_config={}, defaults={}, json_schema=None):
 def setup_http_conn_pool(app):
 
     config = app[PROXY_BASE_ID]["config"]
-    conn = TCPConnector(limit=config["connection_limit"],)
+    conn = TCPConnector(
+        limit=config["connection_limit"],
+    )
 
     async def close_endpoint_http_conn_pool(app):
         await conn.close()
