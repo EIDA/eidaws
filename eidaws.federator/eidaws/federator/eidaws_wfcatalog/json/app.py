@@ -69,7 +69,10 @@ parser = build_parser()
 def main(argv=sys.argv[1:]):
 
     _main(
-        SERVICE_ID, create_app, parser, argv=argv,
+        SERVICE_ID,
+        create_app,
+        parser,
+        argv=argv,
     )
 
 

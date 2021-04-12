@@ -10,7 +10,10 @@ from eidaws.federator.fdsnws_availability.parser import (
 
 
 class _AvailabilitySchema(_AvailabilityBaseSchema):
-    format = fields.Str(missing="json", validate=validate.OneOf(["json"]),)
+    format = fields.Str(
+        missing="json",
+        validate=validate.OneOf(["json"]),
+    )
 
 
 AvailabilityQuerySchema = _AvailabilityQuerySchema(_AvailabilitySchema)

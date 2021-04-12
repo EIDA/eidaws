@@ -28,9 +28,7 @@ def setup_routes(app, static=False):
 
     routes = [
         web.view(FED_AVAILABILITY_JSON_PATH_QUERY, AvailabilityQueryView),
-        web.view(
-            FED_AVAILABILITY_JSON_PATH_EXTENT, AvailabilityExtentView
-        ),
+        web.view(FED_AVAILABILITY_JSON_PATH_EXTENT, AvailabilityExtentView),
     ]
     if static:
         path_static = pathlib.Path(__file__).parent / FED_STATIC

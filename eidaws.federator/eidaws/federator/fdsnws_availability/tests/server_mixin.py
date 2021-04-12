@@ -99,7 +99,10 @@ class _TestAvailabilityQueryMixin:
                     "end": "2020-01-01",
                 },
             ),
-            ("POST", b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_single_net_sta_cha(
@@ -260,7 +263,10 @@ class _TestAvailabilityQueryMixin:
                     "merge": "quality",
                 },
             ),
-            ("POST", b"merge=quality\nFR ZELS 00 LHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"merge=quality\nFR ZELS 00 LHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_single_net_sta_cha_merge_quality(
@@ -697,7 +703,10 @@ class _TestAvailabilityQueryMixin:
                     "end": "2020-01-01",
                 },
             ),
-            ("POST", b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_cached(
@@ -804,7 +813,10 @@ class _TestAvailabilityExtentMixin:
                     "end": "2020-01-01",
                 },
             ),
-            ("POST", b"FR ZELS 00 HHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"FR ZELS 00 HHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_single_net_sta_cha(
@@ -965,7 +977,10 @@ class _TestAvailabilityExtentMixin:
                     "merge": "quality",
                 },
             ),
-            ("POST", b"merge=quality\nFR ZELS 00 HHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"merge=quality\nFR ZELS 00 HHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_single_net_sta_cha_merge_quality(
@@ -1232,7 +1247,10 @@ class _TestAvailabilityExtentMixin:
                     "end": "2020-01-01",
                 },
             ),
-            ("POST", b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",),
+            (
+                "POST",
+                b"FR ZELS 00 LHZ 2019-01-01 2020-01-01",
+            ),
         ],
     )
     async def test_cached(

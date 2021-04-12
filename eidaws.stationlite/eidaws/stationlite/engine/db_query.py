@@ -100,7 +100,13 @@ def resolve_vnetwork(session, stream_epoch, like_escape="/"):
             )
             sliced_ses.append(se)
 
-    logger.debug("Found %r matching %r" % (sorted(sliced_ses), stream_epoch,))
+    logger.debug(
+        "Found %r matching %r"
+        % (
+            sorted(sliced_ses),
+            stream_epoch,
+        )
+    )
 
     return [se for ses in sliced_ses for se in ses]
 

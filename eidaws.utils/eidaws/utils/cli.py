@@ -63,7 +63,10 @@ class InterpolatingYAMLConfigFileParser(configargparse.YAMLConfigFileParser):
         try:
             if not isinstance(
                 parsed_obj[section],
-                (collections.abc.Mapping, collections.abc.MutableMapping,),
+                (
+                    collections.abc.Mapping,
+                    collections.abc.MutableMapping,
+                ),
             ):
 
                 raise configargparse.ConfigFileParserException(

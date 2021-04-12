@@ -10,7 +10,10 @@ from eidaws.federator.fdsnws_availability.parser import (
 
 
 class _AvailabilitySchema(_AvailabilityBaseSchema):
-    format = fields.Str(missing="text", validate=validate.OneOf(["text"]),)
+    format = fields.Str(
+        missing="text",
+        validate=validate.OneOf(["text"]),
+    )
 
 
 AvailabilityQuerySchema = _AvailabilityQuerySchema(_AvailabilitySchema)

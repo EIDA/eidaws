@@ -577,7 +577,8 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "UP.FABU.....station", reader="read_text",
+                            "UP.FABU.....station",
+                            reader="read_text",
                         ),
                     ),
                 ),

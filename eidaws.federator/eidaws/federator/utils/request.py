@@ -80,7 +80,14 @@ class RequestHandlerBase:
         Returns request URL without query parameters.
         """
         return urlunparse(
-            (self._scheme, self._netloc, self._path, "", "", "",)
+            (
+                self._scheme,
+                self._netloc,
+                self._path,
+                "",
+                "",
+                "",
+            )
         )
 
     @property

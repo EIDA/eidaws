@@ -99,7 +99,10 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                     net_element, level=self.level, context=context
                 )
 
-        for (net_element, sta_elements,) in context["buffer"].values():
+        for (
+            net_element,
+            sta_elements,
+        ) in context["buffer"].values():
             serialized = self._serialize_net_element(net_element, sta_elements)
             async with self._lock:
                 await self._drain.drain(serialized)
@@ -268,7 +271,13 @@ class StationXMLRequestProcessor(UnsortedResponse):
         await response.write(header)
 
     def _create_worker(self, request, session, drain, lock=None, **kwargs):
-        return _StationXMLWorker(request, session, drain, lock=lock, *kwargs,)
+        return _StationXMLWorker(
+            request,
+            session,
+            drain,
+            lock=lock,
+            *kwargs,
+        )
 
     async def _dispatch(self, pool, routes, req_method, **req_kwargs):
         """
@@ -282,7 +291,11 @@ class StationXMLRequestProcessor(UnsortedResponse):
                 f"route={_routes!r}"
             )
             await pool.submit(
-                _routes, net, req_method=req_method, context=ctx, **req_kwargs,
+                _routes,
+                net,
+                req_method=req_method,
+                context=ctx,
+                **req_kwargs,
             )
 
     async def _write_response_footer(self, response):

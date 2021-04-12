@@ -319,7 +319,10 @@ class TestStationLiteServer:
             raise ValueError(f"Invalid access: {access}")
 
         req_kwargs = create_request_kwargs(
-            method, params_or_data, **access_args, **service_arg,
+            method,
+            params_or_data,
+            **access_args,
+            **service_arg,
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
@@ -344,7 +347,10 @@ class TestStationLiteServer:
                     "end": "2012-01-02",
                 },
             ),
-            ("post", [b"_NFOVALAIS GRIMS -- HHZ 2012-01-01 2012-01-02"],),
+            (
+                "post",
+                [b"_NFOVALAIS GRIMS -- HHZ 2012-01-01 2012-01-02"],
+            ),
             (
                 "get",
                 {
@@ -356,7 +362,10 @@ class TestStationLiteServer:
                     "end": "2012-01-02",
                 },
             ),
-            ("post", [b"_ALPARRAY GRIMS -- HHZ 2012-01-01 2012-01-02"],),
+            (
+                "post",
+                [b"_ALPARRAY GRIMS -- HHZ 2012-01-01 2012-01-02"],
+            ),
             (
                 "get",
                 {
@@ -389,7 +398,9 @@ class TestStationLiteServer:
         self, client, content_type, service_args, method, params_or_data
     ):
         req_kwargs = create_request_kwargs(
-            method, params_or_data, **service_args,
+            method,
+            params_or_data,
+            **service_args,
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 

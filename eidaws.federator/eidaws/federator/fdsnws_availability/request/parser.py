@@ -11,7 +11,8 @@ from eidaws.federator.fdsnws_availability.parser import (
 
 class _AvailabilitySchema(_AvailabilityBaseSchema):
     format = fields.Str(
-        missing="request", validate=validate.OneOf(["request"]),
+        missing="request",
+        validate=validate.OneOf(["request"]),
     )
 
     @validates_schema

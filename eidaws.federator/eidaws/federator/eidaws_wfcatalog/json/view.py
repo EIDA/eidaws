@@ -64,7 +64,9 @@ class WFCatalogView(BaseView):
     async def _parse_post(self):
         # strict parameter validation
         await keyword_parser.parse(
-            self._schema, self.request, locations=("form",),
+            self._schema,
+            self.request,
+            locations=("form",),
         )
 
         # parse query parameters

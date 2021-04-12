@@ -98,7 +98,10 @@ class TestFDSNDataselectServer(
                     "end": "2019-01-05",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"CH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_single_stream_epoch(
@@ -370,7 +373,10 @@ class TestFDSNDataselectServer(
                     "end": "2019-01-10",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-10",),
+            (
+                "POST",
+                b"CH HASLI -- LHZ 2019-01-01 2019-01-10",
+            ),
         ],
     )
     async def test_split_with_overlap(
@@ -461,7 +467,10 @@ class TestFDSNDataselectServer(
                     "end": "2019-01-01T00:10:00",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-01T00:10:00",),
+            (
+                "POST",
+                b"CH HASLI -- LHZ 2019-01-01 2019-01-01T00:10:00",
+            ),
         ],
     )
     async def test_split_without_overlap(
@@ -555,7 +564,10 @@ class TestFDSNDataselectServer(
                     "end": "2019-01-20",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-20",),
+            (
+                "POST",
+                b"CH HASLI -- LHZ 2019-01-01 2019-01-20",
+            ),
         ],
     )
     async def test_split_multi_with_overlap(
@@ -673,7 +685,10 @@ class TestFDSNDataselectServer(
                     "end": "2019-01-05",
                 },
             ),
-            ("POST", b"CH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"CH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_cached(

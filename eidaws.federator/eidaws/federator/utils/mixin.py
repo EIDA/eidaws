@@ -62,7 +62,10 @@ class CachingMixin:
         key_prefix=None,
         sort_args=True,
         hash_method=hashlib.md5,
-        exclude_params=("nodata", "service",),
+        exclude_params=(
+            "nodata",
+            "service",
+        ),
     ):
         """
         Create a cache key from ``query_params`` and ``stream_epochs``.

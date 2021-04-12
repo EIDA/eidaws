@@ -11,8 +11,10 @@ from eidaws.federator.fdsnws_availability.parser import (
 
 class _AvailabilitySchema(_AvailabilityBaseSchema):
     format = fields.Str(
-        missing="geocsv", validate=validate.OneOf(["geocsv"]),
+        missing="geocsv",
+        validate=validate.OneOf(["geocsv"]),
     )
+
 
 AvailabilityQuerySchema = _AvailabilityQuerySchema(_AvailabilitySchema)
 AvailabilityExtentSchema = _AvailabilityExtentSchema(_AvailabilitySchema)

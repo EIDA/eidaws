@@ -11,4 +11,3 @@ SERVICE_ID = FED_AVAILABILITY_JSON_SERVICE_ID
 def create_app(config_dict, **kwargs):
 
     return _create_app(SERVICE_ID, config_dict, setup_routes, **kwargs)
-

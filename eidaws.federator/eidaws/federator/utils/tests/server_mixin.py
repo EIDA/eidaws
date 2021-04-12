@@ -37,7 +37,10 @@ class _TestRoutingMixin:
                     "end": "2019-01-05",
                 },
             ),
-            ("POST", b"CH FOO -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"CH FOO -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_no_route(
@@ -49,11 +52,18 @@ class _TestRoutingMixin:
     ):
         mocked_routing = {
             "localhost": [
-                (eidaws_routing_path_query, method, web.Response(status=204,),)
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=204,
+                    ),
+                )
             ]
         }
         client, faked_routing, faked_endpoints = await make_federated_eida(
-            self.create_app(), mocked_routing_config=mocked_routing,
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
         )
 
         method = method.lower()
@@ -78,7 +88,10 @@ class _TestRoutingMixin:
                     "end": "2019-01-05",
                 },
             ),
-            ("POST", b"CH FOO -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"CH FOO -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_no_data(
@@ -107,7 +120,13 @@ class _TestRoutingMixin:
 
         mocked_endpoints = {
             "eida.ethz.ch": [
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
             ]
         }
 
@@ -140,7 +159,10 @@ class _TestRoutingMixin:
                     "end": "2019-01-05",
                 },
             ),
-            ("POST", b"CH FOO -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "POST",
+                b"CH FOO -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_routing_unavailable(
@@ -181,11 +203,18 @@ class _TestRoutingMixin:
 
         mocked_routing = {
             "localhost": [
-                (eidaws_routing_path_query, method, web.Response(status=500,),)
+                (
+                    eidaws_routing_path_query,
+                    method,
+                    web.Response(
+                        status=500,
+                    ),
+                )
             ]
         }
         client, faked_routing, faked_endpoints = await make_federated_eida(
-            self.create_app(), mocked_routing_config=mocked_routing,
+            self.create_app(),
+            mocked_routing_config=mocked_routing,
         )
         resp = await getattr(client, _method)(self.FED_PATH_RESOURCE, **kwargs)
 
@@ -210,7 +239,10 @@ class _TestPostfileMixin:
         ],
     )
     async def test_invalid_postfile(
-        self, make_federated_eida, fdsnws_error_content_type, data,
+        self,
+        make_federated_eida,
+        fdsnws_error_content_type,
+        data,
     ):
         client, _, _ = await make_federated_eida(self.create_app())
         resp = await client.post(self.FED_PATH_RESOURCE, data=data)
@@ -232,8 +264,14 @@ class _TestKeywordParserMixin:
     @pytest.mark.parametrize(
         "method,params_or_data",
         [
-            ("GET", {"foo": "bar"},),
-            ("POST", b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "GET",
+                {"foo": "bar"},
+            ),
+            (
+                "POST",
+                b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_invalid_args(
@@ -260,7 +298,9 @@ class _TestKeywordParserMixin:
         )
 
     async def test_post_empty(
-        self, make_federated_eida, fdsnws_error_content_type,
+        self,
+        make_federated_eida,
+        fdsnws_error_content_type,
     ):
         client, _, _ = await make_federated_eida(self.create_app())
 
@@ -298,8 +338,14 @@ class _TestCORSMixin:
     @pytest.mark.parametrize(
         "method,params_or_data",
         [
-            ("GET", {"foo": "bar"},),
-            ("POST", b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",),
+            (
+                "GET",
+                {"foo": "bar"},
+            ),
+            (
+                "POST",
+                b"foo=bar\nCH HASLI -- LHZ 2019-01-01 2019-01-05",
+            ),
         ],
     )
     async def test_get_cors_simple(
@@ -372,7 +418,8 @@ class _TestCommonServerConfig:
     """
 
     async def test_client_max_size(
-        self, make_federated_eida,
+        self,
+        make_federated_eida,
     ):
 
         # avoid large POST requests
@@ -442,7 +489,13 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
             ]
         }
 
@@ -577,9 +630,27 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
             ]
         }
 
@@ -717,7 +788,13 @@ class _TestCommonServerConfig:
         }
         mocked_endpoints = {
             "example.com": [
-                (self.PATH_RESOURCE, "GET", web.Response(status=204,),),
+                (
+                    self.PATH_RESOURCE,
+                    "GET",
+                    web.Response(
+                        status=204,
+                    ),
+                ),
             ]
         }
 
