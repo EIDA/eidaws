@@ -7,7 +7,7 @@ def get_version(filename):
     from re import findall
 
     with open(filename) as f:
-        metadata = dict(findall("__([a-z]+)__ = '([^']+)'", f.read()))
+        metadata = dict(findall('__([a-z]+)__ = "([^"]+)"', f.read()))
     return metadata["version"]
 
 
