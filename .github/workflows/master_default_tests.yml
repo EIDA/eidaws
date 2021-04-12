@@ -1,0 +1,54 @@
+# This workflow runs
+#   - anytime new commits are added to the master branch
+#   - pull requests with target "master" are supplied.
+#
+# It simply runs code linting and executes unittest.
+
+name: master_default_tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: psf/black@stable
+        with:
+          entrypoint: /usr/local/bin/black 
+          args: -l 79 --check --diff .
+
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        (cd eidaws.endpoint_proxy && python -m pip install -r requirements/test.txt)
+        (cd eidaws.federator && python -m pip install -r requirements/test.txt)
+        python -m pip install numpy
+        (cd eidaws.stationlite && python -m pip install -r requirements/test.txt)
+    - name: Test with pytest
+      run: |
+        pytest
