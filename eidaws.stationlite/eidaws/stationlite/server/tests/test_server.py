@@ -148,21 +148,29 @@ class TestStationLiteServer:
     def test_single_sncl_single_dc(
         self, client, service_args, content_type, method, params_or_data
     ):
+        def create_expected_response(service="dataselect"):
+            if service == "station":
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"",
+                ]
+            return [
+                create_url("eida.ethz.ch", service_args),
+                b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
+                b"",
+            ]
 
         req_kwargs = create_request_kwargs(
             method, params_or_data, **service_args
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
-        expected = [
-            create_url("eida.ethz.ch", service_args),
-            b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
-            b"",
-        ]
-
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == content_type("post")
-        assert b"\n".join(expected) == resp.data
+        assert (
+            b"\n".join(create_expected_response(**service_args)) == resp.data
+        )
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -191,22 +199,32 @@ class TestStationLiteServer:
     def test_multi_sncl_single_dc(
         self, client, service_args, content_type, method, params_or_data
     ):
+        def create_expected_response(service="dataselect"):
+            if service == "station":
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH DAVOX -- LHZ 2019-09-27T15:00:00",
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"",
+                ]
+
+            return [
+                create_url("eida.ethz.ch", service_args),
+                b"CH DAVOX -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
+                b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
+                b"",
+            ]
 
         req_kwargs = create_request_kwargs(
             method, params_or_data, **service_args
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
-        expected = [
-            create_url("eida.ethz.ch", service_args),
-            b"CH DAVOX -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
-            b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
-            b"",
-        ]
-
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == content_type("post")
-        assert b"\n".join(expected) == resp.data
+        assert (
+            b"\n".join(create_expected_response(**service_args)) == resp.data
+        )
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -235,24 +253,36 @@ class TestStationLiteServer:
     def test_multi_sncl_multi_dc(
         self, client, service_args, content_type, method, params_or_data
     ):
+        def create_expected_response(service="dataselect"):
+            if service == "station":
+                return [
+                    create_url("eida.bgr.de", service_args),
+                    b"GR WET -- LHZ 2007-03-29T00:00:00",
+                    b"",
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"",
+                ]
+
+            return [
+                create_url("eida.bgr.de", service_args),
+                b"GR WET -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
+                b"",
+                create_url("eida.ethz.ch", service_args),
+                b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
+                b"",
+            ]
 
         req_kwargs = create_request_kwargs(
             method, params_or_data, **service_args
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
-        expected = [
-            create_url("eida.bgr.de", service_args),
-            b"GR WET -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
-            b"",
-            create_url("eida.ethz.ch", service_args),
-            b"CH HASLI -- LHZ 2020-01-01T00:00:00 2020-01-02T00:00:00",
-            b"",
-        ]
-
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == content_type("post")
-        assert b"\n".join(expected) == resp.data
+        assert (
+            b"\n".join(create_expected_response(**service_args)) == resp.data
+        )
 
     @pytest.mark.parametrize(
         "method,params_or_data",
@@ -397,6 +427,20 @@ class TestStationLiteServer:
     def test_vnets(
         self, client, content_type, service_args, method, params_or_data
     ):
+        def create_expected_response(service="dataselect"):
+            if service == "station":
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH GRIMS -- HHZ 2011-11-09T00:00:00 2015-10-30T10:50:00",
+                    b"",
+                ]
+
+            return [
+                create_url("eida.ethz.ch", service_args),
+                b"CH GRIMS -- HHZ 2012-01-01T00:00:00 2012-01-02T00:00:00",
+                b"",
+            ]
+
         req_kwargs = create_request_kwargs(
             method,
             params_or_data,
@@ -404,14 +448,11 @@ class TestStationLiteServer:
         )
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
-        expected = [
-            create_url("eida.ethz.ch", service_args),
-            b"CH GRIMS -- HHZ 2012-01-01T00:00:00 2012-01-02T00:00:00",
-            b"",
-        ]
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == content_type("post")
-        assert b"\n".join(expected) == resp.data
+        assert (
+            b"\n".join(create_expected_response(**service_args)) == resp.data
+        )
 
     @pytest.mark.parametrize(
         "method,params_or_data",
