@@ -123,6 +123,7 @@ def find_streamepochs_and_routes(
     minlon=-180.0,
     maxlon=180.0,
     like_escape="/",
+    trim_to_stream_epoch=True,
 ):
     """
     Return routes for a given stream epoch.
@@ -144,6 +145,8 @@ def find_streamepochs_and_routes(
     :param float maxlon: Longitude smaller than or equal to the specified
         maximum
     :param str like_escape: Character used for the `SQL ESCAPE` statement
+    :param bool trim_to_stream_epoch: Indicates if resulting stream epochs
+        should be trimmed to the `stream_epoch`'s epoch (if possible)
     :return: List of :py:class:`~eidaws.utils.misc.Route` objects
     :rtype: list
     """
@@ -218,18 +221,17 @@ def find_streamepochs_and_routes(
         # NOTE(damb): Adjust epoch in case the ChannelEpoch is smaller/larger
         # than the RoutingEpoch (regarding time constraints); at least one
         # starttime is mandatory to be configured
-        starttime = max(
-            t
-            for t in (row[2], row[6], sql_stream_epoch.starttime)
-            if t is not None
-        )
+        starttimes = [row[2], row[6]]
+        endtimes = [row[3], row[7]]
+
+        if trim_to_stream_epoch:
+            starttimes.append(sql_stream_epoch.starttime)
+            endtimes.append(sql_stream_epoch.endtime)
+
+        starttime = max(t for t in starttimes if t is not None)
 
         try:
-            endtime = min(
-                t
-                for t in (row[3], row[7], sql_stream_epoch.endtime)
-                if t is not None
-            )
+            endtime = min(t for t in endtimes if t is not None)
         except ValueError:
             endtime = None
 

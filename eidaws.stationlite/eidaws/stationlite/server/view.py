@@ -134,6 +134,9 @@ class StationLiteQueryResource(Resource):
 
         stream_epochs.extend(vnet_stream_epochs)
 
+        # NOTE(damb): Do not trim to query epoch if service == "station"
+        trim_to_stream_epoch = args["service"] != "station"
+
         # collect results for each stream epoch
         routes = []
         for stream_epoch in stream_epochs:
@@ -150,13 +153,15 @@ class StationLiteQueryResource(Resource):
                 maxlat=args["maxlatitude"],
                 minlon=args["minlongitude"],
                 maxlon=args["maxlongitude"],
+                trim_to_stream_epoch=trim_to_stream_epoch,
             )
 
             # adjust stream epochs regarding time constraints
-            for url, streams in _routes:
-                streams.modify_with_temporal_constraints(
-                    start=stream_epoch.starttime, end=stream_epoch.endtime
-                )
+            if trim_to_stream_epoch:
+                for url, streams in _routes:
+                    streams.modify_with_temporal_constraints(
+                        start=stream_epoch.starttime, end=stream_epoch.endtime
+                    )
 
             routes.extend(_routes)
 
