@@ -358,10 +358,7 @@ class TestStationLiteServer:
 
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == content_type("post")
-        assert (
-            b"\n".join(create_expected_response(access=access_args["access"]))
-            == resp.data
-        )
+        assert b"\n".join(create_expected_response(**access_args)) == resp.data
 
     @pytest.mark.parametrize(
         "method,params_or_data",
