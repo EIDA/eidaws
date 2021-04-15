@@ -774,7 +774,7 @@ class StreamEpochsHandler:
     def __str__(self):
         return "\n".join(str(stream_epochs) for stream_epochs in self)
 
-    def __stream_id_to_dict(self, stream_id, sep="."):
-        # TODO(damb): configure separator globally (i.e. in settings module)
+    @staticmethod
+    def __stream_id_to_dict(stream_id, sep="."):
         net, sta, loc, cha = stream_id.split(sep)
         return dict(network=net, station=sta, location=loc, channel=cha)
