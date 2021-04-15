@@ -762,10 +762,10 @@ class StreamEpochsHandler:
 
         The iterator emerges objects of type :py:class:`StreamEpochs`.
         """
-        for stream_id, stream_epochs in self.d.items():
+        for stream_id, epochs in self.d.items():
             yield StreamEpochs.from_stream(
                 Stream(**self._stream_id_to_dict(stream_id)),
-                epochs=stream_epochs,
+                epochs=epochs,
             )
 
     def __repr__(self):
