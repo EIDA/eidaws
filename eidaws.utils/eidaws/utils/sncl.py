@@ -182,6 +182,9 @@ class Stream(
     def __lt__(self, other):
         return self.id() < other.id()
 
+    def __hash__(self):
+        return hash(self.id())
+
     def __repr__(self):
         return "<Stream(net=%r, sta=%r, loc=%r, cha=%r)>" % (
             self.network,
@@ -427,6 +430,9 @@ class StreamEpoch(
                 return True
             return self.starttime < other.starttime
         return self.stream < other.stream
+
+    def __hash__(self):
+        return hash((self.stream, self.starttime, self.endtime))
 
     def __repr__(self):
         return "<StreamEpoch(stream=%r, start=%r, end=%r)>" % (
