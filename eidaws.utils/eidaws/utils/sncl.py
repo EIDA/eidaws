@@ -718,7 +718,7 @@ class StreamEpochsHandler:
         #    ---..----..----
         for stream_id, epochs in self.d.items():
             se = StreamEpochs.from_stream(
-                Stream(**self.__stream_id_to_dict(stream_id)), epochs=epochs
+                Stream(**self._stream_id_to_dict(stream_id)), epochs=epochs
             )
             se.modify_with_temporal_constraints(start, end)
 
@@ -764,7 +764,7 @@ class StreamEpochsHandler:
         """
         for stream_id, stream_epochs in self.d.items():
             yield StreamEpochs.from_stream(
-                Stream(**self.__stream_id_to_dict(stream_id)),
+                Stream(**self._stream_id_to_dict(stream_id)),
                 epochs=stream_epochs,
             )
 
@@ -775,6 +775,6 @@ class StreamEpochsHandler:
         return "\n".join(str(stream_epochs) for stream_epochs in self)
 
     @staticmethod
-    def __stream_id_to_dict(stream_id, sep="."):
+    def _stream_id_to_dict(stream_id, sep="."):
         net, sta, loc, cha = stream_id.split(sep)
         return dict(network=net, station=sta, location=loc, channel=cha)
