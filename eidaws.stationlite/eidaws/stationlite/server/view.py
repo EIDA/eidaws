@@ -123,16 +123,23 @@ class StationLiteQueryResource(Resource):
 
     def _process_request(self, args, stream_epochs):
         # resolve virtual network stream epochs
-        vnet_stream_epochs = []
+        vnet_stream_epochs_found = []
+        vnet_stream_epochs_resolved = []
         for stream_epoch in stream_epochs:
             self.logger.debug(f"Resolving {stream_epoch!r} regarding VNET.")
-            vnet_stream_epochs.extend(
-                resolve_vnetwork(db.session, stream_epoch)
-            )
+            resolved = resolve_vnetwork(db.session, stream_epoch)
+            if resolved:
+                vnet_stream_epochs_resolved.extend(resolved)
+                vnet_stream_epochs_found.append(stream_epoch)
 
-        self.logger.debug(f"Stream epochs from VNETs: {vnet_stream_epochs!r}")
+        self.logger.debug(
+            f"Stream epochs from VNETs: {vnet_stream_epochs_resolved!r}"
+        )
 
-        stream_epochs.extend(vnet_stream_epochs)
+        for vnet_stream_epoch in vnet_stream_epochs_found:
+            stream_epochs.remove(vnet_stream_epoch)
+
+        stream_epochs.extend(vnet_stream_epochs_resolved)
 
         # NOTE(damb): Do not trim to query epoch if service == "station"
         trim_to_stream_epoch = args["service"] != "station"
