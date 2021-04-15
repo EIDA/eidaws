@@ -119,6 +119,7 @@ class StationLiteSchema(Schema):
         missing=None,
         allow_none=True,
     )
+    merge = FDSNWSBool(missing="true")
     # geographic (rectangular spatial) options
     # XXX(damb): Default values are defined and assigned within merge_keys ()
     minlatitude = Latitude(missing=-90.0)
@@ -172,6 +173,14 @@ class StationLiteSchema(Schema):
         if data["level"] != "channel" and data["service"] != "station":
             raise ValidationError(
                 f"Bad Request: Invalid 'level' value {data['level']!r} "
+                f"for service {data['service']!r}."
+            )
+
+    @validates_schema
+    def validate_merge(self, data, **kwargs):
+        if not data["merge"] and data["service"] != "station":
+            raise ValidationError(
+                f"Bad Request: Invalid 'merge' value {data['merge']!r} "
                 f"for service {data['service']!r}."
             )
 
