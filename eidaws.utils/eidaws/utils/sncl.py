@@ -106,6 +106,15 @@ def fdsnws_to_sql_wildcards(
     )
 
 
+def generate_stream_epochs(stream_epochs_handler, merge_epochs=True):
+    for stream_id, epochs in stream_epochs_handler.d.items():
+        yield StreamEpochs.from_stream(
+            Stream(**StreamEpochsHandler._stream_id_to_dict(stream_id)),
+            epochs,
+            merge_epochs,
+        )
+
+
 # ----------------------------------------------------------------------------
 @functools.total_ordering
 class Stream(
@@ -457,12 +466,16 @@ class StreamEpochs:
     objects.
 
     Uses `IntervalTree <https://github.com/chaimleib/intervaltree>`_.
-
-    .. note:: Intervals within the tree are automatically merged.
     """
 
     def __init__(
-        self, network="*", station="*", location="*", channel="*", epochs=[]
+        self,
+        network="*",
+        station="*",
+        location="*",
+        channel="*",
+        epochs=[],
+        merge_epochs=True,
     ):
         """
         :param str network: Network code
@@ -470,8 +483,9 @@ class StreamEpochs:
         :param str location: Location code
         :param str channel: Channel code
         :param list epochs: Epochs is a list of (t1, t2) tuples, with t1 and t2
-            of type datetime.datetime. It can contain overlaps. The intervals
-            are merged within the constructor.
+            of type datetime.datetime. It can contain overlaps.
+        :param bool merge_epochs: If `True` the intervals are merged within the
+        constructor.
         """
 
         self._stream = Stream(
@@ -486,8 +500,9 @@ class StreamEpochs:
         except TypeError:
             self.epochs = Epochs()
 
-        # intervals are merged even if they are only end-to-end adjacent
-        self.epochs.merge_overlaps(strict=False)
+        if merge_epochs:
+            # intervals are merged even if they are only end-to-end adjacent
+            self.epochs.merge_overlaps(strict=False)
 
     @classmethod
     def from_stream_epoch(cls, stream_epoch):
@@ -503,7 +518,7 @@ class StreamEpochs:
         )
 
     @classmethod
-    def from_stream(cls, stream, epochs=[]):
+    def from_stream(cls, stream, epochs=[], merge_epochs=True):
         """
         Creates a :py:class:`StreamEpochs` object from :py:class:`Stream` and a
         list of :code:`epochs`.
@@ -514,6 +529,7 @@ class StreamEpochs:
             location=stream.location,
             channel=stream.channel,
             epochs=epochs,
+            merge_epochs=merge_epochs,
         )
 
     def id(self, sep="."):
@@ -524,7 +540,7 @@ class StreamEpochs:
         """
         return self._stream.id(sep)
 
-    def merge(self, epochs):
+    def merge(self, epochs=[]):
         """
         Merge an epoch list into an existing :py:class:`StreamEpochs` object.
 
