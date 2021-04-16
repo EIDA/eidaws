@@ -229,6 +229,31 @@ When configuring logging by means of a logging configuration file (see also the
 getting log messages.
 
 
+Utilities
+=========
+
+Keep caches hot - ``eida-crawl-fdsnws-station``
+--------------------------------------------------
+
+``eida-crawl-fdsnws-station`` is a crawler based on `eidaws-stationlite
+<../eidaws.stationlite/README.rst>`_ which systematically crawls
+``fdsnws-station`` metadata. It's main purpose is keeping caches hot :fire:
+such that federated ``fdsnws-station`` metadata requests can be served
+efficiently from caches. It's full power comes into play when
+``eida-federator-station-text|xml`` services are deployed together with a HTTP
+reverse caching proxy (see also e.g. `eidaws-federator-deployment
+<https://github.com/EIDA/eidaws-federator-deployment>`_).
+
+**Usage**:
+
+Additional information and help is provided when invoking
+``eida-crawl-fdsnws-station`` with the ``-h|--help`` flag:
+
+.. code::
+
+  $ eida-crawl-fdsnws-station -h
+
+
 Testing
 =======
 
@@ -254,9 +279,12 @@ Limitations
 
 - AAI of both *fdsnws-dataselect* and *fdsnws-availability* resources is not
   implemented yet
-- A ``fdsnws-station-xml&level=channel|response`` metadata request including
-  only a single datacenter might be quite imperformant compared to a direct
-  request to the corresponding datacenter.
+- If caches are cold ``fdsnws-station-xml&level=channel|response`` metadata
+  requests including only a single datacenter might be quite imperformant
+  compared to a direct request to the corresponding datacenter. However, this
+  limitation can be circumented if metadata is served from caches. For further
+  information on how to keep caches hot, please refer to
+  `eida-crawl-fdsnws-station <#keep-caches-hot---eida-crawl-fdsnws-station>`_.
 - In certain cases, HTTP response codes might be misleading due to limitations
   of the `FDSN webservice <https://www.fdsn.org/webservices/>`_ specification
   not fully prepared to operate in a distributed environment.
