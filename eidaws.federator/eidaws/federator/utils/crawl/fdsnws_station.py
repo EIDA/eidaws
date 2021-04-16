@@ -166,7 +166,6 @@ class CrawlFDSNWSStationApp:
                             )
 
                             stream_epochs_received = True
-                        
 
             if stream_epochs_received:
                 self.logger.info("Finished crawling successfully")
@@ -237,19 +236,51 @@ class CrawlFDSNWSStationApp:
 
                 return stream_epochs
 
-            async with session.get(url, params=params) as resp:
-                self.logger.debug(
-                    f"Response: {resp.reason}: resp.status={resp.status}, "
-                    f"resp.request_info={resp.request_info}, "
-                    f"resp.url={resp.url}, resp.headers={resp.headers}"
+            try:
+                async with session.get(url, params=params) as resp:
+                    resp.raise_for_status()
+                    resp_status = resp.status
+
+                    msg = (
+                        f"Response: {resp.reason}: resp.status={resp.status}, "
+                        f"resp.request_info={resp.request_info}, "
+                        f"resp.url={resp.url}, resp.headers={resp.headers}"
+                    )
+
+                    if resp_status in FDSNWS_NO_CONTENT_CODES:
+                        self.logger.info(msg)
+                        return []
+                    elif resp_status != 200:
+                        raise RoutingError(f"{resp}")
+
+                    self.logger.debug(msg)
+                    return _parse_stream_epochs(
+                        await resp.text(), domains=self.config["domain"]
+                    )
+
+            except aiohttp.ClientResponseError as err:
+                resp_status = err.status
+                msg = (
+                    f"Error while executing request: {err.message}: "
+                    f"error={type(err)}, resp.status={resp_status}, "
+                    f"resp.request_info={err.request_info}, "
+                    f"resp.headers={err.headers}"
                 )
 
-                if resp.status != 200:
-                    raise RoutingError(f"{resp}")
-
-                return _parse_stream_epochs(
-                    await resp.text(), domains=self.config["domain"]
+                if resp_status in FDSNWS_NO_CONTENT_CODES:
+                    self.logger.info(msg)
+                else:
+                    self.logger.warning(msg)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                resp_status = 503
+                msg = (
+                    f"Error while executing request: error={type(err)}, "
+                    f"url={url!r}, params={params!r}"
                 )
+                if isinstance(err, aiohttp.ClientOSError):
+                    msg += f", errno={err.errno}"
+
+                self.logger.warning(msg)
 
         url_routing = urljoin(
             self.config["routing_url"], EIDAWS_ROUTING_PATH_QUERY
