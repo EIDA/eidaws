@@ -244,7 +244,7 @@ efficiently from caches. It's full power comes into play when
 reverse caching proxy (see also e.g. `eidaws-federator-deployment
 <https://github.com/EIDA/eidaws-federator-deployment>`_).
 
-**Usage**:
+**Usage and Configuration**:
 
 Additional information and help is provided when invoking
 ``eida-crawl-fdsnws-station`` with the ``-h|--help`` flag:
@@ -252,6 +252,12 @@ Additional information and help is provided when invoking
 .. code::
 
   $ eida-crawl-fdsnws-station -h
+
+
+Besides of specifying configuration options at the application's CLI, the
+application also may be configuration by means of a configuration file. An
+exemplary fully documented configuration file is provided under
+``eidaws.federator/config/eidaws_crawl_station_config.yml.example``.
 
 
 Testing
