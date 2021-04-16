@@ -186,7 +186,9 @@ class StationLiteQueryResource(Resource):
                 for se in stream_epochs:
                     processed_routes[url].add(se)
 
-        self.logger.debug(f"StationLite routes (processed): {processed_routes}")
+        self.logger.debug(
+            f"StationLite routes (processed): {processed_routes}"
+        )
         # demux
         for url, stream_epochs_handler in processed_routes.items():
             if args["level"] in ("network", "station"):
