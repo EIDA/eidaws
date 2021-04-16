@@ -106,6 +106,15 @@ def fdsnws_to_sql_wildcards(
     )
 
 
+def generate_stream_epochs(stream_epochs_handler, merge_epochs=True):
+    for stream_id, epochs in stream_epochs_handler.d.items():
+        yield StreamEpochs.from_stream(
+            Stream(**StreamEpochsHandler._stream_id_to_dict(stream_id)),
+            epochs,
+            merge_epochs,
+        )
+
+
 # ----------------------------------------------------------------------------
 @functools.total_ordering
 class Stream(
@@ -181,6 +190,9 @@ class Stream(
 
     def __lt__(self, other):
         return self.id() < other.id()
+
+    def __hash__(self):
+        return hash(self.id())
 
     def __repr__(self):
         return "<Stream(net=%r, sta=%r, loc=%r, cha=%r)>" % (
@@ -428,6 +440,9 @@ class StreamEpoch(
             return self.starttime < other.starttime
         return self.stream < other.stream
 
+    def __hash__(self):
+        return hash((self.stream, self.starttime, self.endtime))
+
     def __repr__(self):
         return "<StreamEpoch(stream=%r, start=%r, end=%r)>" % (
             self.stream,
@@ -451,12 +466,16 @@ class StreamEpochs:
     objects.
 
     Uses `IntervalTree <https://github.com/chaimleib/intervaltree>`_.
-
-    .. note:: Intervals within the tree are automatically merged.
     """
 
     def __init__(
-        self, network="*", station="*", location="*", channel="*", epochs=[]
+        self,
+        network="*",
+        station="*",
+        location="*",
+        channel="*",
+        epochs=[],
+        merge_epochs=True,
     ):
         """
         :param str network: Network code
@@ -464,8 +483,9 @@ class StreamEpochs:
         :param str location: Location code
         :param str channel: Channel code
         :param list epochs: Epochs is a list of (t1, t2) tuples, with t1 and t2
-            of type datetime.datetime. It can contain overlaps. The intervals
-            are merged within the constructor.
+            of type datetime.datetime. It can contain overlaps.
+        :param bool merge_epochs: If `True` the intervals are merged within the
+        constructor.
         """
 
         self._stream = Stream(
@@ -480,8 +500,9 @@ class StreamEpochs:
         except TypeError:
             self.epochs = Epochs()
 
-        # intervals are merged even if they are only end-to-end adjacent
-        self.epochs.merge_overlaps(strict=False)
+        if merge_epochs:
+            # intervals are merged even if they are only end-to-end adjacent
+            self.epochs.merge_overlaps(strict=False)
 
     @classmethod
     def from_stream_epoch(cls, stream_epoch):
@@ -497,7 +518,7 @@ class StreamEpochs:
         )
 
     @classmethod
-    def from_stream(cls, stream, epochs=[]):
+    def from_stream(cls, stream, epochs=[], merge_epochs=True):
         """
         Creates a :py:class:`StreamEpochs` object from :py:class:`Stream` and a
         list of :code:`epochs`.
@@ -508,6 +529,7 @@ class StreamEpochs:
             location=stream.location,
             channel=stream.channel,
             epochs=epochs,
+            merge_epochs=merge_epochs,
         )
 
     def id(self, sep="."):
@@ -518,7 +540,7 @@ class StreamEpochs:
         """
         return self._stream.id(sep)
 
-    def merge(self, epochs):
+    def merge(self, epochs=[]):
         """
         Merge an epoch list into an existing :py:class:`StreamEpochs` object.
 
@@ -712,7 +734,7 @@ class StreamEpochsHandler:
         #    ---..----..----
         for stream_id, epochs in self.d.items():
             se = StreamEpochs.from_stream(
-                Stream(**self.__stream_id_to_dict(stream_id)), epochs=epochs
+                Stream(**self._stream_id_to_dict(stream_id)), epochs=epochs
             )
             se.modify_with_temporal_constraints(start, end)
 
@@ -756,10 +778,10 @@ class StreamEpochsHandler:
 
         The iterator emerges objects of type :py:class:`StreamEpochs`.
         """
-        for stream_id, stream_epochs in self.d.items():
+        for stream_id, epochs in self.d.items():
             yield StreamEpochs.from_stream(
-                Stream(**self.__stream_id_to_dict(stream_id)),
-                epochs=stream_epochs,
+                Stream(**self._stream_id_to_dict(stream_id)),
+                epochs=epochs,
             )
 
     def __repr__(self):
@@ -768,7 +790,7 @@ class StreamEpochsHandler:
     def __str__(self):
         return "\n".join(str(stream_epochs) for stream_epochs in self)
 
-    def __stream_id_to_dict(self, stream_id, sep="."):
-        # TODO(damb): configure separator globally (i.e. in settings module)
+    @staticmethod
+    def _stream_id_to_dict(stream_id, sep="."):
         net, sta, loc, cha = stream_id.split(sep)
         return dict(network=net, station=sta, location=loc, channel=cha)

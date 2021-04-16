@@ -215,7 +215,6 @@ def find_streamepochs_and_routes(
         )
 
     routes = collections.defaultdict(StreamEpochsHandler)
-
     for row in query.all():
         # print('Query response: {0!r}'.format(row))
         # NOTE(damb): Adjust epoch in case the ChannelEpoch is smaller/larger

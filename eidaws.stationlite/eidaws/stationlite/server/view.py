@@ -18,7 +18,11 @@ from eidaws.stationlite.server.parser import (
 )
 from eidaws.stationlite.server.strict import with_strict_args
 from eidaws.stationlite.version import __version__
-from eidaws.utils.sncl import StreamEpochsHandler, StreamEpoch
+from eidaws.utils.sncl import (
+    generate_stream_epochs,
+    StreamEpochsHandler,
+    StreamEpoch,
+)
 from eidaws.utils.settings import (
     EIDAWS_ROUTING_PATH_QUERY,
     FDSNWS_DEFAULT_NO_CONTENT_ERROR_CODE,
@@ -123,16 +127,23 @@ class StationLiteQueryResource(Resource):
 
     def _process_request(self, args, stream_epochs):
         # resolve virtual network stream epochs
-        vnet_stream_epochs = []
+        vnet_stream_epochs_found = []
+        vnet_stream_epochs_resolved = []
         for stream_epoch in stream_epochs:
             self.logger.debug(f"Resolving {stream_epoch!r} regarding VNET.")
-            vnet_stream_epochs.extend(
-                resolve_vnetwork(db.session, stream_epoch)
-            )
+            resolved = resolve_vnetwork(db.session, stream_epoch)
+            if resolved:
+                vnet_stream_epochs_resolved.extend(resolved)
+                vnet_stream_epochs_found.append(stream_epoch)
 
-        self.logger.debug(f"Stream epochs from VNETs: {vnet_stream_epochs!r}")
+        self.logger.debug(
+            f"Stream epochs from VNETs: {vnet_stream_epochs_resolved!r}"
+        )
 
-        stream_epochs.extend(vnet_stream_epochs)
+        for vnet_stream_epoch in vnet_stream_epochs_found:
+            stream_epochs.remove(vnet_stream_epoch)
+
+        stream_epochs.extend(vnet_stream_epochs_resolved)
 
         # NOTE(damb): Do not trim to query epoch if service == "station"
         trim_to_stream_epoch = args["service"] != "station"
@@ -166,27 +177,38 @@ class StationLiteQueryResource(Resource):
             routes.extend(_routes)
 
         self.logger.debug(f"StationLite routes: {routes}")
-        # merge stream epochs for each route
-        merged_routes = collections.defaultdict(StreamEpochsHandler)
-        for url, stream_epochs in routes:
-            merged_routes[url].merge(stream_epochs)
+        # merge routes
+        processed_routes = collections.defaultdict(StreamEpochsHandler)
+        for url, stream_epochs_handler in routes:
+            for stream_epochs in generate_stream_epochs(
+                stream_epochs_handler, merge_epochs=args["merge"]
+            ):
+                for se in stream_epochs:
+                    processed_routes[url].add(se)
 
-        self.logger.debug(f"StationLite routes (merged): {merged_routes}")
-
-        for url, stream_epochs in merged_routes.items():
+        self.logger.debug(
+            f"StationLite routes (processed): {processed_routes}"
+        )
+        # demux
+        for url, stream_epochs_handler in processed_routes.items():
             if args["level"] in ("network", "station"):
-                merged_routes[url] = [
-                    StreamEpoch.from_streamepochs(ses) for ses in stream_epochs
+                processed_routes[url] = [
+                    StreamEpoch.from_streamepochs(stream_epochs)
+                    for stream_epochs in stream_epochs_handler
                 ]
             else:
-                merged_routes[url] = [
-                    se for ses in stream_epochs for se in ses
+                processed_routes[url] = [
+                    stream_epoch
+                    for stream_epochs in generate_stream_epochs(
+                        stream_epochs_handler, merge_epochs=args["merge"]
+                    )
+                    for stream_epoch in stream_epochs
                 ]
 
         # sort response
         routes = [
             Route(url=url, stream_epochs=sorted(stream_epochs))
-            for url, stream_epochs in merged_routes.items()
+            for url, stream_epochs in processed_routes.items()
         ]
 
         # sort additionally by URL

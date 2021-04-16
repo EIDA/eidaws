@@ -28,7 +28,7 @@
 #   # GFZ
 #   - http://geofon.gfz-potsdam.de/eidaws/routing/1/localconfig
 #   # RESIF
-#   - http://ws.resif.fr/eida_routing.xml
+#   - http://ws.resif.fr/routing/eida_routing.xml
 #   # INGV
 #   - http://webservices.ingv.it/eidaws/routing/1/localconfig
 #   # ETHZ
