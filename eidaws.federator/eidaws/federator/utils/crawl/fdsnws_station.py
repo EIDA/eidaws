@@ -134,6 +134,7 @@ class CrawlFDSNWSStationApp:
                 limit=self.config["worker_pool_size"]
             )
             timeout = aiohttp.ClientTimeout(total=self.config["timeout"])
+            stream_epochs_received = False
             async with aiohttp.ClientSession(
                 connector=connector, headers=self._HEADERS
             ) as session:
@@ -154,14 +155,23 @@ class CrawlFDSNWSStationApp:
                         self.logger.debug(
                             f"Received {len(stream_epochs)} stream epoch(s)"
                         )
-                        self.logger.info(f"Start crawling (level={level})")
-                        await self._crawl(
-                            pool,
-                            session,
-                            stream_epochs,
-                            level,
-                            timeout=timeout,
-                        )
+                        if stream_epochs:
+                            self.logger.info(f"Start crawling (level={level})")
+                            await self._crawl(
+                                pool,
+                                session,
+                                stream_epochs,
+                                level,
+                                timeout=timeout,
+                            )
+
+                            stream_epochs_received = True
+                        
+
+            if stream_epochs_received:
+                self.logger.info("Finished crawling successfully")
+            else:
+                self.logger.info("Nothing to do")
 
         except Error as err:
             self.logger.error(err)
