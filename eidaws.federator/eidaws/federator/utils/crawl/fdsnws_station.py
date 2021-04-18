@@ -152,11 +152,11 @@ class CrawlFDSNWSStationApp:
                             level,
                         )
 
-                        self.logger.debug(
-                            f"Received {len(stream_epochs)} stream epoch(s)"
-                        )
                         if stream_epochs:
-                            self.logger.info(f"Start crawling (level={level})")
+                            self.logger.debug(
+                                f"Received {len(stream_epochs)} stream "
+                                f"epoch(s). Start crawling (level={level})"
+                            )
                             await self._crawl(
                                 pool,
                                 session,
@@ -166,6 +166,8 @@ class CrawlFDSNWSStationApp:
                             )
 
                             stream_epochs_received = True
+                        else:
+                            self.logger.debug("No stream epochs received")
 
             if stream_epochs_received:
                 self.logger.info("Finished crawling successfully")
@@ -282,6 +284,8 @@ class CrawlFDSNWSStationApp:
 
                 self.logger.warning(msg)
 
+            return None
+
         url_routing = urljoin(
             self.config["routing_url"], EIDAWS_ROUTING_PATH_QUERY
         )
@@ -295,8 +299,11 @@ class CrawlFDSNWSStationApp:
         }
         stream_epochs = await _request(url_routing, params)
 
-        # remove duplicates - maintain order
-        return list(dict.fromkeys(stream_epochs))
+        if stream_epochs is not None:
+            # remove duplicates - maintain order
+            return list(dict.fromkeys(stream_epochs))
+
+        return None
 
     @with_exception_handling(ignore_runtime_exception=False)
     async def _request_worker(
