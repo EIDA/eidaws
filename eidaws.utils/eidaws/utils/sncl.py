@@ -714,7 +714,9 @@ class StreamEpochsHandler:
         if stream_epochs:
             self.merge(stream_epochs)
 
-    def modify_with_temporal_constraints(self, start=None, end=None):
+    def modify_with_temporal_constraints(
+        self, start=None, end=None, merge_epochs=True
+    ):
         """
         Modify epochs by performing a real intersection.
 
@@ -734,7 +736,9 @@ class StreamEpochsHandler:
         #    ---..----..----
         for stream_id, epochs in self.d.items():
             se = StreamEpochs.from_stream(
-                Stream(**self._stream_id_to_dict(stream_id)), epochs=epochs
+                Stream(**self._stream_id_to_dict(stream_id)),
+                epochs=epochs,
+                merge_epochs=merge_epochs,
             )
             se.modify_with_temporal_constraints(start, end)
 
