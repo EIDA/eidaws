@@ -744,6 +744,33 @@ class StreamEpochsHandler:
 
             self.d[se.id()] = se.epochs
 
+    def canonicalize_epochs(
+        self,
+        start=None,
+        end=None,
+        canonicalization_offset=datetime.timedelta(microseconds=1),
+    ):
+
+        for stream_id, epochs in self.d.items():
+            canonicalized = []
+            for epoch in epochs:
+                _start = epoch.begin
+                _end = epoch.end
+                if start is None or start != _start:
+                    _start += canonicalization_offset
+                if _end not in (None, datetime.datetime.max) and (
+                    end is None or end != _end
+                ):
+                    _end -= canonicalization_offset
+
+                if _start == _end:
+                    # skip if original epoch was too short
+                    continue
+
+                canonicalized.append((_start, _end))
+
+            self.d[stream_id] = Epochs.from_tuples(canonicalized)
+
     def add(self, other):
         """
         Add ``other`` to :py:class:`StreamEpochsHandler` without merging

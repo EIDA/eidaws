@@ -145,8 +145,10 @@ class StationLiteQueryResource(Resource):
 
         stream_epochs.extend(vnet_stream_epochs_resolved)
 
-        # NOTE(damb): Do not trim to query epoch if service == "station"
-        trim_to_stream_epoch = args["service"] != "station"
+        # NOTE(damb): Do neither merge epochs nor trim to query epoch if
+        # service == "station"
+        merge_epochs = trim_to_stream_epoch = args["service"] != "station"
+        canonicalize_epochs = args["service"] == "station"
 
         # collect results for each stream epoch
         routes = []
@@ -167,21 +169,28 @@ class StationLiteQueryResource(Resource):
                 trim_to_stream_epoch=trim_to_stream_epoch,
             )
 
-            # adjust stream epochs regarding time constraints
             if trim_to_stream_epoch:
-                for url, streams in _routes:
-                    streams.modify_with_temporal_constraints(
+                # adjust stream epochs regarding time constraints
+                for url, stream_epochs_handler in _routes:
+                    stream_epochs_handler.modify_with_temporal_constraints(
+                        start=stream_epoch.starttime, end=stream_epoch.endtime
+                    )
+            elif canonicalize_epochs:
+                # canonicalize epochs
+                for url, stream_epochs_handler in _routes:
+                    stream_epochs_handler.canonicalize_epochs(
                         start=stream_epoch.starttime, end=stream_epoch.endtime
                     )
 
             routes.extend(_routes)
 
         self.logger.debug(f"StationLite routes: {routes}")
+
         # merge routes
         processed_routes = collections.defaultdict(StreamEpochsHandler)
         for url, stream_epochs_handler in routes:
             for stream_epochs in generate_stream_epochs(
-                stream_epochs_handler, merge_epochs=args["merge"]
+                stream_epochs_handler, merge_epochs=merge_epochs
             ):
                 for se in stream_epochs:
                     processed_routes[url].add(se)
@@ -200,7 +209,7 @@ class StationLiteQueryResource(Resource):
                 processed_routes[url] = [
                     stream_epoch
                     for stream_epochs in generate_stream_epochs(
-                        stream_epochs_handler, merge_epochs=args["merge"]
+                        stream_epochs_handler, merge_epochs=merge_epochs
                     )
                     for stream_epoch in stream_epochs
                 ]
