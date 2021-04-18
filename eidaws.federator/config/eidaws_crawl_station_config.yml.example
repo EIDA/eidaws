@@ -31,12 +31,6 @@
 # federator-url: http://localhost:80
 #
 # ----
-# Defines whether to crawl epochs fully split i.e. as defined by
-# fdsnws-station, too. By default only merged epochs are crawled.
-#
-# original-epochs: False
-#
-# ----
 # Restrict crawling to the domains specified. By default all domains are
 # crawled.
 #

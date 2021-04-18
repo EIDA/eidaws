@@ -292,12 +292,8 @@ class CrawlFDSNWSStationApp:
             "channel": cha_codes,
             "level": level,
             "service": "station",
-            # "merge": "true",
         }
         stream_epochs = await _request(url_routing, params)
-        if self.config["original_epochs"]:
-            params["merge"] = "false"
-            stream_epochs.extend(await _request(url_routing, params))
 
         # remove duplicates - maintain order
         return list(dict.fromkeys(stream_epochs))
@@ -494,17 +490,6 @@ class CrawlFDSNWSStationApp:
             dest="federator_url",
             default=FED_CRAWL_STATION_DEFAULT_URL_FED,
             help=("eidaws-federator URL (default: %(default)s)."),
-        )
-        parser.add_argument(
-            "--original-epochs",
-            action="store_true",
-            dest="original_epochs",
-            default=FED_CRAWL_STATION_DEFAULT_ORIGINAL_EPOCHS,
-            help=(
-                "Also crawl epochs fully split i.e. as defined by "
-                "fdsnws-station. By default only merged epochs "
-                "are crawled."
-            ),
         )
         parser.add_argument(
             "--domain",
