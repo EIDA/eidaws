@@ -259,7 +259,7 @@ class TestFDSNStationTextServer(
             ),
         ],
     )
-    async def test_single_sncl_level_station(
+    async def test_single_sncl_level_channel(
         self,
         server_config,
         tester,
