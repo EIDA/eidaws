@@ -2,6 +2,7 @@
 
 import asyncio
 from eidaws.federator.utils.httperror import FDSNHTTPError
+from eidaws.federator.utils.misc import create_job_context
 from eidaws.federator.utils.process import group_routes_by, SortedResponse
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.worker import (
@@ -45,7 +46,11 @@ class AvailabilityWorker(NetworkLevelMixin, BaseWorker):
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                context={"logger_ctx": self.create_job_context(route, _route)},
+                context={
+                    "logger_ctx": create_job_context(
+                        self.request, parent_ctx=context.get("logger_ctx")
+                    )
+                },
                 **req_kwargs,
             )
             for _route in route
@@ -146,7 +151,7 @@ class AvailabilityRequestProcessor(SortedResponse):
         _sorted = sorted(grouped_routes)
         for priority, net in enumerate(_sorted):
             _routes = grouped_routes[net]
-            ctx = {"logger_ctx": self.create_job_context(_routes)}
+            ctx = {"logger_ctx": create_job_context(self.request)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, priority={priority}, "
                 f"network={net!r}, route={_routes!r}"

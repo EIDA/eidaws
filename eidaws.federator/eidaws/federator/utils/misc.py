@@ -9,7 +9,6 @@ import logging.handlers  # needed for handlers defined in logging.conf
 import uuid
 
 from aiohttp import web, TCPConnector
-from hashlib import md5
 
 from eidaws.federator.settings import (
     FED_BASE_ID,
@@ -184,10 +183,10 @@ class HelperPOSTRequest:
 
 
 # ----------------------------------------------------------------------------
-def route_to_uuid(route):
-    h = md5(str(route).encode("utf-8"))
-    return uuid.UUID(bytes=h.digest())
+def create_job_context(request, parent_ctx=None):
+    if parent_ctx is None:
+        return [request, uuid.uuid4()]
 
-
-def create_job_context(request, *routes):
-    return [request] + [route_to_uuid(route) for route in routes]
+    ctx = parent_ctx[:]
+    ctx.append(uuid.uuid4())
+    return ctx

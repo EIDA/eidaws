@@ -20,7 +20,6 @@ from eidaws.federator.utils.misc import (
 )
 from eidaws.federator.utils.request import FdsnRequestHandler
 from eidaws.federator.utils.tempfile import AioSpooledTemporaryFile
-from eidaws.federator.utils.misc import create_job_context
 from eidaws.utils.error import ErrorWithTraceback
 from eidaws.utils.misc import (
     _callable_or_raise,
@@ -192,9 +191,6 @@ class BaseWorker(ClientRetryBudgetMixin, ConfigMixin):
         """
         Template coro intented to be called when finializing a job.
         """
-
-    def create_job_context(self, *routes):
-        return create_job_context(self.request, *routes)
 
     def _log_request(self, req_handler, method, logger=None):
         logger = logger or self.logger
