@@ -123,6 +123,11 @@
 # timeout: 10
 #
 # ----
+# Defines if stream epochs are sorted alphanumerically before crawling.
+#
+# sorted: False
+#
+# ----
 # Absolute path to a process ID locking file in order to prevent from having
 # multiple crawling processes running concurrently.
 #

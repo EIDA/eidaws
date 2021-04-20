@@ -8,6 +8,7 @@ import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
 import os
+import random
 import re
 import sys
 import traceback
@@ -39,6 +40,7 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_PATH_LOGGING_CONF,
     FED_CRAWL_STATION_DEFAULT_NUM_WORKERS,
     FED_CRAWL_STATION_DEFAULT_TIMEOUT,
+    FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -301,7 +303,11 @@ class CrawlFDSNWSStationApp:
 
         if stream_epochs is not None:
             # remove duplicates - maintain order
-            return list(dict.fromkeys(stream_epochs))
+            retval = list(dict.fromkeys(stream_epochs))
+            if not self.config["sorted"]:
+                random.shuffle(retval)
+
+            return retval
 
         return None
 
@@ -509,7 +515,6 @@ class CrawlFDSNWSStationApp:
                 "to. By default all domains are crawled."
             ),
         )
-
         parser.add_argument(
             "--network",
             nargs="+",
@@ -602,6 +607,13 @@ class CrawlFDSNWSStationApp:
             help="Total request timeout in seconds for a single request "
             "(including connection establishment, request sending and "
             "response reading) while crawling (default: %(default)s).",
+        )
+        parser.add_argument(
+            "--sorted",
+            action="store_true",
+            default=FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
+            help="Keep stream epochs alphanumerically sorted when crawling "
+            "(default: %(default)s).",
         )
         parser.add_argument(
             "-P",
