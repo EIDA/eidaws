@@ -21,6 +21,7 @@ from eidaws.federator.utils.worker import (
     BaseWorker,
     NetworkLevelMixin,
 )
+from eidaws.federator.utils.misc import create_job_context
 from eidaws.utils.misc import make_context_logger
 from eidaws.utils.settings import (
     STATIONXML_TAGS_NETWORK,
@@ -60,7 +61,9 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
         finally:
             context["logger"] = logger
 
-        logger.debug(f"Fetching data for network: {net!r}")
+        logger.debug(
+            f"Fetching data for network: {net!r} (num_routes={len(route)})"
+        )
 
         # TODO(damb): Currently, limiting the number of concurrent connection
         # is guaranteed by sharing an aiohttp.TCPConnector instance. Though,
@@ -79,7 +82,11 @@ class _StationXMLWorker(NetworkLevelMixin, BaseWorker):
                 _route,
                 parser_cb=self._parse_response,
                 req_method=req_method,
-                context={"logger_ctx": self.create_job_context(route, _route)},
+                context={
+                    "logger_ctx": create_job_context(
+                        self.request, parent_ctx=context.get("logger_ctx")
+                    )
+                },
                 **req_kwargs,
             )
             for _route in route
@@ -285,7 +292,7 @@ class StationXMLRequestProcessor(UnsortedResponse):
         """
         grouped_routes = group_routes_by(routes, key="network")
         for net, _routes in grouped_routes.items():
-            ctx = {"logger_ctx": self.create_job_context(_routes)}
+            ctx = {"logger_ctx": create_job_context(self.request)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, network={net}, "
                 f"route={_routes!r}"

@@ -338,9 +338,6 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
             # TODO(damb): Finalization prevents access logs being output
             await asyncio.shield(self.finalize())
 
-    def create_job_context(self, *routes):
-        return create_job_context(self.request, *routes)
-
     def make_stream_response(self, *args, **kwargs):
         """
         Factory for a :py:class:`aiohttp.web.StreamResponse`.
@@ -550,7 +547,7 @@ class UnsortedResponse(BaseRequestProcessor):
         Dispatch jobs onto ``pool``.
         """
         for route in routes:
-            ctx = {"logger_ctx": self.create_job_context(route)}
+            ctx = {"logger_ctx": create_job_context(self.request)}
             self.logger.debug(
                 f"Creating job: context={ctx!r}, route={route!r}"
             )
