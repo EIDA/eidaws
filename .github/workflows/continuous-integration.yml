@@ -4,7 +4,7 @@
 #
 # It simply runs code linting and executes unittest.
 
-name: master_default_tests
+name: continuous-integration
 
 on:
   push:

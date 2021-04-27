@@ -2,7 +2,7 @@
 Webservice implementations being part of EIDA NG
 ================================================
 
-.. image:: https://github.com/EIDA/eidaws/workflows/master_default_tests/badge.svg
+.. image:: https://github.com/EIDA/eidaws/workflows/continuous-integration/badge.svg
    :target: https://github.com/EIDA/eidaws/actions
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
