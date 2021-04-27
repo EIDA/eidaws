@@ -369,12 +369,12 @@ class CrawlFDSNWSStationApp:
         url_federator = urljoin(
             self.config["federator_url"], FDSNWS_STATION_PATH_QUERY
         )
-        for f in self.config["format"]:
-            if f == "text" and level == "response":
-                continue
+        for stream_epoch in stream_epochs:
+            for f in self.config["format"]:
+                if f == "text" and level == "response":
+                    continue
 
-            query_params = {"format": f, "level": level}
-            for stream_epoch in stream_epochs:
+                query_params = {"format": f, "level": level}
                 self.logger.debug(
                     f"Creating task: stream_epoch={stream_epoch!r}, "
                     f"query_params={query_params!r}"
