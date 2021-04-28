@@ -12,11 +12,14 @@ import random
 import re
 import sys
 import traceback
+import uuid
 
+from collections import Counter
 from copy import deepcopy
 from itertools import product
 from urllib.parse import urlparse, urlunparse, urljoin
 from random import randint
+from timeit import default_timer as timer
 
 from cached_property import cached_property
 from fasteners import InterProcessLock
@@ -63,6 +66,71 @@ class AlreadyCrawling(Error):
 
 class RoutingError(Error):
     """Error while requesting routing information ({})"""
+
+
+class Worker:
+    """
+    Request worker implementation.
+    """
+
+    LOGGER = FED_CRAWL_STATION_BASE_ID + ".worker"
+
+    def __init__(self, session, counter, lock):
+        self._session = session
+        self._counter = counter
+        self._lock = lock
+
+        self.logger = logging.getLogger(self.LOGGER)
+
+    @with_exception_handling(ignore_runtime_exception=False)
+    async def run(self, url, stream_epoch, query_params, **req_kwargs):
+        req_handler = FdsnRequestHandler(
+            url,
+            stream_epochs=[stream_epoch],
+            query_params=query_params,
+        )
+
+        resp_status = None
+        req = req_handler.get(self._session)
+        try:
+            async with req(**req_kwargs) as resp:
+                resp.raise_for_status()
+
+                resp_status = resp.status
+                self.logger.debug(
+                    f"Response: {resp.reason}: resp.status={resp.status}, "
+                    f"resp.request_info={resp.request_info}, "
+                    f"resp.url={resp.url}, resp.headers={resp.headers}"
+                )
+        except aiohttp.ClientResponseError as err:
+            resp_status = err.status
+            msg = (
+                f"Error while executing request: {err.message}: "
+                f"error={type(err)}, resp.status={resp_status}, "
+                f"resp.request_info={err.request_info}, "
+                f"resp.headers={err.headers}"
+            )
+
+            if resp_status in FDSNWS_NO_CONTENT_CODES:
+                self.logger.info(msg)
+            else:
+                self.logger.warning(msg)
+
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            resp_status = 503
+            msg = (
+                f"Error while executing request: error={type(err)}, "
+                f"req_handler={req_handler!r}"
+            )
+            if isinstance(err, aiohttp.ClientOSError):
+                msg += f", errno={err.errno}"
+
+            self.logger.warning(msg)
+        finally:
+            if resp_status is not None:
+                # collect stats
+                async with self._lock:
+                    self._counter[resp_status] += 1
 
 
 class CrawlFDSNWSStationApp:
@@ -137,11 +205,16 @@ class CrawlFDSNWSStationApp:
             )
             timeout = aiohttp.ClientTimeout(total=self.config["timeout"])
             stream_epochs_received = False
+
+            stats_counter = Counter()
+            lock = asyncio.Lock()
+            start = timer()
             async with aiohttp.ClientSession(
                 connector=connector, headers=self._HEADERS
             ) as session:
+
                 async with Pool(
-                    worker_coro=self._request_worker,
+                    worker_coro=Worker(session, stats_counter, lock).run,
                     max_workers=self.config["worker_pool_size"],
                 ) as pool:
                     for level in self.config["level"]:
@@ -161,7 +234,6 @@ class CrawlFDSNWSStationApp:
                             )
                             await self._crawl(
                                 pool,
-                                session,
                                 stream_epochs,
                                 level,
                                 timeout=timeout,
@@ -172,7 +244,15 @@ class CrawlFDSNWSStationApp:
                             self.logger.debug("No stream epochs received")
 
             if stream_epochs_received:
-                self.logger.info("Finished crawling successfully")
+                self.logger.info(
+                    "Crawling HTTP response code statistics "
+                    f"(total requests: {sum(stats_counter.values())}): "
+                    f"{dict(stats_counter)!r}"
+                )
+                self.logger.info(
+                    "Finished crawling successfully in "
+                    f"{round(timer() - start, 6)}s"
+                )
             else:
                 self.logger.info("Nothing to do")
 
@@ -311,56 +391,7 @@ class CrawlFDSNWSStationApp:
 
         return None
 
-    @with_exception_handling(ignore_runtime_exception=False)
-    async def _request_worker(
-        self, session, url, stream_epoch, query_params, **req_kwargs
-    ):
-        req_handler = FdsnRequestHandler(
-            url,
-            stream_epochs=[stream_epoch],
-            query_params=query_params,
-            headers=self._HEADERS,
-        )
-
-        resp_status = None
-        req = req_handler.get(session)
-        try:
-            async with req(**req_kwargs) as resp:
-                resp.raise_for_status()
-
-                resp_status = resp.status
-                self.logger.debug(
-                    f"Response: {resp.reason}: resp.status={resp.status}, "
-                    f"resp.request_info={resp.request_info}, "
-                    f"resp.url={resp.url}, resp.headers={resp.headers}"
-                )
-                # TODO(damb): collect stats etc.
-        except aiohttp.ClientResponseError as err:
-            resp_status = err.status
-            msg = (
-                f"Error while executing request: {err.message}: "
-                f"error={type(err)}, resp.status={resp_status}, "
-                f"resp.request_info={err.request_info}, "
-                f"resp.headers={err.headers}"
-            )
-
-            if resp_status in FDSNWS_NO_CONTENT_CODES:
-                self.logger.info(msg)
-            else:
-                self.logger.warning(msg)
-
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            resp_status = 503
-            msg = (
-                f"Error while executing request: error={type(err)}, "
-                f"req_handler={req_handler!r}"
-            )
-            if isinstance(err, aiohttp.ClientOSError):
-                msg += f", errno={err.errno}"
-
-            self.logger.warning(msg)
-
-    async def _crawl(self, pool, session, stream_epochs, level, **req_kwargs):
+    async def _crawl(self, pool, stream_epochs, level, **req_kwargs):
         """
         Crawl ``stream_epochs`` for ``level`` and dispatch ``stream_epochs`` to
         ``pool``.
@@ -380,7 +411,6 @@ class CrawlFDSNWSStationApp:
                     f"query_params={query_params!r}"
                 )
                 await pool.submit(
-                    session,
                     url_federator,
                     stream_epoch,
                     query_params,
