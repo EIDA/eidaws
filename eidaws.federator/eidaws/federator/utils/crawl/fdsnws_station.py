@@ -16,6 +16,7 @@ import traceback
 import uuid
 
 from collections import Counter
+from contextlib import contextmanager
 from copy import deepcopy
 from itertools import product
 from urllib.parse import urlparse, urlunparse, urljoin
@@ -24,6 +25,8 @@ from timeit import default_timer as timer
 
 from cached_property import cached_property
 from fasteners import InterProcessLock
+from tqdm.asyncio import tqdm
+from tqdm.contrib.logging import tqdm_logging_redirect
 
 from eidaws.federator.version import __version__
 from eidaws.federator.utils.crawl.settings import (
@@ -46,6 +49,7 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_TIMEOUT,
     FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
     FED_CRAWL_STATION_DEFAULT_DELAY,
+    FED_CRAWL_STATION_DEFAULT_PBAR,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -77,13 +81,14 @@ class Worker:
 
     LOGGER = FED_CRAWL_STATION_BASE_ID + ".worker"
 
-    def __init__(self, session, counter, lock, delay=None):
+    def __init__(self, session, counter, lock, delay=None, pbar=None):
         self._session = session
         self._counter = counter
         self._lock = lock
         self._delay = delay
 
         self.logger = logging.getLogger(self.LOGGER)
+        self._pbar = pbar
 
     @with_exception_handling(ignore_runtime_exception=False)
     async def run(self, url, stream_epoch, query_params, **req_kwargs):
@@ -138,6 +143,9 @@ class Worker:
                 async with self._lock:
                     self._counter[resp_status] += 1
 
+            if self._pbar is not None:
+                self._pbar.update()
+
 
 class CrawlFDSNWSStationApp:
     """
@@ -191,6 +199,17 @@ class CrawlFDSNWSStationApp:
         """
         Run application.
         """
+
+        def _total(stream_epoch_dict, formats):
+            retval = 0
+            for level, stream_epochs in stream_epoch_dict.items():
+                for f in formats:
+                    if level == "response" and f == "text":
+                        continue
+                    retval += len(stream_epochs)
+
+            return retval
+
         exit_code = ExitCodes.EXIT_SUCCESS
 
         self.logger.info(f"{self.PROG}: Version v{__version__}")
@@ -232,7 +251,8 @@ class CrawlFDSNWSStationApp:
                     )
                     if not stream_epochs:
                         self.logger.debug(
-                            f"No stream epochs received for level: {level!r}")
+                            f"No stream epochs received for level: {level!r}"
+                        )
                         continue
 
                     stream_epoch_dict[level] = stream_epochs
@@ -248,33 +268,43 @@ class CrawlFDSNWSStationApp:
                 start = timer()
                 stats_counter = Counter()
                 lock = asyncio.Lock()
-                async with Pool(
-                    worker_coro=Worker(
-                        session,
-                        stats_counter,
-                        lock,
-                        delay=self.config["delay"],
-                    ).run,
-                    max_workers=self.config["worker_pool_size"],
-                ) as pool:
-                    for level, stream_epochs in stream_epoch_dict.items():
-                        await self._crawl(
-                            pool,
-                            stream_epochs,
+                with tqdm_logging_redirect(
+                    tqdm_class=tqdm,
+                    loggers=[logging.root, logging.getLogger("eidaws")],
+                    total=_total(stream_epoch_dict, self.config["format"]),
+                    disable=not self.config["progress_bar"],
+                ) as pbar:
+                    async with Pool(
+                        worker_coro=Worker(
+                            session,
+                            stats_counter,
+                            lock,
+                            delay=self.config["delay"],
+                            pbar=pbar,
+                        ).run,
+                        max_workers=self.config["worker_pool_size"],
+                    ) as pool:
+                        for (
                             level,
-                            timeout=timeout,
-                        )
+                            stream_epochs,
+                        ) in stream_epoch_dict.items():
+                            await self._crawl(
+                                pool,
+                                stream_epochs,
+                                level,
+                                formats=self.config["format"],
+                                timeout=timeout,
+                            )
 
-
-                self.logger.info(
-                    "Crawling HTTP response code statistics "
-                    f"(total requests: {sum(stats_counter.values())}): "
-                    f"{dict(stats_counter)!r}"
-                )
-                self.logger.info(
-                    "Finished crawling successfully in "
-                    f"{round(timer() - start, 6)}s"
-                )
+                    self.logger.info(
+                        "Crawling HTTP response code statistics "
+                        f"(total requests: {sum(stats_counter.values())}): "
+                        f"{dict(stats_counter)!r}"
+                    )
+                    self.logger.info(
+                        "Finished crawling successfully in "
+                        f"{round(timer() - start, 6)}s"
+                    )
 
         except Error as err:
             self.logger.error(err)
@@ -411,17 +441,17 @@ class CrawlFDSNWSStationApp:
 
         return None
 
-    async def _crawl(self, pool, stream_epochs, level, **req_kwargs):
+    async def _crawl(self, pool, stream_epochs, level, formats, **req_kwargs):
         """
-        Crawl ``stream_epochs`` for ``level`` and dispatch ``stream_epochs`` to
-        ``pool``.
+        Crawl ``stream_epochs`` for both ``level`` and ``formats`` and dispatch
+        ``stream_epochs`` to ``pool``.
         """
 
         url_federator = urljoin(
             self.config["federator_url"], FDSNWS_STATION_PATH_QUERY
         )
         for stream_epoch in stream_epochs:
-            for f in self.config["format"]:
+            for f in formats:
                 if f == "text" and level == "response":
                     continue
 
@@ -683,6 +713,13 @@ class CrawlFDSNWSStationApp:
             default=FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
             help="Keep stream epochs alphanumerically sorted when crawling "
             "(default: %(default)s).",
+        )
+        parser.add_argument(
+            "--progress-bar",
+            action="store_true",
+            dest="progress_bar",
+            default=FED_CRAWL_STATION_DEFAULT_PBAR,
+            help="Display progress bar.",
         )
         parser.add_argument(
             "-P",

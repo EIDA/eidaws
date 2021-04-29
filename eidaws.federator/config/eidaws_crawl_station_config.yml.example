@@ -133,6 +133,11 @@
 # sorted: False
 #
 # ----
+# Display progress bar while crawling.
+#
+# progress-bar: False
+#
+# ----
 # Absolute path to a process ID locking file in order to prevent from having
 # multiple crawling processes running concurrently.
 #
