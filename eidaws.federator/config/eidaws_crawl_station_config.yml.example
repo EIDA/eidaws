@@ -61,6 +61,36 @@
 #   - ws.icgc.cat
 #
 # ----
+# Domains to be excluded from crawling. Exclusions are calculated first,
+# inclusions later. By default all domains are crawled.
+#
+# exclude-domain:
+#   # ODC
+#   - www.orfeus-eu.org
+#   # GFZ
+#   - geofon.gfz-potsdam.de
+#   # RESIF
+#   - ws.resif.fr
+#   # INGV
+#   - webservices.ingv.it
+#   # ETHZ
+#   - eida.ethz.ch
+#   # BGR
+#   - eida.bgr.de
+#   # NIEP
+#   - eida-routing.infp.ro
+#   # KOERI
+#   - eida.koeri.boun.edu.tr
+#   # LMU
+#   - erde.geophysik.uni-muenchen.de
+#   # NOA
+#   - eida.gein.noa.gr
+#   # UIB
+#   - eida.geo.uib.no
+#   # ICGC
+#   - ws.icgc.cat
+#
+# ----
 # Restrict crawling to the network codes specified. By default all network
 # codes are crawled. Allows FDSNWS wildcard characters to be specified.
 #

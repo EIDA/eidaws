@@ -339,22 +339,41 @@ class CrawlFDSNWSStationApp:
         cha_codes,
         level,
         domains=None,
+        domains_exclude=None,
     ):
         """
         Emerge stream epochs using eidaws-stationlite.
         """
 
         async def _request(url, params):
-            def _parse_stream_epochs(text, domains=None):
+            def _parse_stream_epochs(
+                text, domains=None, excluded_domains=None
+            ):
+                # compute domains to be crawled
+                _excluded_domains = None
+                if excluded_domains:
+                    _excluded_domains = excluded_domains[:]
+                    if excluded_domains and domains:
+                        explicitly_included = [
+                            d for d in excluded_domains if d in domains
+                        ]
+                        for d in explicitly_included:
+                            _excluded_domains.remove(d)
+
                 stream_epochs = []
                 url = None
                 skip_url = False
                 for line in text.split("\n"):
                     if not url:
                         url = line.strip()
-                        if domains is not None:
+                        if excluded_domains or domains:
                             parsed = urlparse(url)
-                            if parsed.netloc not in domains:
+                            if (
+                                _excluded_domains
+                                and parsed.netloc in _excluded_domains
+                                or domains
+                                and parsed.netloc not in domains
+                            ):
                                 skip_url = True
 
                     elif not line.strip():
@@ -389,7 +408,9 @@ class CrawlFDSNWSStationApp:
 
                     self.logger.debug(msg)
                     return _parse_stream_epochs(
-                        await resp.text(), domains=self.config["domain"]
+                        await resp.text(),
+                        domains=self.config["domain"],
+                        excluded_domains=self.config["exclude_domain"],
                     )
 
             except aiohttp.ClientResponseError as err:
@@ -605,6 +626,18 @@ class CrawlFDSNWSStationApp:
             help=(
                 "Whitespace-separated list of domains crawling is restricted "
                 "to. By default all domains are crawled."
+            ),
+        )
+        parser.add_argument(
+            "--exclude-domain",
+            nargs="+",
+            metavar="DOMAIN",
+            dest="exclude_domain",
+            type=_domain_or_none,
+            help=(
+                "Whitespace-separated list of domains to be excluded "
+                "crawling. Exclusions are calculated first, inclusions later. "
+                "By default all domains are crawled."
             ),
         )
         parser.add_argument(
