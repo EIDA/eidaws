@@ -210,15 +210,44 @@ class CrawlFDSNWSStationApp:
                 limit=self.config["worker_pool_size"]
             )
             timeout = aiohttp.ClientTimeout(total=self.config["timeout"])
-            stream_epochs_received = False
 
-            stats_counter = Counter()
-            lock = asyncio.Lock()
-            start = timer()
             async with aiohttp.ClientSession(
                 connector=connector, headers=self._HEADERS
             ) as session:
 
+                # download stream epochs from eidaws-stationlite
+                stream_epoch_dict = {}
+                for level in self.config["level"]:
+                    self.logger.debug(
+                        f"Request stream epochs for level: {level!r}"
+                    )
+
+                    stream_epochs = await self._emerge_stream_epochs(
+                        session,
+                        net_codes,
+                        sta_codes,
+                        loc_codes,
+                        cha_codes,
+                        level,
+                    )
+                    if not stream_epochs:
+                        self.logger.debug(
+                            f"No stream epochs received for level: {level!r}")
+                        continue
+
+                    stream_epoch_dict[level] = stream_epochs
+                    self.logger.debug(
+                        f"Received {len(stream_epoch_dict[level])} stream "
+                        "epoch(s)."
+                    )
+
+                if not stream_epoch_dict:
+                    self.logger.info("Nothing to do")
+                    return
+
+                start = timer()
+                stats_counter = Counter()
+                lock = asyncio.Lock()
                 async with Pool(
                     worker_coro=Worker(
                         session,
@@ -228,33 +257,15 @@ class CrawlFDSNWSStationApp:
                     ).run,
                     max_workers=self.config["worker_pool_size"],
                 ) as pool:
-                    for level in self.config["level"]:
-                        stream_epochs = await self._emerge_stream_epochs(
-                            session,
-                            net_codes,
-                            sta_codes,
-                            loc_codes,
-                            cha_codes,
+                    for level, stream_epochs in stream_epoch_dict.items():
+                        await self._crawl(
+                            pool,
+                            stream_epochs,
                             level,
+                            timeout=timeout,
                         )
 
-                        if stream_epochs:
-                            self.logger.debug(
-                                f"Received {len(stream_epochs)} stream "
-                                f"epoch(s). Start crawling (level={level})"
-                            )
-                            await self._crawl(
-                                pool,
-                                stream_epochs,
-                                level,
-                                timeout=timeout,
-                            )
 
-                            stream_epochs_received = True
-                        else:
-                            self.logger.debug("No stream epochs received")
-
-            if stream_epochs_received:
                 self.logger.info(
                     "Crawling HTTP response code statistics "
                     f"(total requests: {sum(stats_counter.values())}): "
@@ -264,8 +275,6 @@ class CrawlFDSNWSStationApp:
                     "Finished crawling successfully in "
                     f"{round(timer() - start, 6)}s"
                 )
-            else:
-                self.logger.info("Nothing to do")
 
         except Error as err:
             self.logger.error(err)
