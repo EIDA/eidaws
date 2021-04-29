@@ -4,6 +4,7 @@ import aiohttp
 import argparse
 import asyncio
 import datetime
+import functools
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
@@ -44,6 +45,7 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_NUM_WORKERS,
     FED_CRAWL_STATION_DEFAULT_TIMEOUT,
     FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
+    FED_CRAWL_STATION_DEFAULT_DELAY,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -75,10 +77,11 @@ class Worker:
 
     LOGGER = FED_CRAWL_STATION_BASE_ID + ".worker"
 
-    def __init__(self, session, counter, lock):
+    def __init__(self, session, counter, lock, delay=None):
         self._session = session
         self._counter = counter
         self._lock = lock
+        self._delay = delay
 
         self.logger = logging.getLogger(self.LOGGER)
 
@@ -93,6 +96,9 @@ class Worker:
         resp_status = None
         req = req_handler.get(self._session)
         try:
+            if self._delay is not None:
+                await asyncio.sleep(self._delay)
+
             async with req(**req_kwargs) as resp:
                 resp.raise_for_status()
 
@@ -214,7 +220,12 @@ class CrawlFDSNWSStationApp:
             ) as session:
 
                 async with Pool(
-                    worker_coro=Worker(session, stats_counter, lock).run,
+                    worker_coro=Worker(
+                        session,
+                        stats_counter,
+                        lock,
+                        delay=self.config["delay"],
+                    ).run,
                     max_workers=self.config["worker_pool_size"],
                 ) as pool:
                     for level in self.config["level"]:
@@ -466,15 +477,27 @@ class CrawlFDSNWSStationApp:
 
             raise argparse.ArgumentError(f"Invalid channel code: {code!r}")
 
-        def _positive_int(i):
+        def _positive(i, ret_type):
             try:
-                i = int(i)
+                i = ret_type(i)
                 if i <= 0:
                     raise ValueError
             except Exception as err:
-                raise argparse.ArgumentError(f"Invalid integer value.")
+                raise argparse.ArgumentError(f"Invalid value: must be >= 0")
 
             return i
+
+        _positive_float = functools.partial(_positive, ret_type=float)
+        _positive_int = functools.partial(_positive, ret_type=int)
+
+        _timeout = _positive_float
+        _worker_pool_size = _positive_int
+
+        def _delay(i):
+            if i is None:
+                return None
+
+            return _positive_float(i)
 
         def _domain_or_none(domain):
             def to_unicode(obj, charset="utf-8", errors="strict"):
@@ -620,7 +643,7 @@ class CrawlFDSNWSStationApp:
         parser.add_argument(
             "-w",
             "--worker-pool-size",
-            type=_positive_int,
+            type=_worker_pool_size,
             metavar="NUM",
             dest="worker_pool_size",
             default=FED_CRAWL_STATION_DEFAULT_NUM_WORKERS,
@@ -631,12 +654,19 @@ class CrawlFDSNWSStationApp:
         )
         parser.add_argument(
             "--timeout",
-            type=_positive_int,
+            type=_timeout,
             metavar="SEC",
             default=FED_CRAWL_STATION_DEFAULT_TIMEOUT,
             help="Total request timeout in seconds for a single request "
             "(including connection establishment, request sending and "
             "response reading) while crawling (default: %(default)s).",
+        )
+        parser.add_argument(
+            "--delay",
+            type=_delay,
+            metavar="SEC",
+            default=FED_CRAWL_STATION_DEFAULT_DELAY,
+            help="Delay requests by SEC.",
         )
         parser.add_argument(
             "--sorted",

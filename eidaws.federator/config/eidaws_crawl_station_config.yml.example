@@ -123,6 +123,11 @@
 # timeout: 10
 #
 # ----
+# Delay requests by the number of seconds specified.
+#
+# delay: 1
+#
+# ----
 # Defines if stream epochs are sorted alphanumerically before crawling.
 #
 # sorted: False
