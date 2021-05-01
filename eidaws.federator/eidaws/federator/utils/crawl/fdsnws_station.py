@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import datetime
 import functools
+import json
 import logging
 import logging.config
 import logging.handlers  # needed for handlers defined in logging.conf
@@ -19,9 +20,10 @@ from collections import Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import product
-from urllib.parse import urlparse, urlunparse, urljoin
+from pathlib import Path
 from random import randint
 from timeit import default_timer as timer
+from urllib.parse import urlparse, urlunparse, urljoin
 
 from cached_property import cached_property
 from fasteners import InterProcessLock
@@ -50,6 +52,7 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_CRAWL_SORTED,
     FED_CRAWL_STATION_DEFAULT_DELAY,
     FED_CRAWL_STATION_DEFAULT_PBAR,
+    FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_DUMP,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -58,12 +61,18 @@ from eidaws.utils.app import AppError
 from eidaws.utils.cli import CustomParser, InterpolatingYAMLConfigFileParser
 from eidaws.utils.error import Error, ExitCodes
 from eidaws.utils.misc import real_file_path
+from eidaws.utils.schema import StreamEpochSchema
 from eidaws.utils.settings import (
     EIDAWS_ROUTING_PATH_QUERY,
     FDSNWS_STATION_PATH_QUERY,
     FDSNWS_NO_CONTENT_CODES,
 )
 from eidaws.utils.sncl import StreamEpoch
+
+
+def _serialize_stream_epoch(stream_epoch):
+    serializer = StreamEpochSchema(context={"routing": True})
+    return " ".join(serializer.dump(stream_epoch).values())
 
 
 class AlreadyCrawling(Error):
@@ -81,11 +90,14 @@ class Worker:
 
     LOGGER = FED_CRAWL_STATION_BASE_ID + ".worker"
 
-    def __init__(self, session, counter, lock, delay=None, pbar=None):
+    def __init__(
+        self, session, counter, lock, delay=None, pbar=None, history=None
+    ):
         self._session = session
         self._counter = counter
         self._lock = lock
         self._delay = delay
+        self._history = history
 
         self.logger = logging.getLogger(self.LOGGER)
         self._pbar = pbar
@@ -138,10 +150,21 @@ class Worker:
 
             self.logger.warning(msg)
         finally:
-            if resp_status is not None:
-                # collect stats
-                async with self._lock:
+            history = None
+            if self._history is not None:
+                history = {
+                    "stream": stream_epoch,
+                    "params": query_params,
+                    "status": resp_status,
+                }
+
+            # collect stats
+            async with self._lock:
+                if resp_status is not None:
                     self._counter[resp_status] += 1
+
+                if history:
+                    self._history.append(history)
 
             if self._pbar is not None:
                 self._pbar.update()
@@ -265,6 +288,10 @@ class CrawlFDSNWSStationApp:
                     self.logger.info("Nothing to do")
                     return
 
+                _history = None
+                if self.config["dump_history_json"]:
+                    _history = []
+
                 start = timer()
                 stats_counter = Counter()
                 lock = asyncio.Lock()
@@ -281,6 +308,7 @@ class CrawlFDSNWSStationApp:
                             lock,
                             delay=self.config["delay"],
                             pbar=pbar,
+                            history=_history,
                         ).run,
                         max_workers=self.config["worker_pool_size"],
                     ) as pool:
@@ -306,6 +334,29 @@ class CrawlFDSNWSStationApp:
                         f"{round(timer() - start, 6)}s"
                     )
 
+                if _history:
+                    self.logger.debug(
+                        "Dumping crawling history to {!r}".format(
+                            self.config["dump_history_json"]
+                            if self.config["dump_history_json"] != "-"
+                            else "stdout"
+                        )
+                    )
+
+                    for entry in _history:
+                        entry["stream"] = _serialize_stream_epoch(
+                            entry["stream"]
+                        )
+
+                    ofd = (
+                        open(self.config["dump_history_json"], "w")
+                        if self.config["dump_history_json"] != "-"
+                        else sys.stdout
+                    )
+                    json.dump(_history, ofd)
+                    if ofd is not sys.stdout:
+                        ofd.close()
+
         except Error as err:
             self.logger.error(err)
             exit_code = ExitCodes.EXIT_ERROR
@@ -322,6 +373,7 @@ class CrawlFDSNWSStationApp:
             )
             exit_code = ExitCodes.EXIT_ERROR
         finally:
+
             try:
                 if got_pid_lock:
                     pid_lock.release()
@@ -462,7 +514,14 @@ class CrawlFDSNWSStationApp:
 
         return None
 
-    async def _crawl(self, pool, stream_epochs, level, formats, **req_kwargs):
+    async def _crawl(
+        self,
+        pool,
+        stream_epochs,
+        level,
+        formats,
+        **req_kwargs,
+    ):
         """
         Crawl ``stream_epochs`` for both ``level`` and ``formats`` and dispatch
         ``stream_epochs`` to ``pool``.
@@ -753,6 +812,16 @@ class CrawlFDSNWSStationApp:
             dest="progress_bar",
             default=FED_CRAWL_STATION_DEFAULT_PBAR,
             help="Display progress bar.",
+        )
+        parser.add_argument(
+            "--dump-history-json",
+            type=str,
+            dest="dump_history_json",
+            metavar="PATH",
+            default=FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_DUMP,
+            help="Dump the crawling history to the PATH specified. Specify "
+            "PATH as '-' if you want the crawler to dump the history to "
+            "stdout.",
         )
         parser.add_argument(
             "-P",

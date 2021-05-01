@@ -163,6 +163,12 @@
 # sorted: False
 #
 # ----
+# Dump the crawling history to the path specified. Specify the path as '-' if
+# you want the crawler to dump te history to stdout.
+#
+# dump-history-json: path/to/history
+#
+# ----
 # Display progress bar while crawling.
 #
 # progress-bar: False
