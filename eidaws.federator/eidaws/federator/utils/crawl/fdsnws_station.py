@@ -55,6 +55,7 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_DUMP,
     FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_LOAD,
     FED_CRAWL_STATION_DEFAULT_HISTORY_INCLUDE_STL,
+    FED_CRAWL_STATION_DEFAULT_HISTORY_BY_STATUS,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -291,6 +292,7 @@ class CrawlFDSNWSStationApp:
                 start = timer()
                 stats_counter = Counter()
                 lock = asyncio.Lock()
+                crawled_total = 0
                 with tqdm_logging_redirect(
                     tqdm_class=tqdm,
                     loggers=[logging.root, logging.getLogger("eidaws")],
@@ -307,7 +309,7 @@ class CrawlFDSNWSStationApp:
                         ).run,
                         max_workers=self.config["worker_pool_size"],
                     ) as pool:
-                        await self._crawl(
+                        crawled_total = await self._crawl(
                             pool,
                             stream_epoch_dict,
                             formats=self.config["format"],
@@ -315,15 +317,19 @@ class CrawlFDSNWSStationApp:
                             timeout=timeout,
                         )
 
-                    self.logger.info(
-                        "Crawling HTTP response code statistics "
-                        f"(total requests: {sum(stats_counter.values())}): "
-                        f"{dict(stats_counter)!r}"
-                    )
-                    self.logger.info(
-                        "Finished crawling successfully in "
-                        f"{round(timer() - start, 6)}s"
-                    )
+                    if crawled_total:
+                        self.logger.info(
+                            "Crawling HTTP response code statistics "
+                            f"(total requests: {sum(stats_counter.values())}): "
+                            f"{dict(stats_counter)!r}"
+                        )
+                        self.logger.info(
+                            "Finished crawling successfully in "
+                            f"{round(timer() - start, 6)}s"
+                        )
+                    else:
+                        self.logger.info("Nothing to do")
+                        return
 
                 if _history_dump:
                     self.logger.debug(
@@ -551,10 +557,11 @@ class CrawlFDSNWSStationApp:
             return retval
 
         if self.config["history_json_load"] is None:
-            pbar.reset(total=_total(stream_epoch_dict))
+            total = _total(stream_epoch_dict)
+            pbar.reset(total=total)
 
             await _crawl_from_dict(stream_epoch_dict, formats)
-            return
+            return total
 
         self.logger.debug(
             "Loading history from {!r}".format(
@@ -573,9 +580,10 @@ class CrawlFDSNWSStationApp:
 
             def _prepare_history(history, stream_epoch_dict):
                 # synchronize history with eidaws-stationlite stream epochs
-                idx = {}
-                for level, stream_epochs in stream_epoch_dict.items():
-                    idx[level] = set(stream_epochs)
+                idx = {
+                    level: set(stream_epochs)
+                    for level, stream_epochs in stream_epoch_dict.items()
+                }
 
                 seen = defaultdict(set)
                 total = 0
@@ -589,6 +597,13 @@ class CrawlFDSNWSStationApp:
                         l = query_params["level"]
                         f = query_params["format"]
                         if not l or not f:
+                            continue
+
+                        if (
+                            self.config["history_by_status"]
+                            and entry["status"]
+                            not in self.config["history_by_status"]
+                        ):
                             continue
 
                         stream_epoch = StreamEpoch.from_snclline(stream_epoch)
@@ -645,6 +660,8 @@ class CrawlFDSNWSStationApp:
                 )
 
             await _crawl_from_dict(supplementary, formats)
+
+            return total
 
     def _build_parser(self, parents=[]):
         """
@@ -945,6 +962,17 @@ class CrawlFDSNWSStationApp:
             "too, while crawling based on a history. Note that for "
             "supplementary epochs crawling is performed for the formats "
             "specified by the '--format' CLI argument.",
+        )
+        parser.add_argument(
+            "--history-by-status",
+            nargs="+",
+            dest="history_by_status",
+            type=_positive_int,
+            metavar="CODE",
+            default=FED_CRAWL_STATION_DEFAULT_HISTORY_BY_STATUS,
+            help="Whitespace separated list of HTTP status codes. Perform a "
+            "history based crawling run, but restrict the stream epochs to be "
+            "crawled to the HTTP status codes defined.",
         )
         parser.add_argument(
             "-P",

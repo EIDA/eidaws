@@ -186,6 +186,18 @@
 # history-include-supplementary-epochs: False
 #
 # ----
+# Whitespace separated list of HTTP status codes. Perform a history based
+# crawling run, but restrict the stream epochs to be crawled to the HTTP status
+# codes defined.
+#
+# history-by-status:
+#   - 500
+#   - 502
+#   - 503
+#   - 504
+#   - 429
+#
+# ----
 # Display progress bar while crawling.
 #
 # progress-bar: False
