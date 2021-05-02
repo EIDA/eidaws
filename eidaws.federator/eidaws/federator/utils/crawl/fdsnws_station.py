@@ -439,7 +439,11 @@ class CrawlFDSNWSStationApp:
                 return stream_epochs
 
             try:
-                async with session.get(url, params=params) as resp:
+                async with session.get(
+                    url,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=300),
+                ) as resp:
                     resp.raise_for_status()
                     resp_status = resp.status
 
