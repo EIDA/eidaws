@@ -570,13 +570,13 @@ class CrawlFDSNWSStationApp:
                 else "stdin"
             )
         )
-        _history = []
+        _history = None
         try:
             _history = json.load(self.config["history_json_load"])
         except json.JSONDecodeError as err:
             raise InvalidHistory(err)
 
-        if _history:
+        if _history is not None:
 
             def _prepare_history(history, stream_epoch_dict):
                 # synchronize history with eidaws-stationlite stream epochs
