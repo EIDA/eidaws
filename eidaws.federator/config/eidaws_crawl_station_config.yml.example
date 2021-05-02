@@ -166,7 +166,24 @@
 # Dump the crawling history to the path specified. Specify the path as '-' if
 # you want the crawler to dump te history to stdout.
 #
-# dump-history-json: path/to/history
+# history-json-dump: path/to/history
+#
+# ----
+# Load the crawling history from the path specified. Specify path as '-' if you
+# want the crawler to load the history from stdin. If loading the crawling
+# history is enabled, crawling is performed based on the history provided
+# syncronized with eidaws-stationlite. Therefore, using the '--format' CLI
+# argument has no effect. Note that crawling will be executed in the sorting
+# order provided by the history.
+#
+# history-json-load: path/to/history
+#
+# ----
+# Crawl supplementary stream epochs from eidaws-stationlite, too, while crawling
+# based on a history. Note that for supplementary epochs crawling is performed
+# for the formats specified by the '--format' CLI argument.
+#
+# history-include-supplementary-epochs: False
 #
 # ----
 # Display progress bar while crawling.

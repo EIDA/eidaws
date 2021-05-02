@@ -16,7 +16,7 @@ import sys
 import traceback
 import uuid
 
-from collections import Counter
+from collections import defaultdict, Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import product
@@ -53,6 +53,8 @@ from eidaws.federator.utils.crawl.settings import (
     FED_CRAWL_STATION_DEFAULT_DELAY,
     FED_CRAWL_STATION_DEFAULT_PBAR,
     FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_DUMP,
+    FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_LOAD,
+    FED_CRAWL_STATION_DEFAULT_HISTORY_INCLUDE_STL,
 )
 from eidaws.federator.utils.pool import Pool
 from eidaws.federator.utils.request import FdsnRequestHandler
@@ -81,6 +83,10 @@ class AlreadyCrawling(Error):
 
 class RoutingError(Error):
     """Error while requesting routing information ({})"""
+
+
+class InvalidHistory(Error):
+    """Error while loading history ({})"""
 
 
 class Worker:
@@ -223,16 +229,6 @@ class CrawlFDSNWSStationApp:
         Run application.
         """
 
-        def _total(stream_epoch_dict, formats):
-            retval = 0
-            for level, stream_epochs in stream_epoch_dict.items():
-                for f in formats:
-                    if level == "response" and f == "text":
-                        continue
-                    retval += len(stream_epochs)
-
-            return retval
-
         exit_code = ExitCodes.EXIT_SUCCESS
 
         self.logger.info(f"{self.PROG}: Version v{__version__}")
@@ -288,9 +284,9 @@ class CrawlFDSNWSStationApp:
                     self.logger.info("Nothing to do")
                     return
 
-                _history = None
-                if self.config["dump_history_json"]:
-                    _history = []
+                _history_dump = None
+                if self.config["history_json_dump"]:
+                    _history_dump = []
 
                 start = timer()
                 stats_counter = Counter()
@@ -298,7 +294,6 @@ class CrawlFDSNWSStationApp:
                 with tqdm_logging_redirect(
                     tqdm_class=tqdm,
                     loggers=[logging.root, logging.getLogger("eidaws")],
-                    total=_total(stream_epoch_dict, self.config["format"]),
                     disable=not self.config["progress_bar"],
                 ) as pbar:
                     async with Pool(
@@ -308,21 +303,17 @@ class CrawlFDSNWSStationApp:
                             lock,
                             delay=self.config["delay"],
                             pbar=pbar,
-                            history=_history,
+                            history=_history_dump,
                         ).run,
                         max_workers=self.config["worker_pool_size"],
                     ) as pool:
-                        for (
-                            level,
-                            stream_epochs,
-                        ) in stream_epoch_dict.items():
-                            await self._crawl(
-                                pool,
-                                stream_epochs,
-                                level,
-                                formats=self.config["format"],
-                                timeout=timeout,
-                            )
+                        await self._crawl(
+                            pool,
+                            stream_epoch_dict,
+                            formats=self.config["format"],
+                            pbar=pbar,
+                            timeout=timeout,
+                        )
 
                     self.logger.info(
                         "Crawling HTTP response code statistics "
@@ -334,26 +325,26 @@ class CrawlFDSNWSStationApp:
                         f"{round(timer() - start, 6)}s"
                     )
 
-                if _history:
+                if _history_dump:
                     self.logger.debug(
                         "Dumping crawling history to {!r}".format(
-                            self.config["dump_history_json"]
-                            if self.config["dump_history_json"] != "-"
+                            self.config["history_json_dump"]
+                            if self.config["history_json_dump"] != "-"
                             else "stdout"
                         )
                     )
 
-                    for entry in _history:
+                    for entry in _history_dump:
                         entry["stream"] = _serialize_stream_epoch(
                             entry["stream"]
                         )
 
                     ofd = (
-                        open(self.config["dump_history_json"], "w")
-                        if self.config["dump_history_json"] != "-"
+                        open(self.config["history_json_dump"], "w")
+                        if self.config["history_json_dump"] != "-"
                         else sys.stdout
                     )
-                    json.dump(_history, ofd)
+                    json.dump(_history_dump, ofd)
                     if ofd is not sys.stdout:
                         ofd.close()
 
@@ -517,25 +508,131 @@ class CrawlFDSNWSStationApp:
     async def _crawl(
         self,
         pool,
-        stream_epochs,
-        level,
+        stream_epoch_dict,
         formats,
+        pbar=None,
         **req_kwargs,
     ):
         """
-        Crawl ``stream_epochs`` for both ``level`` and ``formats`` and dispatch
-        ``stream_epochs`` to ``pool``.
+        Dispatch crawling request tasks based on ``stream_epochs_dict`` onto
+        ``pool``.
         """
-
         url_federator = urljoin(
             self.config["federator_url"], FDSNWS_STATION_PATH_QUERY
         )
-        for stream_epoch in stream_epochs:
-            for f in formats:
-                if f == "text" and level == "response":
-                    continue
 
-                query_params = {"format": f, "level": level}
+        async def _crawl_from_dict(stream_epoch_dict, formats):
+            for level, stream_epochs in stream_epoch_dict.items():
+                for stream_epoch in stream_epochs:
+                    for f in formats:
+                        if f == "text" and level == "response":
+                            continue
+
+                        query_params = {"format": f, "level": level}
+                        self.logger.debug(
+                            f"Creating task: stream_epoch={stream_epoch!r}, "
+                            f"query_params={query_params!r}"
+                        )
+                        await pool.submit(
+                            url_federator,
+                            stream_epoch,
+                            query_params,
+                            **req_kwargs,
+                        )
+
+        def _total(stream_epoch_dict):
+            retval = 0
+            for level, stream_epochs in stream_epoch_dict.items():
+                for f in self.config["format"]:
+                    if level == "response" and f == "text":
+                        continue
+                    retval += len(stream_epochs)
+
+            return retval
+
+        if self.config["history_json_load"] is None:
+            pbar.reset(total=_total(stream_epoch_dict))
+
+            await _crawl_from_dict(stream_epoch_dict, formats)
+            return
+
+        self.logger.debug(
+            "Loading history from {!r}".format(
+                self.config["history_json_load"]
+                if self.config["history_json_load"] != "-"
+                else "stdin"
+            )
+        )
+        _history = []
+        try:
+            _history = json.load(self.config["history_json_load"])
+        except json.JSONDecodeError as err:
+            raise InvalidHistory(err)
+
+        if _history:
+
+            def _prepare_history(history, stream_epoch_dict):
+                # synchronize history with eidaws-stationlite stream epochs
+                idx = {}
+                for level, stream_epochs in stream_epoch_dict.items():
+                    idx[level] = set(stream_epochs)
+
+                seen = defaultdict(set)
+                total = 0
+                from_history = []
+                try:
+                    for entry in history:
+                        stream_epoch = entry["stream"]
+                        query_params = entry["params"]
+                        if not stream_epoch or not query_params:
+                            continue
+                        l = query_params["level"]
+                        f = query_params["format"]
+                        if not l or not f:
+                            continue
+
+                        stream_epoch = StreamEpoch.from_snclline(stream_epoch)
+                        if l in idx and stream_epoch in idx[l]:
+                            from_history.append(
+                                (stream_epoch, {"format": f, "level": l})
+                            )
+
+                            seen[l].add(stream_epoch)
+                            total += 1
+
+                except (KeyError, TypeError) as err:
+                    raise InvalidHistory(err)
+
+                supplementary = {}
+                if self.config["history_include_stl"]:
+                    self.logger.debug(
+                        "Checking for supplementary stream epochs"
+                    )
+                    supplementary = {}
+                    for level, stream_epochs in stream_epoch_dict.items():
+                        supplementary[level] = list(
+                            set(stream_epochs) - seen.get("level", set())
+                        )
+
+                    self.logger.debug(
+                        "Found {} supplementary stream epochs to be crawled".format(
+                            sum(
+                                len(se_lst)
+                                for l, se_lst in supplementary.items()
+                            )
+                        )
+                    )
+                    total += _total(stream_epoch_dict)
+
+                return from_history, supplementary, total
+
+            from_history, supplementary, total = _prepare_history(
+                _history, stream_epoch_dict
+            )
+
+            pbar.reset(total=total)
+
+            for stream_epoch, query_params in from_history:
                 self.logger.debug(
                     f"Creating task: stream_epoch={stream_epoch!r}, "
                     f"query_params={query_params!r}"
@@ -546,6 +643,8 @@ class CrawlFDSNWSStationApp:
                     query_params,
                     **req_kwargs,
                 )
+
+            await _crawl_from_dict(supplementary, formats)
 
     def _build_parser(self, parents=[]):
         """
@@ -814,14 +913,38 @@ class CrawlFDSNWSStationApp:
             help="Display progress bar.",
         )
         parser.add_argument(
-            "--dump-history-json",
+            "--history-json-dump",
             type=str,
-            dest="dump_history_json",
+            dest="history_json_dump",
             metavar="PATH",
             default=FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_DUMP,
             help="Dump the crawling history to the PATH specified. Specify "
             "PATH as '-' if you want the crawler to dump the history to "
             "stdout.",
+        )
+        parser.add_argument(
+            "--history-json-load",
+            type=argparse.FileType("r"),
+            dest="history_json_load",
+            metavar="PATH",
+            default=FED_CRAWL_STATION_DEFAULT_HISTORY_JSON_LOAD,
+            help="Load the crawling history from the PATH specified. Specify "
+            "PATH as '-' if you want the crawler to load the history from "
+            "stdin. If loading the crawling history is enabled, crawling "
+            "is performed based on the history provided syncronized with "
+            "eidaws-stationlite. Therefore, using the '--format' CLI argument "
+            "has no effect. Note that crawling will be executed in the "
+            "sorting order provided by the history.",
+        )
+        parser.add_argument(
+            "--history-include-supplementary-epochs",
+            action="store_true",
+            dest="history_include_stl",
+            default=FED_CRAWL_STATION_DEFAULT_HISTORY_INCLUDE_STL,
+            help="Crawl supplementary stream epochs from eidaws-stationlite, "
+            "too, while crawling based on a history. Note that for "
+            "supplementary epochs crawling is performed for the formats "
+            "specified by the '--format' CLI argument.",
         )
         parser.add_argument(
             "-P",
