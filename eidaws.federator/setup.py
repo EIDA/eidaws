@@ -32,6 +32,7 @@ _DEPS = [
     "lxml>=4.5.0",
     "multidict>=4.5,<5.0",
     "pyyaml>=5.3",
+    "tqdm>=4.60.0",
     "yarl==1.5.1",
 ]
 _ENTRY_POINTS = {

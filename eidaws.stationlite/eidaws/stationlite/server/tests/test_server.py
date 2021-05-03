@@ -152,7 +152,7 @@ class TestStationLiteServer:
             if service == "station":
                 return [
                     create_url("eida.ethz.ch", service_args),
-                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00.000001",
                     b"",
                 ]
             return [
@@ -203,8 +203,8 @@ class TestStationLiteServer:
             if service == "station":
                 return [
                     create_url("eida.ethz.ch", service_args),
-                    b"CH DAVOX -- LHZ 2019-09-27T15:00:00",
-                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"CH DAVOX -- LHZ 2019-09-27T15:00:00.000001",
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00.000001",
                     b"",
                 ]
 
@@ -257,10 +257,10 @@ class TestStationLiteServer:
             if service == "station":
                 return [
                     create_url("eida.bgr.de", service_args),
-                    b"GR WET -- LHZ 2007-03-29T00:00:00",
+                    b"GR WET -- LHZ 2007-03-29T00:00:00.000001",
                     b"",
                     create_url("eida.ethz.ch", service_args),
-                    b"CH HASLI -- LHZ 1999-06-16T00:00:00",
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00.000001",
                     b"",
                 ]
 
@@ -428,7 +428,8 @@ class TestStationLiteServer:
             if service == "station":
                 return [
                     create_url("eida.ethz.ch", service_args),
-                    b"CH GRIMS -- HHZ 2011-11-09T00:00:00 2015-10-30T10:50:00",
+                    b"CH GRIMS -- HHZ 2011-11-09T00:00:00.000001 "
+                    b"2015-10-30T10:49:59.999999",
                     b"",
                 ]
 

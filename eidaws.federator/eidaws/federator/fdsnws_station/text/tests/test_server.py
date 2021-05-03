@@ -116,8 +116,7 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * 1993-11-16T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -133,7 +132,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL....2013-11-10.2013-11-11.network",
+                            "NL....1993-01-01.network",
                             reader="read_text",
                         ),
                     ),
@@ -144,7 +143,7 @@ class TestFDSNStationTextServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_text_content_type,
-            "result": "NL....2013-11-10.2013-11-11.network",
+            "result": "NL....1993-01-01.network",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -197,8 +196,7 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * * "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN * * 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -214,7 +212,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN...2013-11-10.2013-11-11.station",
+                            "NL.HGN...2001-06-06.station",
                             reader="read_text",
                         ),
                     ),
@@ -225,7 +223,7 @@ class TestFDSNStationTextServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_text_content_type,
-            "result": "NL.HGN...2013-11-10.2013-11-11.station",
+            "result": "NL.HGN...2001-06-06.station",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -259,7 +257,7 @@ class TestFDSNStationTextServer(
             ),
         ],
     )
-    async def test_single_sncl_level_station(
+    async def test_single_sncl_level_channel(
         self,
         server_config,
         tester,
@@ -279,8 +277,7 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -296,7 +293,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -307,7 +304,7 @@ class TestFDSNStationTextServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_text_content_type,
-            "result": "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+            "result": "NL.HGN.02.BHZ.2009-04-27.channel",
         }
         await tester(
             self.FED_PATH_RESOURCE,
@@ -364,9 +361,8 @@ class TestFDSNStationTextServer(
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
                             "NL DBN -- BHZ "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "1997-11-25T00:00:00.000001 2018-06-30T23:58:59.999999\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -385,7 +381,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.DBN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.DBN..BHZ.1997-11-25.2018-06-03.channel",
                             reader="read_text",
                         ),
                     ),
@@ -396,7 +392,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -463,12 +459,11 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/station/1/query\n"
-                            "CH HASLI -- BHZ "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "CH HASLI -- BHZ 1999-06-16T00:00:00.000001\n"
                             "\n"
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
                             "NL DBN -- BHZ "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "1997-11-25T00:00:00.000001 2018-06-30T23:58:59.999999\n"
                         ),
                     ),
                 )
@@ -487,7 +482,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "CH.HASLI..BHZ.2013-11-10.2013-11-11.channel",
+                            "CH.HASLI..BHZ.1999-06-16.channel",
                             reader="read_text",
                         ),
                     ),
@@ -500,7 +495,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -558,7 +553,7 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://geofon.gfz-potsdam.de/fdsnws/station/1/query\n"
-                            "UP FABU * * 2012-07-31T00:00:00\n"
+                            "UP FABU * * 2012-07-31T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -639,8 +634,7 @@ class TestFDSNStationTextServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * "
-                            "2013-11-10T00:00:00 2013-11-11T00:00:00\n"
+                            "NL * * * 1993-11-16T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -656,7 +650,7 @@ class TestFDSNStationTextServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL....2013-11-10.2013-11-11.network",
+                            "NL....1993-01-01.network",
                             reader="read_text",
                         ),
                     ),
@@ -667,7 +661,7 @@ class TestFDSNStationTextServer(
         expected = {
             "status": 200,
             "content_type": fdsnws_station_text_content_type,
-            "result": "NL....2013-11-10.2013-11-11.network",
+            "result": "NL....1993-01-01.network",
         }
         await tester(
             self.FED_PATH_RESOURCE,

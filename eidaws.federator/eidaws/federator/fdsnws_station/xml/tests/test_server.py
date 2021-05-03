@@ -146,8 +146,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL * * * 1997-11-25T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -163,7 +162,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL....2013-11-10.2013-11-11.network",
+                            "NL....1993-01-01.network",
                             reader="read_text",
                         ),
                     ),
@@ -226,8 +225,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN * * 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL HGN * * 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -243,7 +241,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN...2013-11-10.2013-11-11.station",
+                            "NL.HGN...2001-06-06.station",
                             reader="read_text",
                         ),
                     ),
@@ -307,8 +305,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -324,7 +321,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -388,8 +385,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -405,7 +401,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.response",
+                            "NL.HGN.02.BHZ.2009-04-27.response",
                             reader="read_text",
                         ),
                     ),
@@ -472,10 +468,9 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL DBN -- BHZ 1997-11-25T00:00:00.000001 "
+                            "2018-06-30T23:58:59.999999\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -494,7 +489,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -505,7 +500,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.DBN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.DBN..BHZ.1997-11-25.2018-06-30.channel",
                             reader="read_text",
                         ),
                     ),
@@ -572,10 +567,8 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL HGN -- BHN 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
-                            "NL HGN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL HGN 02 BHN 2009-04-27T00:00:00.000001\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -594,7 +587,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHN.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHN.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -605,7 +598,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -672,12 +665,10 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://eida.ethz.ch/fdsnws/station/1/query\n"
-                            "CH HASLI -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "CH HASLI -- BHZ 1999-06-16T00:00:00.000001\n"
                             "\n"
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL DBN -- BHZ 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL HGN 02 BHZ 2009-04-27T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -696,7 +687,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "CH.HASLI..BHZ.2013-11-10.2013-11-11.channel",
+                            "CH.HASLI..BHZ.1999-06-16.channel",
                             reader="read_text",
                         ),
                     ),
@@ -709,7 +700,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL.HGN..BHZ.2013-11-10.2013-11-11.channel",
+                            "NL.HGN.02.BHZ.2009-04-27.channel",
                             reader="read_text",
                         ),
                     ),
@@ -771,8 +762,7 @@ class TestFDSNStationXMLServer(
                         status=200,
                         text=(
                             "http://www.orfeus-eu.org/fdsnws/station/1/query\n"
-                            "NL * * * 2013-11-10T00:00:00 "
-                            "2013-11-11T00:00:00\n"
+                            "NL * * * 1997-11-25T00:00:00.000001\n"
                         ),
                     ),
                 )
@@ -788,7 +778,7 @@ class TestFDSNStationXMLServer(
                     web.Response(
                         status=200,
                         text=load_data(
-                            "NL....2013-11-10.2013-11-11.network",
+                            "NL....1993-01-01.network",
                             reader="read_text",
                         ),
                     ),

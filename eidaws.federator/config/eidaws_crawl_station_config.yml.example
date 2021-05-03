@@ -31,16 +31,40 @@
 # federator-url: http://localhost:80
 #
 # ----
-# Defines whether to crawl epochs fully split i.e. as defined by
-# fdsnws-station, too. By default only merged epochs are crawled.
-#
-# original-epochs: False
-#
-# ----
 # Restrict crawling to the domains specified. By default all domains are
 # crawled.
 #
 # domain:
+#   # ODC
+#   - www.orfeus-eu.org
+#   # GFZ
+#   - geofon.gfz-potsdam.de
+#   # RESIF
+#   - ws.resif.fr
+#   # INGV
+#   - webservices.ingv.it
+#   # ETHZ
+#   - eida.ethz.ch
+#   # BGR
+#   - eida.bgr.de
+#   # NIEP
+#   - eida-routing.infp.ro
+#   # KOERI
+#   - eida.koeri.boun.edu.tr
+#   # LMU
+#   - erde.geophysik.uni-muenchen.de
+#   # NOA
+#   - eida.gein.noa.gr
+#   # UIB
+#   - eida.geo.uib.no
+#   # ICGC
+#   - ws.icgc.cat
+#
+# ----
+# Domains to be excluded from crawling. Exclusions are calculated first,
+# inclusions later. By default all domains are crawled.
+#
+# exclude-domain:
 #   # ODC
 #   - www.orfeus-eu.org
 #   # GFZ
@@ -127,6 +151,56 @@
 # (including connection establishment, request sending and response reading).
 #
 # timeout: 10
+#
+# ----
+# Delay requests by the number of seconds specified.
+#
+# delay: 1
+#
+# ----
+# Defines if stream epochs are sorted alphanumerically before crawling.
+#
+# sorted: False
+#
+# ----
+# Dump the crawling history to the path specified. Specify the path as '-' if
+# you want the crawler to dump te history to stdout.
+#
+# history-json-dump: path/to/history
+#
+# ----
+# Load the crawling history from the path specified. Specify path as '-' if you
+# want the crawler to load the history from stdin. If loading the crawling
+# history is enabled, crawling is performed based on the history provided
+# syncronized with eidaws-stationlite. Therefore, using the '--format' CLI
+# argument has no effect. Note that crawling will be executed in the sorting
+# order provided by the history.
+#
+# history-json-load: path/to/history
+#
+# ----
+# Crawl supplementary stream epochs from eidaws-stationlite, too, while crawling
+# based on a history. Note that for supplementary epochs crawling is performed
+# for the formats specified by the '--format' CLI argument.
+#
+# history-include-supplementary-epochs: False
+#
+# ----
+# Whitespace separated list of HTTP status codes. Perform a history based
+# crawling run, but restrict the stream epochs to be crawled to the HTTP status
+# codes defined.
+#
+# history-by-status:
+#   - 500
+#   - 502
+#   - 503
+#   - 504
+#   - 429
+#
+# ----
+# Display progress bar while crawling.
+#
+# progress-bar: False
 #
 # ----
 # Absolute path to a process ID locking file in order to prevent from having

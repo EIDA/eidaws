@@ -714,7 +714,9 @@ class StreamEpochsHandler:
         if stream_epochs:
             self.merge(stream_epochs)
 
-    def modify_with_temporal_constraints(self, start=None, end=None):
+    def modify_with_temporal_constraints(
+        self, start=None, end=None, merge_epochs=True
+    ):
         """
         Modify epochs by performing a real intersection.
 
@@ -734,11 +736,40 @@ class StreamEpochsHandler:
         #    ---..----..----
         for stream_id, epochs in self.d.items():
             se = StreamEpochs.from_stream(
-                Stream(**self._stream_id_to_dict(stream_id)), epochs=epochs
+                Stream(**self._stream_id_to_dict(stream_id)),
+                epochs=epochs,
+                merge_epochs=merge_epochs,
             )
             se.modify_with_temporal_constraints(start, end)
 
             self.d[se.id()] = se.epochs
+
+    def canonicalize_epochs(
+        self,
+        start=None,
+        end=None,
+        canonicalization_offset=datetime.timedelta(microseconds=1),
+    ):
+
+        for stream_id, epochs in self.d.items():
+            canonicalized = []
+            for epoch in epochs:
+                _start = epoch.begin
+                _end = epoch.end
+                if start is None or start != _start:
+                    _start += canonicalization_offset
+                if _end not in (None, datetime.datetime.max) and (
+                    end is None or end != _end
+                ):
+                    _end -= canonicalization_offset
+
+                if _start == _end:
+                    # skip if original epoch was too short
+                    continue
+
+                canonicalized.append((_start, _end))
+
+            self.d[stream_id] = Epochs.from_tuples(canonicalized)
 
     def add(self, other):
         """
