@@ -387,8 +387,6 @@ class CrawlFDSNWSStationApp:
         loc_codes,
         cha_codes,
         level,
-        domains=None,
-        domains_exclude=None,
     ):
         """
         Emerge stream epochs using eidaws-stationlite.
