@@ -261,6 +261,9 @@ class CrawlFDSNWSStationApp:
                         f"Request stream epochs for level: {level!r}"
                     )
 
+                    # https://github.com/aio-libs/aiohttp/issues/4549
+                    # TODO(damb): Debug with tcpdump
+                    await asyncio.sleep(0.02)
                     stream_epochs = await self._emerge_stream_epochs(
                         session,
                         net_codes,
