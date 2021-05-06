@@ -92,19 +92,6 @@ class RedirectView(web.View):
                         f"resp.request_info={resp.request_info}, "
                         f"resp.url={resp.url}, resp.headers={resp.headers}"
                     )
-                    # XXX(damb): Workaround since aiohttp seems to always set
-                    # the Transfer-Encoding header field which violates RFC7329
-                    # see also:
-                    # https://tools.ietf.org/html/rfc7230#section-3.3.1
-                    if (
-                        resp.status == 204
-                        or (resp.status >= 100 and resp.status <= 199)
-                        or request.method == "CONNECT"
-                    ):
-                        return web.Response(
-                            headers=resp.headers, status=resp.status
-                        )
-
                     proxied_response = web.StreamResponse(
                         headers=resp.headers, status=resp.status
                     )
