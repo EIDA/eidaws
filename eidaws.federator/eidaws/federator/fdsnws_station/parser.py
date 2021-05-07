@@ -90,6 +90,17 @@ class StationSchema(ServiceSchema):
             raise ValidationError("Invalid level for format 'text'.")
 
     @validates_schema
+    def validate_time_constraints(self, data, **kwargs):
+        start_after = data.get("startafter")
+        end_before = data.get("endbefore")
+
+        if start_after and end_before and start_after >= end_before:
+            raise ValidationError(
+                "Invalid time constraints specified: 'startafter' >= "
+                "'endbefore'"
+            )
+
+    @validates_schema
     def validate_spatial_params(self, data, **kwargs):
         # NOTE(damb): Allow either rectangular or circular spatial parameters
         rectangular_spatial = (
