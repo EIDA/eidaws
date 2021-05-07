@@ -87,6 +87,15 @@ class _StationTextWorker(BaseWorker):
                 await self.handle_413()
             elif resp_status in FDSNWS_NO_CONTENT_CODES:
                 logger.info(msg)
+            # https://github.com/aio-libs/aiohttp/issues/3641
+            elif (
+                resp_status == 400 and "invalid constant string" == err.message
+            ):
+                resp_status = 204
+                logger.info(
+                    "Excess found in read (reset status code to "
+                    f"{resp_status}). Original aiohttp error: {msg}"
+                )
             else:
                 await self.handle_error(msg=msg, context=context)
 
