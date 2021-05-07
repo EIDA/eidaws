@@ -90,6 +90,17 @@ class StationSchema(ServiceSchema):
             raise ValidationError("Invalid level for format 'text'.")
 
     @validates_schema
+    def validate_time_constraints(self, data, **kwargs):
+        start_after = data.get("startafter")
+        end_before = data.get("endbefore")
+
+        if start_after and end_before and start_after >= end_before:
+            raise ValidationError(
+                "Invalid time constraints specified: 'startafter' >= "
+                "'endbefore'"
+            )
+
+    @validates_schema
     def validate_spatial_params(self, data, **kwargs):
         # NOTE(damb): Allow either rectangular or circular spatial parameters
         rectangular_spatial = (
@@ -105,8 +116,8 @@ class StationSchema(ServiceSchema):
 
         if has_rectangular_spatial and has_circular_spatial:
             raise ValidationError(
-                "Bad Request: Both rectangular spatial and circular spatial"
-                + " parameters defined."
+                "Both rectangular spatial and circular spatial "
+                "parameters defined."
             )
 
         if (
@@ -120,7 +131,7 @@ class StationSchema(ServiceSchema):
             has_circular_spatial
             and (data.get("minradius", 0.0) >= data.get("maxradius", 180.0))
         ):
-            raise ValidationError("Bad Request: Invalid spatial constraints.")
+            raise ValidationError("Invalid spatial constraints.")
 
     class Meta:
         service = "station"
