@@ -116,8 +116,8 @@ class StationSchema(ServiceSchema):
 
         if has_rectangular_spatial and has_circular_spatial:
             raise ValidationError(
-                "Bad Request: Both rectangular spatial and circular spatial"
-                + " parameters defined."
+                "Both rectangular spatial and circular spatial "
+                "parameters defined."
             )
 
         if (
@@ -131,7 +131,7 @@ class StationSchema(ServiceSchema):
             has_circular_spatial
             and (data.get("minradius", 0.0) >= data.get("maxradius", 180.0))
         ):
-            raise ValidationError("Bad Request: Invalid spatial constraints.")
+            raise ValidationError("Invalid spatial constraints.")
 
     class Meta:
         service = "station"
