@@ -80,8 +80,10 @@ class Network(CodeMixin, ORMBase):
     channel_epochs = relationship(
         "ChannelEpoch", back_populates="network", cascade="all, delete-orphan"
     )
-    stream_epochs = relationship(
-        "StreamEpoch", back_populates="network", cascade="all, delete-orphan"
+    virtual_channel_epochs = relationship(
+        "VirtualChannelEpoch",
+        back_populates="network",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):
@@ -136,8 +138,10 @@ class Station(CodeMixin, ORMBase):
     channel_epochs = relationship(
         "ChannelEpoch", back_populates="station", cascade="all, delete-orphan"
     )
-    stream_epochs = relationship(
-        "StreamEpoch", back_populates="station", cascade="all, delete-orphan"
+    virtual_channel_epochs = relationship(
+        "VirtualChannelEpoch",
+        back_populates="station",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):
@@ -200,45 +204,45 @@ class Service(ORMBase):
         return "<Service(name=%s)>" % self.name
 
 
-class StreamEpochGroup(CodeMixin, ORMBase):
+class VirtualChannelEpochGroup(CodeMixin, ORMBase):
     """
     ORM entity representing a *Virtual Network* in the context of
     :code:`eidaws-routing`.
     """
 
-    stream_epochs = relationship(
-        "StreamEpoch",
-        back_populates="stream_epoch_group",
+    virtual_channel_epochs = relationship(
+        "VirtualChannelEpoch",
+        back_populates="virtual_channel_epoch_group",
         cascade="all, delete-orphan",
     )
 
     def __repr__(self):
-        return "<StreamEpochGroup(code=%s)>" % self.code
+        return "<VirtualChannelEpochGroup(code=%s)>" % self.code
 
 
-class StreamEpoch(EpochMixin, LastSeenMixin, ORMBase):
+class VirtualChannelEpoch(EpochMixin, LastSeenMixin, ORMBase):
     """
-    ORM entity representing a *Virtual Stream Epoch* in the context of
+    ORM entity representing a *Virtual Channel Epoch* in the context of
     :code:`eidaws-routing` virtual networks.
     """
 
     network_ref = Column(Integer, ForeignKey("network.id"), index=True)
     station_ref = Column(Integer, ForeignKey("station.id"), index=True)
-    stream_epoch_group_ref = Column(
-        Integer, ForeignKey("streamepochgroup.id"), index=True
+    virtual_channel_epoch_group_ref = Column(
+        Integer, ForeignKey("virtualchannelepochgroup.id"), index=True
     )
     channel = Column(String(LENGTH_CHANNEL_CODE), nullable=False, index=True)
     location = Column(String(LENGTH_LOCATION_CODE), nullable=False, index=True)
 
-    station = relationship("Station", back_populates="stream_epochs")
-    network = relationship("Network", back_populates="stream_epochs")
-    stream_epoch_group = relationship(
-        "StreamEpochGroup", back_populates="stream_epochs"
+    station = relationship("Station", back_populates="virtual_channel_epochs")
+    network = relationship("Network", back_populates="virtual_channel_epochs")
+    virtual_channel_epoch_group = relationship(
+        "VirtualChannelEpochGroup", back_populates="virtual_channel_epochs"
     )
 
     def __repr__(self):
         return (
-            "<StreamEpoch(network=%r, station=%r, channel=%r, "
+            "<VirtualChannelEpoch(network=%r, station=%r, channel=%r, "
             "location=%r, starttime=%r, endtime=%r)>"
             % (
                 self.network,
