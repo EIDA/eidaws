@@ -22,8 +22,12 @@ from obspy import UTCDateTime
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-from eidaws.stationlite.harvester import RoutingHarvester, VNetHarvester
 from eidaws.stationlite.engine import db
+from eidaws.stationlite.harvest.harvester import (
+    Harvester,
+    RoutingHarvester,
+    VNetHarvester,
+)
 from eidaws.stationlite.settings import (
     STL_HARVEST_BASE_ID,
     STL_HARVEST_DEFAULT_CONFIG_FILES,
@@ -180,7 +184,9 @@ class StationLiteHarvestApp:
             )
 
             Session = db.ScopedSession()
-            engine = create_engine(self.config["sqlalchemy_database_uri"])
+            engine = create_engine(
+                self.config["sqlalchemy_database_uri"], echo=False
+            )
             Session.configure(bind=engine)
 
             if engine.name == "sqlite":
