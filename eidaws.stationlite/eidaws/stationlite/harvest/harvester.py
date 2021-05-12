@@ -454,7 +454,46 @@ class RoutingHarvester(Harvester):
                 f"Created new {type(service)} object {service!r}"
             )
 
+        _ = self._emerge_datacenter(session, service)
+
         return service
+
+    def _emerge_datacenter(self, session, service):
+        try:
+            datacenter = (
+                session.query(orm.DataCenter)
+                .filter(orm.DataCenter.url == self.url)
+                .one_or_none()
+            )
+        except MultipleResultsFound as err:
+            raise self.IntegrityError(err)
+
+        if datacenter is None:
+            datacenter = orm.DataCenter(url=self.url)
+            session.add(datacenter)
+            self.logger.debug(
+                f"Created new {type(datacenter)} object {datacenter!r}"
+            )
+
+            _ = orm.ServiceDataCenter(service=service, datacenter=datacenter)
+
+        else:
+            try:
+                service_dc = (
+                    session.query(orm.ServiceDataCenter)
+                    .filter(orm.ServiceDataCenter.service == service)
+                    .filter(orm.ServiceDataCenter.datacenter == datacenter)
+                    .one_or_none()
+                )
+            except MultipleResultsFound as err:
+                raise IntegrityError(err)
+
+            if service_dc is None:
+                _ = orm.ServiceDataCenter(
+                    service=service, datacenter=datacenter
+                )
+
+        return datacenter
 
     def _emerge_endpoint(self, session, url, service):
         """

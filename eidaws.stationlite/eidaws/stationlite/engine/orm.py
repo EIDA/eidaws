@@ -7,6 +7,7 @@ import datetime
 import enum
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
@@ -14,7 +15,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Table,
     Unicode,
 )
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
@@ -218,11 +218,11 @@ class Routing(EpochMixin, LastSeenMixin, ORMBase):
     epoch_ref = Column(Integer, ForeignKey("epoch.id"), index=True)
     endpoint_ref = Column(Integer, ForeignKey("endpoint.id"), index=True)
 
-    epoch = relationship("Epoch", back_populates="endpoints")
-    endpoint = relationship("Endpoint", back_populates="epochs")
-
     # TODO(damb): Make use of Association Proxy for cascades. See:
     # https://docs.sqlalchemy.org/en/14/orm/extensions/associationproxy.html
+    # TODO(damb): Configure cascades
+    epoch = relationship("Epoch", back_populates="endpoints")
+    endpoint = relationship("Endpoint", back_populates="epochs")
 
     def __repr__(self):
         return (
@@ -247,20 +247,6 @@ class Endpoint(ORMBase):
         return f"<Endpoint(url={self.url!r})>"
 
 
-service_datacenter = Table(
-    "servicedatacenter",
-    ORMBase.metadata,
-    Column(
-        "service_ref", Integer, ForeignKey("service.id", ondelete="CASCADE")
-    ),
-    Column(
-        "datacenter_ref",
-        Integer,
-        ForeignKey("datacenter.id", ondelete="CASCADE"),
-    ),
-)
-
-
 class Service(ORMBase):
 
     name = Column(String(LENGTH_STD_CODE), nullable=False, unique=True)
@@ -269,30 +255,35 @@ class Service(ORMBase):
         "Endpoint", back_populates="service", cascade="all, delete-orphan"
     )
     datacenters = relationship(
-        "DataCenter",
-        secondary=service_datacenter,
-        back_populates="services",
-        passive_deletes=True,
+        "ServiceDataCenter",
+        back_populates="service",
     )
 
     def __repr__(self):
         return f"<Service(name={self.name!r})>"
 
 
-class DataCenter(ORMBase):
+class DataCenter(LastSeenMixin, ORMBase):
 
     name = Column(String(LENGTH_STD_CODE), unique=True)
     url = Column(String(LENGTH_URL), nullable=False)
 
-    services = relationship(
-        "Service",
-        secondary=service_datacenter,
-        back_populates="datacenters",
-        cascade="all, delete",
-    )
+    services = relationship("ServiceDataCenter", back_populates="datacenter")
 
     def __repr__(self):
         return f"<DataCenter(url={self.url!r}, name={self.name!r})>"
+
+
+class ServiceDataCenter(ORMBase):
+    service_ref = Column(Integer, ForeignKey("service.id"), index=True)
+    datacenter_ref = Column(Integer, ForeignKey("datacenter.id"), index=True)
+    enabled = Column(Boolean, default=True)
+
+    # TODO(damb): Make use of Association Proxy for cascades. See:
+    # https://docs.sqlalchemy.org/en/14/orm/extensions/associationproxy.html
+    # TODO(damb): Configure cascades
+    service = relationship("Service", back_populates="datacenters")
+    datacenter = relationship("DataCenter", back_populates="services")
 
 
 class VirtualChannelEpochGroup(CodeMixin, ORMBase):
