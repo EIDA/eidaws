@@ -8,16 +8,22 @@ import enum
 
 from sqlalchemy import (
     Column,
-    Integer,
-    Float,
-    String,
-    Unicode,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
+    Integer,
+    String,
+    Table,
+    Unicode,
 )
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 from sqlalchemy.orm import relationship
+
+from eidaws.stationlite.engine.utils import (
+    Epoch as _Epoch,
+    RestrictedStatus as _RestrictedStatus,
+)
 
 
 LENGTH_CHANNEL_CODE = 3
@@ -25,18 +31,6 @@ LENGTH_DESCRIPTION = 512
 LENGTH_LOCATION_CODE = 2
 LENGTH_STD_CODE = 32
 LENGTH_URL = 256
-
-
-class EpochType(enum.Enum):
-    NETWORK = 1
-    STATION = 2
-    CHANNEL = 3
-
-
-class RestrictedStatusType(enum.Enum):
-    OPEN = 1
-    CLOSED = 2
-    PARTIAL = 3
 
 
 class Base:
@@ -77,12 +71,20 @@ class RestrictedStatusMixin(object):
     @declared_attr
     def restrictedstatus(cls):
         return Column(
-            Enum(RestrictedStatusType),
-            default=RestrictedStatusType.OPEN,
+            Enum(_RestrictedStatus),
+            default=_RestrictedStatus.OPEN,
         )
 
 
 ORMBase = declarative_base(cls=Base)
+
+
+class EpochType(ORMBase):
+    type = Column(Enum(_Epoch), nullable=False, default=_Epoch.CHANNEL)
+
+    epochs = relationship(
+        "Epoch", back_populates="type", cascade="all, delete-orphan"
+    )
 
 
 class Epoch(EpochMixin, RestrictedStatusMixin, LastSeenMixin, ORMBase):
@@ -90,16 +92,26 @@ class Epoch(EpochMixin, RestrictedStatusMixin, LastSeenMixin, ORMBase):
     ORM entity representing a StationXML epoch.
     """
 
-    type = Column(Enum(EpochType), nullable=False, default=EpochType.CHANNEL)
+    epochtype_ref = Column(Integer, ForeignKey("epochtype.id"))
 
+    type = relationship("EpochType", back_populates="epochs")
     network_epoch = relationship(
-        "NetworkEpoch", uselist=False, back_populates="epoch"
+        "NetworkEpoch",
+        uselist=False,
+        back_populates="epoch",
+        cascade="all, delete-orphan",
     )
     station_epoch = relationship(
-        "StationEpoch", uselist=False, back_populates="epoch"
+        "StationEpoch",
+        uselist=False,
+        back_populates="epoch",
+        cascade="all, delete-orphan",
     )
     channel_epoch = relationship(
-        "ChannelEpoch", uselist=False, back_populates="epoch"
+        "ChannelEpoch",
+        uselist=False,
+        back_populates="epoch",
+        cascade="all, delete-orphan",
     )
     # many to many Epoch<->Endpoint
     endpoints = relationship("Routing", back_populates="epoch")
@@ -209,10 +221,13 @@ class Routing(EpochMixin, LastSeenMixin, ORMBase):
     epoch = relationship("Epoch", back_populates="endpoints")
     endpoint = relationship("Endpoint", back_populates="epochs")
 
+    # TODO(damb): Make use of Association Proxy for cascades. See:
+    # https://docs.sqlalchemy.org/en/14/orm/extensions/associationproxy.html
+
     def __repr__(self):
         return (
             f"<Routing(url={self.endpoint.url!r}, "
-            "starttime={self.starttime!r}, endtime={self.endtime!r})>"
+            f"starttime={self.starttime!r}, endtime={self.endtime!r})>"
         )
 
 
@@ -232,6 +247,20 @@ class Endpoint(ORMBase):
         return f"<Endpoint(url={self.url!r})>"
 
 
+service_datacenter = Table(
+    "servicedatacenter",
+    ORMBase.metadata,
+    Column(
+        "service_ref", Integer, ForeignKey("service.id", ondelete="CASCADE")
+    ),
+    Column(
+        "datacenter_ref",
+        Integer,
+        ForeignKey("datacenter.id", ondelete="CASCADE"),
+    ),
+)
+
+
 class Service(ORMBase):
 
     name = Column(String(LENGTH_STD_CODE), nullable=False, unique=True)
@@ -239,9 +268,31 @@ class Service(ORMBase):
     endpoints = relationship(
         "Endpoint", back_populates="service", cascade="all, delete-orphan"
     )
+    datacenters = relationship(
+        "DataCenter",
+        secondary=service_datacenter,
+        back_populates="services",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Service(name={self.name!r})>"
+
+
+class DataCenter(ORMBase):
+
+    name = Column(String(LENGTH_STD_CODE), unique=True)
+    url = Column(String(LENGTH_URL), nullable=False)
+
+    services = relationship(
+        "Service",
+        secondary=service_datacenter,
+        back_populates="datacenters",
+        cascade="all, delete",
+    )
+
+    def __repr__(self):
+        return f"<DataCenter(url={self.url!r}, name={self.name!r})>"
 
 
 class VirtualChannelEpochGroup(CodeMixin, ORMBase):
