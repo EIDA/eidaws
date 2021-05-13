@@ -29,9 +29,9 @@ from eidaws.utils.settings import (
 )
 from eidaws.utils.misc import Route
 
-from eidaws.stationlite.engine.db_query import (
+from eidaws.stationlite.engine.query import (
     resolve_vnetwork,
-    find_streamepochs_and_routes,
+    query_routes,
 )
 from eidaws.stationlite.server.db import db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
@@ -155,7 +155,7 @@ class StationLiteQueryResource(Resource):
         for stream_epoch in stream_epochs:
             self.logger.debug(f"Processing request for {stream_epoch!r}")
             # query
-            _routes = find_streamepochs_and_routes(
+            _routes = query_routes(
                 db.session,
                 stream_epoch,
                 args["service"],
