@@ -21,7 +21,7 @@ from eidaws.utils.sncl import (
 )
 
 
-logger = logging.getLogger("eidaws.stationlite.engine.db_query")
+logger = logging.getLogger("eidaws.stationlite.engine.query")
 
 
 # ----------------------------------------------------------------------------
