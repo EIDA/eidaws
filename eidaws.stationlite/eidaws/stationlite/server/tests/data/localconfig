@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ns0:routing xmlns:ns0="http://geofon.gfz-potsdam.de/ns/Routing/1.0/">
+ <ns0:route networkCode="CH" stationCode="DAVOX,GRIMS,GUT,HASLI" locationCode="*" streamCode="*">
+  <ns0:station address="http://eida.ethz.ch/fdsnws/station/1/query" priority="1" start="1980-01-01T00:00:00" end=""/>
+  <ns0:dataselect address="http://eida.ethz.ch/fdsnws/dataselect/1/query" priority="1" start="1980-01-01T00:00:00" end=""/>
+  <ns0:wfcatalog address="http://eida.ethz.ch/eidaws/wfcatalog/1/query" priority="1" start="1980-01-01T00:00:00" end=""/>
+ </ns0:route>
+ <ns0:route networkCode="GR" stationCode="WET" locationCode="*" streamCode="*">
+  <ns0:station address="http://eida.bgr.de/fdsnws/station/1/query" priority="1" start="1976-02-17T00:00:00" end=""/>
+  <ns0:dataselect address="http://eida.bgr.de/fdsnws/dataselect/1/query" priority="1" start="1976-02-17T00:00:00" end=""/>
+  <ns0:wfcatalog address="http://eida.bgr.de/eidaws/wfcatalog/1/query" priority="1" start="1976-02-17T00:00:00" end=""/>
+ </ns0:route>
+ <ns0:vnetwork networkCode="_ALPARRAY">
+  <ns0:stream networkCode="CH" stationCode="GRIMS" locationCode="*" streamCode="*" start="2011-11-09T00:00:00.0000Z" end=""/>
+ </ns0:vnetwork>
+ <ns0:vnetwork networkCode="_NFOVALAIS">
+  <ns0:stream networkCode="CH" stationCode="GRIMS" locationCode="*" streamCode="*" start="2011-11-09T00:00:00.0000Z" end=""/>
+ </ns0:vnetwork>
+</ns0:routing>
