@@ -219,7 +219,7 @@ class StreamEpoch(
 
     __slots__ = ()
 
-    FIELDS_SHORT = ("net", "sta", "loc", "cha", "start", "end")
+    FIELDS_SHORT = ("stream", "start", "end")
 
     def __new__(cls, stream, starttime=None, endtime=None):
         return super().__new__(
@@ -395,8 +395,10 @@ class StreamEpoch(
         Return a new :py:class:`OrderedDict` which maps field names to their
         values.
         """
+        retval = self.stream._asdict(short_keys=short_keys)
         fields = self.FIELDS_SHORT if short_keys else self._fields
-        return OrderedDict(zip(fields, self))
+        retval.update(zip(fields[1:], (self.starttime, self.endtime)))
+        return retval
 
     @property
     def network(self):
