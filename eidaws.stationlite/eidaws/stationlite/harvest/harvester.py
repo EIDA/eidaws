@@ -595,6 +595,9 @@ class RoutingHarvester(Harvester):
             )
             net.network_epochs.append(net_epoch)
             self.logger.debug(f"Created new {type(net)} object {net!r}")
+            self.logger.debug(
+                f"Created new {type(net_epoch)} object {net_epoch!r}"
+            )
 
             session.add(net)
 
@@ -728,6 +731,9 @@ class RoutingHarvester(Harvester):
             )
             sta.station_epochs.append(sta_epoch)
             self.logger.debug(f"Created new {type(sta)} object {sta!r}")
+            self.logger.debug(
+                f"Created new {type(sta_epoch)} object {sta_epoch!r}"
+            )
 
             session.add(sta)
 
