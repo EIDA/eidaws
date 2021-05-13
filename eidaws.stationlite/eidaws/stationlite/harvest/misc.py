@@ -19,7 +19,7 @@ from sqlalchemy import create_engine
 from cached_property import cached_property
 
 from eidaws.stationlite.version import __version__
-from eidaws.stationlite.engine import orm
+from eidaws.stationlite.core import orm
 from eidaws.stationlite.settings import STL_HARVEST_BASE_ID
 from eidaws.utils.app import AppError
 from eidaws.utils.cli import CustomParser

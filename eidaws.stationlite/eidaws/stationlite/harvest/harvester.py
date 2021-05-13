@@ -22,8 +22,8 @@ from eidaws.stationlite.harvest.request import (
     RequestsError,
     NoContent,
 )
-from eidaws.stationlite.engine import orm
-from eidaws.stationlite.engine.utils import (
+from eidaws.stationlite.core import orm
+from eidaws.stationlite.core.utils import (
     Epoch as _Epoch,
     RestrictedStatus as _RestrictedStatus,
 )
@@ -795,10 +795,10 @@ class RoutingHarvester(Harvester):
         :type channel: :py:class:`obspy.core.inventory.channel.Channel`
         :param network: Network referenced by the channel epoch
         :type network:
-        :py:class:`eidaws.stationlite.engine.orm.Network`
+        :py:class:`eidaws.stationlite.core.orm.Network`
         :param station: Station referenced by the channel epoch
         :type station:
-        :py:class:`eidaws.stationlite.engine.orm.Station`
+        :py:class:`eidaws.stationlite.core.orm.Station`
         :param base_node: Parent base node element shipping properties to be
             inherited
         :type base_node: :py:class:`self.BaseNode`

@@ -29,7 +29,7 @@ from eidaws.utils.settings import (
 )
 from eidaws.utils.misc import Route
 
-from eidaws.stationlite.engine.query import (
+from eidaws.stationlite.core.query import (
     resolve_vnetwork,
     query_routes,
 )

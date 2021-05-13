@@ -22,7 +22,7 @@ from obspy import UTCDateTime
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-from eidaws.stationlite.engine import db
+from eidaws.stationlite.core import db
 from eidaws.stationlite.harvest.harvester import (
     Harvester,
     RoutingHarvester,

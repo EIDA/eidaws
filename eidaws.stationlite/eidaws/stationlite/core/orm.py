@@ -20,7 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 from sqlalchemy.orm import relationship
 
-from eidaws.stationlite.engine.utils import (
+from eidaws.stationlite.core.utils import (
     Epoch as _Epoch,
     RestrictedStatus as _RestrictedStatus,
 )

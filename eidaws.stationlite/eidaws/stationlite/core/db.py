@@ -11,7 +11,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.event import listens_for
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from eidaws.stationlite.engine import orm
+from eidaws.stationlite.core import orm
 from eidaws.utils.error import Error, ErrorWithTraceback
 
 

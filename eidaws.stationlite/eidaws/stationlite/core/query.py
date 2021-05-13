@@ -6,8 +6,8 @@ import logging
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import null
 
-from eidaws.stationlite.engine import orm
-from eidaws.stationlite.engine.utils import Epoch, RestrictedStatus
+from eidaws.stationlite.core import orm
+from eidaws.stationlite.core.utils import Epoch, RestrictedStatus
 from eidaws.utils.misc import Route
 from eidaws.utils.settings import (
     FDSNWS_QUERY_WILDCARD_MULT_CHAR,
@@ -21,7 +21,7 @@ from eidaws.utils.sncl import (
 )
 
 
-logger = logging.getLogger("eidaws.stationlite.engine.query")
+logger = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------------

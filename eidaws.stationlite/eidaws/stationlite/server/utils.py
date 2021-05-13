@@ -9,7 +9,7 @@ import click
 from flask.cli import with_appcontext
 
 from eidaws.stationlite.server.db import db
-from eidaws.stationlite.engine.orm import ORMBase
+from eidaws.stationlite.core.orm import ORMBase
 from eidaws.stationlite.settings import STL_BASE_ID
 
 
