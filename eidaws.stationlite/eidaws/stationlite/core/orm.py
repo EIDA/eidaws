@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-EIDA NG stationlite ORM.
-"""
 
 import datetime
 import enum
