@@ -76,6 +76,12 @@ class RestrictedStatusMixin(object):
         )
 
 
+class DescriptionMixin(object):
+    @declared_attr
+    def description(cls):
+        return Column("description", Unicode(LENGTH_DESCRIPTION))
+
+
 ORMBase = declarative_base(cls=Base)
 
 
@@ -141,11 +147,10 @@ class Network(CodeMixin, ORMBase):
         return f"<Network(code={self.code!r})>"
 
 
-class NetworkEpoch(ORMBase):
+class NetworkEpoch(DescriptionMixin, ORMBase):
 
     network_ref = Column(Integer, ForeignKey("network.id"), index=True)
     epoch_ref = Column(Integer, ForeignKey("epoch.id"), index=True)
-    description = Column(Unicode(LENGTH_DESCRIPTION))
 
     network = relationship("Network", back_populates="network_epochs")
     epoch = relationship("Epoch", back_populates="network_epoch")
@@ -175,11 +180,10 @@ class Station(CodeMixin, ORMBase):
         return f"<Station(code={self.code!r})>"
 
 
-class StationEpoch(ORMBase):
+class StationEpoch(DescriptionMixin, ORMBase):
 
     station_ref = Column(Integer, ForeignKey("station.id"), index=True)
     epoch_ref = Column(Integer, ForeignKey("epoch.id"), index=True)
-    description = Column(Unicode(LENGTH_DESCRIPTION))
     longitude = Column(Float, nullable=False, index=True)
     latitude = Column(Float, nullable=False, index=True)
 
@@ -263,7 +267,7 @@ class Service(ORMBase):
         return f"<Service(name={self.name!r})>"
 
 
-class DataCenter(LastSeenMixin, ORMBase):
+class DataCenter(DescriptionMixin, LastSeenMixin, ORMBase):
 
     name = Column(String(LENGTH_STD_CODE), unique=True)
     url = Column(String(LENGTH_URL), nullable=False)
