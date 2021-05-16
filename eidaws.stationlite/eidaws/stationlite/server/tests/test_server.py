@@ -458,6 +458,64 @@ class TestStationLiteServer:
             (
                 "get",
                 {
+                    "net": "CH",
+                    "sta": "HASLI",
+                    "loc": "--",
+                    "cha": "LHZ",
+                    "start": "1999-03-01",
+                    "end": "2020-01-02",
+                },
+            ),
+            (
+                "post",
+                [
+                    b"CH HASLI -- LHZ 1999-03-01 2020-01-02",
+                ],
+            ),
+        ],
+        ids=["method=GET", "method=POST"],
+    )
+    def test_station(
+        self, client, level_args, content_type, method, params_or_data
+    ):
+        def create_expected_response(level):
+            service_args = {"service": "station"}
+            if level == "network":
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH * * * 1980-01-01T00:00:00.000001",
+                    b"",
+                ]
+            elif level == "station":
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH HASLI * * 1999-01-19T00:00:00.000001",
+                    b"",
+                ]
+            else:
+                return [
+                    create_url("eida.ethz.ch", service_args),
+                    b"CH HASLI -- LHZ 1999-01-19T00:00:00.000001 "
+                    b"1999-06-15T23:59:59.999999",
+                    b"CH HASLI -- LHZ 1999-06-16T00:00:00.000001",
+                    b"",
+                ]
+
+        req_kwargs = create_request_kwargs(
+            method, params_or_data, **level_args, service="station"
+        )
+        resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
+
+        assert resp.status_code == 200
+        assert resp.headers["Content-Type"] == content_type("post")
+        assert b"\n".join(create_expected_response(**level_args)) == resp.data
+
+    @pytest.mark.parametrize(
+        "method,params_or_data",
+        [
+            (
+                "get",
+                {
                     "net": "FOO",
                     "sta": "HASLI",
                     "loc": "--",

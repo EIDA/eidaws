@@ -6,6 +6,7 @@ import requests
 
 from urllib.parse import urlparse, urljoin
 
+from eidaws.stationlite.core.utils import RestrictedStatus
 from eidaws.stationlite.harvest.request import binary_request
 from eidaws.stationlite.settings import STL_SERVICES
 from eidaws.utils.error import Error
@@ -56,7 +57,7 @@ def _get_method_token(url):
         return None
 
 
-def _validate_method_token(url, restricted_status="open"):
+def _validate_method_token(url, restricted_status=RestrictedStatus.OPEN):
     token = _get_method_token(url)
 
     if token is None or token != FDSNWS_QUERY_METHOD_TOKEN:
@@ -69,13 +70,18 @@ validate_station_method_token = _validate_method_token
 validate_wfcatalog_method_token = _validate_method_token
 
 
-def validate_dataselect_method_token(url, restricted_status="open"):
+def validate_dataselect_method_token(
+    url, restricted_status=RestrictedStatus.OPEN
+):
     token = _get_method_token(url)
     if (
         token is None
-        or (restricted_status == "open" and token != FDSNWS_QUERY_METHOD_TOKEN)
         or (
-            restricted_status == "closed"
+            restricted_status == RestrictedStatus.OPEN
+            and token != FDSNWS_QUERY_METHOD_TOKEN
+        )
+        or (
+            restricted_status == RestrictedStatus.CLOSED
             and token != FDSNWS_QUERYAUTH_METHOD_TOKEN
         )
     ):
@@ -84,17 +90,19 @@ def validate_dataselect_method_token(url, restricted_status="open"):
         )
 
 
-def validate_availability_method_token(url, restricted_status="open"):
+def validate_availability_method_token(
+    url, restricted_status=RestrictedStatus.OPEN
+):
     token = _get_method_token(url)
     if (
         token is None
         or (
-            restricted_status == "open"
+            restricted_status == RestrictedStatus.OPEN
             and token
             not in (FDSNWS_QUERY_METHOD_TOKEN, FDSNWS_EXTENT_METHOD_TOKEN)
         )
         or (
-            restricted_status == "closed"
+            restricted_status == RestrictedStatus.CLOSED
             and token
             not in (
                 FDSNWS_QUERYAUTH_METHOD_TOKEN,
@@ -107,7 +115,9 @@ def validate_availability_method_token(url, restricted_status="open"):
         )
 
 
-def validate_method_token(url, service, restricted_status="open"):
+def validate_method_token(
+    url, service, restricted_status=RestrictedStatus.OPEN
+):
     """
     Validates the *service method token* AKA the *service resource*.
     """

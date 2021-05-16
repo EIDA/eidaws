@@ -20,7 +20,6 @@ _DEPS = [
     "eidaws.utils==0.1",
     "fasteners>=0.14.1",
     "Flask>=0.12.2",
-    "Flask-RESTful>=0.3.6",
     "Flask-SQLAlchemy>=2.3.2",
     "importlib_metadata==3.0.0;python_version<'3.8'",
     "jsonschema>=3.2.0",

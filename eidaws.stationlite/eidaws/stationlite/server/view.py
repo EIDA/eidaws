@@ -6,7 +6,7 @@ import socket
 
 from cached_property import cached_property
 from flask import request, make_response, render_template
-from flask_restful import Resource
+from flask.views import MethodView
 from webargs.flaskparser import use_args
 
 from eidaws.stationlite.server.parser import (
@@ -29,16 +29,16 @@ from eidaws.utils.settings import (
 )
 from eidaws.utils.misc import Route
 
-from eidaws.stationlite.engine.db_query import (
+from eidaws.stationlite.core.query import (
     resolve_vnetwork,
-    find_streamepochs_and_routes,
+    query_routes,
 )
 from eidaws.stationlite.server.db import db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
 from eidaws.stationlite.server.stream import OutputStream
 
 
-class StationLiteVersionResource(Resource):
+class StationLiteVersionResource(MethodView):
     """
     ``version`` resource implementation for eidaws-stationlite
     """
@@ -51,7 +51,7 @@ class StationLiteVersionResource(Resource):
     post = get
 
 
-class StationLiteWadlResource(Resource):
+class StationLiteWadlResource(MethodView):
     """
     ``application.wadl`` resource implementation for eidaws-stationlite
     """
@@ -69,7 +69,7 @@ class StationLiteWadlResource(Resource):
     post = get
 
 
-class StationLiteQueryResource(Resource):
+class StationLiteQueryResource(MethodView):
     """
     ``query`` resource implementation for eidaws-stationlite
     """
@@ -155,7 +155,7 @@ class StationLiteQueryResource(Resource):
         for stream_epoch in stream_epochs:
             self.logger.debug(f"Processing request for {stream_epoch!r}")
             # query
-            _routes = find_streamepochs_and_routes(
+            _routes = query_routes(
                 db.session,
                 stream_epoch,
                 args["service"],

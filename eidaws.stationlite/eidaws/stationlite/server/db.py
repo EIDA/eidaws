@@ -2,7 +2,7 @@
 
 from flask_sqlalchemy import SQLAlchemy
 
-from eidaws.stationlite.engine.db import configure_sqlite
+from eidaws.stationlite.core.db import configure_sqlite
 
 db = SQLAlchemy()
 

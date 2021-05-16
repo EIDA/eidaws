@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from flask_restful import Api
-
 from eidaws.stationlite.server.view import (
     StationLiteVersionResource,
     StationLiteWadlResource,
@@ -15,15 +13,18 @@ from eidaws.utils.settings import (
 
 def setup_routes(app):
 
-    api = Api(app)
-
-    api.add_resource(
-        StationLiteVersionResource, "/".join([EIDAWS_ROUTING_PATH, "version"])
+    app.add_url_rule(
+        "/".join([EIDAWS_ROUTING_PATH, "version"]),
+        view_func=StationLiteVersionResource.as_view("version"),
     )
-    api.add_resource(
-        StationLiteWadlResource,
+    app.add_url_rule(
         "/".join([EIDAWS_ROUTING_PATH, "application.wadl"]),
+        view_func=StationLiteWadlResource.as_view("application.wadl"),
     )
-    api.add_resource(StationLiteQueryResource, EIDAWS_ROUTING_PATH_QUERY)
 
-    return api
+    app.add_url_rule(
+        EIDAWS_ROUTING_PATH_QUERY,
+        view_func=StationLiteQueryResource.as_view("query"),
+    )
+
+    return app

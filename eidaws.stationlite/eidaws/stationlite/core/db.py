@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-StationLite (stationlite) DB tools.
-"""
 
 import logging
 
@@ -11,7 +8,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.event import listens_for
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from eidaws.stationlite.engine import orm
+from eidaws.stationlite.core import orm
 from eidaws.utils.error import Error, ErrorWithTraceback
 
 
@@ -111,7 +108,7 @@ def clean(session, timestamp):
     """
     Clean DB from data older than timestamp.
 
-    :param :py:class:`sqlalchemy.orm.sessionSession` session: SQLAlchemy
+    :param :py:class:`sqlalchemy.orm.session.Session` session: SQLAlchemy
         session
     :param :py:class:`obspy.UTCDateTime` Data older than timestamp will
         be removed.
@@ -120,11 +117,10 @@ def clean(session, timestamp):
     :rtype int:
     """
     MAPPINGS_WITH_LASTSEEN = (
-        orm.NetworkEpoch,
-        orm.ChannelEpoch,
-        orm.StationEpoch,
+        orm.Epoch,
         orm.Routing,
-        orm.StreamEpoch,
+        orm.DataCenter,
+        orm.VirtualChannelEpoch,
     )
     retval = 0
     for m in MAPPINGS_WITH_LASTSEEN:
@@ -132,10 +128,8 @@ def clean(session, timestamp):
             session.query(m).filter(m.lastseen < timestamp.datetime).delete()
         )
 
-    # NOTE(damb): If VNet/orm.StationEpochGroup has no StreamEpochs anymore
-    # remove also the orm.StreamEpochGroup.
-    # Currently virtual networks do not come along with a corresponding
-    # 'VirtualNetworkEpoch'.
+    # NOTE(damb): If VNet/orm.VirtualChannelEpochGroup has no
+    # VirtualChannelEpoch anymore remove also the orm.VirtualChannelEpochGroup.
     vnets_active = set(
         session.query(orm.StreamEpoch.stream_epoch_group_ref).all()
     )
