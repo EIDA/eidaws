@@ -185,7 +185,7 @@ class RoutingQueryResource(MethodView):
 
             routes.extend(_routes)
 
-        self.logger.debug(f"StationLite routes: {routes}")
+        self.logger.debug(f"Routes: {routes}")
 
         # merge routes
         processed_routes = collections.defaultdict(StreamEpochsHandler)
@@ -197,7 +197,7 @@ class RoutingQueryResource(MethodView):
                     processed_routes[url].add(se)
 
         self.logger.debug(
-            f"StationLite routes (processed): {processed_routes}"
+            f"Routes (processed): {processed_routes}"
         )
         # demux
         for url, stream_epochs_handler in processed_routes.items():

@@ -26,7 +26,7 @@ from eidaws.utils.settings import (
 
 class RoutingSchema(Schema):
     """
-    Stationlite *routing* webservice schema definition.
+    StationLite *routing* webservice schema definition.
 
     The parameters defined correspond to the definition
     `https://www.orfeus-eu.org/data/eida/webservices/routing/`
