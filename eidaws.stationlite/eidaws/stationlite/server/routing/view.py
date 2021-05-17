@@ -12,10 +12,11 @@ from webargs.flaskparser import use_args
 from eidaws.stationlite.server.parser import (
     use_fdsnws_args,
     use_fdsnws_kwargs,
-    StationLiteSchema,
     StreamEpochSchema,
     ManyStreamEpochSchema,
 )
+from eidaws.stationlite.server.routing.parser import RoutingSchema
+from eidaws.stationlite.server.routing.stream import OutputStream
 from eidaws.stationlite.server.strict import with_strict_args
 from eidaws.stationlite.version import __version__
 from eidaws.utils.sncl import (
@@ -35,12 +36,11 @@ from eidaws.stationlite.core.query import (
 )
 from eidaws.stationlite.server.db import db
 from eidaws.stationlite.server.http_error import FDSNHTTPError
-from eidaws.stationlite.server.stream import OutputStream
 
 
-class StationLiteVersionResource(MethodView):
+class RoutingVersionResource(MethodView):
     """
-    ``version`` resource implementation for eidaws-stationlite
+    ``version`` resource implementation for eidaws-stationlite *routing*
     """
 
     def get(self):
@@ -51,9 +51,10 @@ class StationLiteVersionResource(MethodView):
     post = get
 
 
-class StationLiteWadlResource(MethodView):
+class RoutingWadlResource(MethodView):
     """
     ``application.wadl`` resource implementation for eidaws-stationlite
+    *routing*
     """
 
     @cached_property
@@ -69,46 +70,46 @@ class StationLiteWadlResource(MethodView):
     post = get
 
 
-class StationLiteQueryResource(MethodView):
+class RoutingQueryResource(MethodView):
     """
-    ``query`` resource implementation for eidaws-stationlite
+    ``query`` resource implementation for eidaws-stationlite *routing*
     """
 
-    LOGGER = "eidaws.stationlite.stationlite_resource"
+    LOGGER = "eidaws.stationlite.routing_resource"
 
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(self.LOGGER)
 
-    @use_args(StationLiteSchema(), locations=("query",))
+    @use_args(RoutingSchema(), locations=("query",))
     @use_fdsnws_kwargs(
         ManyStreamEpochSchema(context={"request": request}),
         locations=("query",),
     )
     @with_strict_args(
-        (StreamEpochSchema, StationLiteSchema),
+        (StreamEpochSchema, RoutingSchema),
         locations=("query",),
     )
     def get(self, args, stream_epochs):
         """
-        Process an eidaws-stationlite HTTP GET request.
+        Process an eidaws-stationlite *routing* HTTP GET request.
         """
         return self._make_response(args, stream_epochs)
 
-    @use_fdsnws_args(StationLiteSchema(), locations=("form",))
+    @use_fdsnws_args(RoutingSchema(), locations=("form",))
     @use_fdsnws_kwargs(
         ManyStreamEpochSchema(context={"request": request}),
         locations=("form",),
     )
-    @with_strict_args(StationLiteSchema, locations=("form",))
+    @with_strict_args(RoutingSchema, locations=("form",))
     def post(self, args, stream_epochs):
         """
-        Process an eidaws-stationlite HTTP POST request.
+        Process an eidaws-stationlite *routing* HTTP POST request.
         """
         return self._make_response(args, stream_epochs)
 
     def _make_response(self, args, stream_epochs):
-        self.logger.debug(f"StationLiteSchema: {args}")
+        self.logger.debug(f"RoutingSchema: {args}")
         self.logger.debug(f"StreamEpoch objects: {stream_epochs}")
 
         payload = self._process_request(
