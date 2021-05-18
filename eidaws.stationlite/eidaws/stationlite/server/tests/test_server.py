@@ -19,6 +19,7 @@ def client():
     with app.test_client() as client:
         yield client
 
+
 @pytest.fixture
 def content_type():
     def _content_type(query_format_or_status_code):
@@ -37,3 +38,23 @@ def content_type():
             return "text/plain; charset=utf-8"
 
     return _content_type
+
+
+def build_query_string(mappings):
+    return "&".join(f"{k}={v}" for m in mappings for k, v in m.items())
+
+
+def build_postfile(sncls, **filter_args):
+    payload = [f"{k}={v}".encode("utf-8") for k, v in filter_args.items()]
+    payload.extend(sncls)
+
+    return b"\n".join(payload)
+
+
+def create_request_kwargs(method, params_or_data, **filter_args):
+    method = method.lower()
+    if method == "get":
+        return {
+            "query_string": build_query_string([filter_args, params_or_data])
+        }
+    return {"data": build_postfile(params_or_data, **filter_args)}
