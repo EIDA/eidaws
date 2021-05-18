@@ -185,9 +185,9 @@ def query_routes(
         if endtime is not None and endtime <= starttime:
             continue
 
-        sta = row[1]
-        loc = row[2]
-        cha = row[3]
+        sta = row[2]
+        loc = row[1]
+        cha = row[0]
         if level == "network":
             sta = loc = cha = "*"
         elif level == "station":
@@ -197,7 +197,7 @@ def query_routes(
         # acquiring data).
         with none_as_max(endtime) as end:
             stream_epoch = StreamEpoch.from_sncl(
-                network=row[0],
+                network=row[3],
                 station=sta,
                 location=loc,
                 channel=cha,
@@ -222,14 +222,15 @@ def query_stationlite(
 
     query = (
         session.query(
-            orm.Network.code,
-            orm.Station.code,
-            orm.ChannelEpoch.locationcode,
             orm.ChannelEpoch.code,
+            orm.ChannelEpoch.locationcode,
+            orm.Station.code,
+            orm.Network.code,
             orm.Epoch.starttime,
             orm.Epoch.endtime,
             orm.Epoch.restrictedstatus,
         )
+        .join(orm.Epoch, orm.ChannelEpoch.epoch_ref == orm.Epoch.id)
         .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
         .join(orm.Network, orm.ChannelEpoch.network_ref == orm.Network.id)
         .join(orm.Station, orm.ChannelEpoch.station_ref == orm.Station.id)
@@ -289,10 +290,10 @@ def query_stationlite(
         # acquiring data).
         with none_as_max(endtime) as end:
             cha_epoch = ChannelEpoch(
-                network=row[0],
-                station=row[1],
-                location=row[2],
-                channel=row[3],
+                network=row[3],
+                station=row[2],
+                location=row[1],
+                channel=row[0],
                 starttime=starttime,
                 endtime=end,
                 restrictedStatus=row[6],
@@ -393,24 +394,24 @@ def _create_route_query_cha_epochs(
 ):
     return (
         session.query(
-            orm.Network.code,
-            orm.Station.code,
-            orm.ChannelEpoch.locationcode,
             orm.ChannelEpoch.code,
+            orm.ChannelEpoch.locationcode,
+            orm.Station.code,
+            orm.Network.code,
             orm.Epoch.starttime,
             orm.Epoch.endtime,
             orm.Routing.starttime,
             orm.Routing.endtime,
             orm.Endpoint.url,
         )
-        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
+        .join(orm.Epoch, orm.ChannelEpoch.epoch_ref == orm.Epoch.id)
         .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
         .join(orm.Network, orm.ChannelEpoch.network_ref == orm.Network.id)
         .join(orm.Station, orm.ChannelEpoch.station_ref == orm.Station.id)
         .join(orm.StationEpoch, orm.StationEpoch.station_ref == orm.Station.id)
         .join(orm.Endpoint, orm.Routing.endpoint_ref == orm.Endpoint.id)
         .join(orm.Service, orm.Endpoint.service_ref == orm.Service.id)
-        .filter(orm.ChannelEpoch.epoch_ref == orm.Epoch.id)
         .filter(orm.Network.code.like(net, escape=like_escape))
         .filter(orm.Station.code.like(sta, escape=like_escape))
         .filter(orm.ChannelEpoch.code.like(cha, escape=like_escape))
@@ -432,24 +433,26 @@ def _create_route_query_sta_epochs(
 ):
     return (
         session.query(
-            orm.Network.code,
+            null(),
+            null(),
             orm.Station.code,
-            null(),
-            null(),
+            orm.Network.code,
             orm.Epoch.starttime,
             orm.Epoch.endtime,
             orm.Routing.starttime,
             orm.Routing.endtime,
             orm.Endpoint.url,
         )
-        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
-        .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        # XXX(damb): Pay attention to the correct order.
+        .select_from(orm.StationEpoch, orm.ChannelEpoch)
         .join(orm.Network, orm.ChannelEpoch.network_ref == orm.Network.id)
         .join(orm.Station, orm.ChannelEpoch.station_ref == orm.Station.id)
         .join(orm.StationEpoch, orm.StationEpoch.station_ref == orm.Station.id)
+        .join(orm.Epoch, orm.StationEpoch.epoch_ref == orm.Epoch.id)
+        .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
         .join(orm.Endpoint, orm.Routing.endpoint_ref == orm.Endpoint.id)
         .join(orm.Service, orm.Endpoint.service_ref == orm.Service.id)
-        .filter(orm.StationEpoch.epoch_ref == orm.Epoch.id)
         .filter(orm.Network.code.like(net, escape=like_escape))
         .filter(orm.Station.code.like(sta, escape=like_escape))
         .filter(orm.ChannelEpoch.code.like(cha, escape=like_escape))
@@ -471,25 +474,27 @@ def _create_route_query_net_epochs(
 ):
     return (
         session.query(
+            null(),
+            null(),
+            null(),
             orm.Network.code,
-            null(),
-            null(),
-            null(),
             orm.Epoch.starttime,
             orm.Epoch.endtime,
             orm.Routing.starttime,
             orm.Routing.endtime,
             orm.Endpoint.url,
         )
-        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
-        .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        # XXX(damb): Pay attention to the correct order.
+        .select_from(orm.NetworkEpoch, orm.ChannelEpoch)
         .join(orm.Network, orm.ChannelEpoch.network_ref == orm.Network.id)
-        .join(orm.NetworkEpoch, orm.NetworkEpoch.network_ref == orm.Network.id)
         .join(orm.Station, orm.ChannelEpoch.station_ref == orm.Station.id)
+        .join(orm.NetworkEpoch, orm.NetworkEpoch.network_ref == orm.Network.id)
         .join(orm.StationEpoch, orm.StationEpoch.station_ref == orm.Station.id)
+        .join(orm.Epoch, orm.NetworkEpoch.epoch_ref == orm.Epoch.id)
+        .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        .join(orm.Routing, orm.Routing.epoch_ref == orm.Epoch.id)
         .join(orm.Endpoint, orm.Routing.endpoint_ref == orm.Endpoint.id)
         .join(orm.Service, orm.Endpoint.service_ref == orm.Service.id)
-        .filter(orm.NetworkEpoch.epoch_ref == orm.Epoch.id)
         .filter(orm.Network.code.like(net, escape=like_escape))
         .filter(orm.Station.code.like(sta, escape=like_escape))
         .filter(orm.ChannelEpoch.code.like(cha, escape=like_escape))
