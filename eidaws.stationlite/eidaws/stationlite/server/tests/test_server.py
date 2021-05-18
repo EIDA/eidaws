@@ -21,23 +21,8 @@ def client():
 
 
 @pytest.fixture
-def content_type():
-    def _content_type(query_format_or_status_code):
-        if query_format_or_status_code in (
-            "post",
-            "get",
-            200,
-            204,
-            400,
-            404,
-            413,
-            414,
-            500,
-            503,
-        ):
-            return "text/plain; charset=utf-8"
-
-    return _content_type
+def content_type_text():
+    return "text/plain; charset=utf-8"
 
 
 def build_query_string(mappings):

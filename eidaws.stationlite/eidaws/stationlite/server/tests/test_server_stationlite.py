@@ -8,7 +8,7 @@ from operator import itemgetter
 from eidaws.stationlite.server import create_app
 from eidaws.stationlite.server.tests.test_server import (
     client,
-    content_type as content_type_text,
+    content_type_text,
     create_request_kwargs,
     path_module,
 )
@@ -127,9 +127,7 @@ class TestStationLite:
         ]
 
         req_kwargs = create_request_kwargs(
-            method,
-            params_or_data,
-            **{"merge": "false"}
+            method, params_or_data, **{"merge": "false"}
         )
         resp = getattr(client, method)(
             EIDAWS_STATIONLITE_PATH_QUERY, **req_kwargs
@@ -233,7 +231,7 @@ class TestStationLite:
         )
 
         assert resp.status_code == 204
-        assert resp.headers["Content-Type"] == content_type_text(204)
+        assert resp.headers["Content-Type"] == content_type_text
         assert b"" == resp.data
 
     @pytest.mark.parametrize("data", [b"", b"="])
@@ -241,7 +239,7 @@ class TestStationLite:
         resp = client.post(EIDAWS_STATIONLITE_PATH_QUERY, data=data)
 
         assert resp.status_code == 400
-        assert resp.headers["Content-Type"] == content_type_text(400)
+        assert resp.headers["Content-Type"] == content_type_text
         assert resp.data.startswith(b"\nError 400: Bad request\n")
 
     @pytest.mark.parametrize(
@@ -274,7 +272,7 @@ class TestStationLite:
             )
 
             assert resp.status_code == 500
-            assert resp.headers["Content-Type"] == content_type_text(500)
+            assert resp.headers["Content-Type"] == content_type_text
             assert resp.data.startswith(
                 b"\nError 500: Internal server error\n"
             )

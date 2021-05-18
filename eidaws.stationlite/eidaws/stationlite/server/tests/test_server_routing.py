@@ -5,7 +5,7 @@ import pytest
 from eidaws.stationlite.server import create_app
 from eidaws.stationlite.server.tests.test_server import (
     client,
-    content_type,
+    content_type_text,
     create_request_kwargs,
     path_module,
 )
@@ -97,7 +97,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_single_sncl_single_dc(
-        self, client, service_args, content_type, method, params_or_data
+        self, client, service_args, content_type_text, method, params_or_data
     ):
         def create_expected_response(service="dataselect"):
             if service == "station":
@@ -118,7 +118,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert (
             b"\n".join(create_expected_response(**service_args)) == resp.data
         )
@@ -148,7 +148,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_multi_sncl_single_dc(
-        self, client, service_args, content_type, method, params_or_data
+        self, client, service_args, content_type_text, method, params_or_data
     ):
         def create_expected_response(service="dataselect"):
             if service == "station":
@@ -172,7 +172,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert (
             b"\n".join(create_expected_response(**service_args)) == resp.data
         )
@@ -202,7 +202,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_multi_sncl_multi_dc(
-        self, client, service_args, content_type, method, params_or_data
+        self, client, service_args, content_type_text, method, params_or_data
     ):
         def create_expected_response(service="dataselect"):
             if service == "station":
@@ -230,7 +230,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert (
             b"\n".join(create_expected_response(**service_args)) == resp.data
         )
@@ -260,7 +260,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_multi_sncl_single_dc_access(
-        self, client, access_args, content_type, method, params_or_data
+        self, client, access_args, content_type_text, method, params_or_data
     ):
         service_arg = {"service": "dataselect"}
 
@@ -308,7 +308,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert b"\n".join(create_expected_response(**access_args)) == resp.data
 
     @pytest.mark.parametrize(
@@ -373,7 +373,7 @@ class TestRouting:
         ],
     )
     def test_vnets(
-        self, client, content_type, service_args, method, params_or_data
+        self, client, content_type_text, service_args, method, params_or_data
     ):
         def create_expected_response(service="dataselect"):
             if service == "station":
@@ -398,7 +398,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert (
             b"\n".join(create_expected_response(**service_args)) == resp.data
         )
@@ -427,7 +427,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_station(
-        self, client, level_args, content_type, method, params_or_data
+        self, client, level_args, content_type_text, method, params_or_data
     ):
         def create_expected_response(level):
             service_args = {"service": "station"}
@@ -458,7 +458,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == content_type("post")
+        assert resp.headers["Content-Type"] == content_type_text
         assert b"\n".join(create_expected_response(**level_args)) == resp.data
 
     @pytest.mark.parametrize(
@@ -480,7 +480,7 @@ class TestRouting:
         ids=["method=GET", "method=POST"],
     )
     def test_no_content(
-        self, client, service_args, content_type, method, params_or_data
+        self, client, service_args, content_type_text, method, params_or_data
     ):
         req_kwargs = create_request_kwargs(
             method, params_or_data, **service_args
@@ -488,7 +488,7 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 204
-        assert resp.headers["Content-Type"] == content_type(204)
+        assert resp.headers["Content-Type"] == content_type_text
         assert b"" == resp.data
 
     @pytest.mark.parametrize(
@@ -510,7 +510,7 @@ class TestRouting:
         ids=["method=get", "method=post"],
     )
     def test_keywordparser_invalid_args(
-        self, client, content_type, method, params_or_data
+        self, client, content_type_text, method, params_or_data
     ):
         req_kwargs = create_request_kwargs(
             method, params_or_data, **{"foo": "bar"}
@@ -518,15 +518,15 @@ class TestRouting:
         resp = getattr(client, method)(EIDAWS_ROUTING_PATH_QUERY, **req_kwargs)
 
         assert resp.status_code == 400
-        assert resp.headers["Content-Type"] == content_type(400)
+        assert resp.headers["Content-Type"] == content_type_text
         assert resp.data.startswith(b"\nError 400: Bad request\n")
 
     @pytest.mark.parametrize("data", [b"", b"="])
-    def test_keywordparser_post_invalid(self, client, content_type, data):
+    def test_keywordparser_post_invalid(self, client, content_type_text, data):
         resp = client.post(EIDAWS_ROUTING_PATH_QUERY, data=data)
 
         assert resp.status_code == 400
-        assert resp.headers["Content-Type"] == content_type(400)
+        assert resp.headers["Content-Type"] == content_type_text
         assert resp.data.startswith(b"\nError 400: Bad request\n")
 
     @pytest.mark.parametrize(
@@ -546,7 +546,7 @@ class TestRouting:
         ],
         ids=["method=GET", "method=POST"],
     )
-    def test_invalid_db_config(self, service_config, content_type):
+    def test_invalid_db_config(self, service_config, content_type_text):
         app = create_app(service_config)
 
         with app.test_client() as client:
@@ -559,7 +559,7 @@ class TestRouting:
             )
 
             assert resp.status_code == 500
-            assert resp.headers["Content-Type"] == content_type(500)
+            assert resp.headers["Content-Type"] == content_type_text
             assert resp.data.startswith(
                 b"\nError 500: Internal server error\n"
             )
