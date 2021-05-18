@@ -6,17 +6,22 @@
 EIDA Stationlite webservice
 ===========================
 
-Alternative implementation of a routing webservice as part of EIDA NG. In
-contrast to eidaws-routing_ ``eidaws-stationlite`` returns fully resolved
-stream epochs. The package implements two major components:
+Leightweight inventory metadata and routing webservice API as part of EIDA NG.
+This package implements two major components:
 
-- **Harvesting**: Routing information is collected from EIDA routing
+- **Harvesting**: Routing information is collected from eidaws-routing_
   ``localconfig`` configuration files. Routed stream epochs are fully resolved
   by means of ``fdsnws-station`` and stored in a local DB.
 
-- **Webservice**: REST API allowing clients to query the routing information.
-  With a few exceptions the API is similar to the one provided by
-  eidaws-routing_.
+- **Webservice**:
+
+  - ``/eidaws/routing``: Alternative implementation of a routing webservice
+    API tailored to the requirements of ``eidaws-federator`` (i.e.  fully
+    resolved stream epochs, stream epoch canonicalization, etc.). With a few
+    exceptions the API is similar to the one provided by eidaws-routing_.
+
+  - ``/eidaws/stationlite``: Leightweight API in order to request inventory
+    metadata information.
 
   The webservice implementation is based on the Flask_ framework.
 

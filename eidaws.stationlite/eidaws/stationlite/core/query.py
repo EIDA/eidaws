@@ -7,7 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.sql.expression import null
 
 from eidaws.stationlite.core import orm
-from eidaws.stationlite.core.utils import Epoch, RestrictedStatus
+from eidaws.stationlite.core.utils import Epoch, RestrictedStatus, ChannelEpoch
 from eidaws.utils.misc import Route
 from eidaws.utils.settings import (
     FDSNWS_QUERY_WILDCARD_MULT_CHAR,
@@ -150,7 +150,7 @@ def query_routes(
     loc = sql_stream_epoch.location
     cha = sql_stream_epoch.channel
 
-    query = _create_query(
+    query = _create_route_query(
         session,
         service,
         **sql_stream_epoch._asdict(short_keys=True),
@@ -213,7 +213,98 @@ def query_routes(
     ]
 
 
-def _create_query(
+def query_stationlite(
+    session, stream_epoch, cha_epochs_handler, merge, like_escape="/"
+):
+
+    sql_stream_epoch = stream_epoch.fdsnws_to_sql_wildcards()
+    logger.debug(f"Processing request for (SQL) {sql_stream_epoch!r}")
+
+    query = (
+        session.query(
+            orm.Network.code,
+            orm.Station.code,
+            orm.ChannelEpoch.locationcode,
+            orm.ChannelEpoch.code,
+            orm.Epoch.starttime,
+            orm.Epoch.endtime,
+            orm.Epoch.restrictedstatus,
+        )
+        .join(orm.EpochType, orm.Epoch.epochtype_ref == orm.EpochType.id)
+        .join(orm.Network, orm.ChannelEpoch.network_ref == orm.Network.id)
+        .join(orm.Station, orm.ChannelEpoch.station_ref == orm.Station.id)
+        .filter(orm.ChannelEpoch.epoch_ref == orm.Epoch.id)
+        .filter(
+            orm.Network.code.like(sql_stream_epoch.network, escape=like_escape)
+        )
+        .filter(
+            orm.Station.code.like(sql_stream_epoch.station, escape=like_escape)
+        )
+        .filter(
+            orm.ChannelEpoch.code.like(
+                sql_stream_epoch.channel, escape=like_escape
+            )
+        )
+        .filter(
+            orm.ChannelEpoch.locationcode.like(
+                sql_stream_epoch.location, escape=like_escape
+            )
+        )
+        .filter(orm.EpochType.type == Epoch.CHANNEL)
+        .distinct()
+        .order_by(
+            orm.Network.code,
+            orm.Station.code,
+            orm.ChannelEpoch.locationcode,
+            orm.ChannelEpoch.code,
+        )
+    )
+
+    start = sql_stream_epoch.starttime
+    end = sql_stream_epoch.endtime
+    if start:
+        # NOTE(damb): compare to None for undefined endtime (i.e. device
+        # currently operating)
+        query = query.filter(
+            (orm.Epoch.endtime > start) | (orm.Epoch.endtime == None)
+        )  # noqa
+    if end:
+        query = query.filter(orm.Epoch.starttime < end)
+
+    for row in query.all():
+        # print(f"Query response: {row!r}")
+        starttimes = [row[4], sql_stream_epoch.starttime]
+        endtimes = [row[5], sql_stream_epoch.endtime]
+
+        starttime = max(t for t in starttimes if t is not None)
+        try:
+            endtime = min(t for t in endtimes if t is not None)
+        except ValueError:
+            endtime = None
+
+        if endtime is not None and endtime <= starttime:
+            continue
+
+        # NOTE(damb): Set endtime to 'max' if undefined (i.e. device currently
+        # acquiring data).
+        with none_as_max(endtime) as end:
+            cha_epoch = ChannelEpoch(
+                network=row[0],
+                station=row[1],
+                location=row[2],
+                channel=row[3],
+                starttime=starttime,
+                endtime=end,
+                restrictedStatus=row[6],
+            )
+
+            if merge:
+                cha_epochs_handler.merge(cha_epoch, merge_epochs=True)
+            else:
+                cha_epochs_handler.add(cha_epoch)
+
+
+def _create_route_query(
     session,
     service,
     net,
@@ -232,7 +323,7 @@ def _create_query(
     like_escape,
 ):
     if service == "station" and level == "network":
-        query = _create_query_net_epochs(
+        query = _create_route_query_net_epochs(
             session,
             service,
             net,
@@ -242,7 +333,7 @@ def _create_query(
             like_escape=like_escape,
         )
     elif service == "station" and level == "station":
-        query = _create_query_sta_epochs(
+        query = _create_route_query_sta_epochs(
             session,
             service,
             net,
@@ -252,7 +343,7 @@ def _create_query(
             like_escape=like_escape,
         )
     else:
-        query = _create_query_cha_epochs(
+        query = _create_route_query_cha_epochs(
             session,
             service,
             net,
@@ -291,7 +382,7 @@ def _create_query(
     return query
 
 
-def _create_query_cha_epochs(
+def _create_route_query_cha_epochs(
     session,
     service,
     net,
@@ -330,7 +421,7 @@ def _create_query_cha_epochs(
     )
 
 
-def _create_query_sta_epochs(
+def _create_route_query_sta_epochs(
     session,
     service,
     net,
@@ -369,7 +460,7 @@ def _create_query_sta_epochs(
     )
 
 
-def _create_query_net_epochs(
+def _create_route_query_net_epochs(
     session,
     service,
     net,
