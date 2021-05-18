@@ -68,7 +68,9 @@ class RestrictedStatusMixin(object):
     @declared_attr
     def restrictedstatus(cls):
         return Column(
-            Enum(_RestrictedStatus),
+            Enum(
+                _RestrictedStatus, name="_restrictedstatus", native_enum=False
+            ),
             default=_RestrictedStatus.OPEN,
         )
 
@@ -83,7 +85,11 @@ ORMBase = declarative_base(cls=Base)
 
 
 class EpochType(ORMBase):
-    type = Column(Enum(_Epoch), nullable=False, default=_Epoch.CHANNEL)
+    type = Column(
+        Enum(_Epoch, name="_epoch", native_enum=False),
+        nullable=False,
+        default=_Epoch.CHANNEL,
+    )
 
     epochs = relationship(
         "Epoch", back_populates="type", cascade="all, delete-orphan"
