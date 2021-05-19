@@ -13,6 +13,7 @@ from flask import g
 from werkzeug.exceptions import HTTPException
 
 from eidaws.stationlite.server.config import Config, ConversionMap
+from eidaws.stationlite.server.cors import setup_cors
 from eidaws.stationlite.server.db import setup_db
 from eidaws.stationlite.server.flask import Flask
 from eidaws.stationlite.server.http_error import FDSNHTTPError
@@ -81,6 +82,7 @@ def create_app(config_dict=None, service_version=__version__):
     setup_parser_error_handler(service_version=service_version)
     setup_keywordparser_error_handler(service_version=service_version)
 
+    setup_cors(app)
     setup_db(app)
 
     logger.info(f"{STL_BASE_ID}: Version v{__version__}")
