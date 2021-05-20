@@ -318,6 +318,7 @@ class CrawlFDSNWSStationApp:
                             formats=self.config["format"],
                             pbar=pbar,
                             timeout=timeout,
+                            headers=self._HEADERS,
                         )
 
                     if crawled_total:
