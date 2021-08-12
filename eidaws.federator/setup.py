@@ -21,7 +21,7 @@ _DEPS = [
     "aiohttp-remotes>=0.1.2",
     "aiodns>=2.0.0",
     "aiofiles>=0.5.0",
-    "aioredis>=1.3.1",
+    "aioredis==1.3.1",
     "brotlipy>=0.7.0",
     "cached-property>=1.5.1",
     "cchardet>=2.1.5",
