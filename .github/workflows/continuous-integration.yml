@@ -20,7 +20,8 @@ jobs:
       - uses: actions/setup-python@v2
       - uses: psf/black@stable
         with:
-          black_args: -l 79 --check --diff .
+          options: -l 79 --check --diff
+          src: .
 
   build_eidaws_federator:
     needs: lint
