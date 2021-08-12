@@ -3,6 +3,7 @@
 import aiohttp_cors
 import functools
 import sys
+import traceback
 
 from aiohttp import web
 
@@ -22,6 +23,7 @@ from eidaws.federator.utils.parser import setup_parser_error_handler
 from eidaws.federator.utils.remote import XForwardedRelaxed
 from eidaws.federator.utils.strict import setup_keywordparser_error_handler
 from eidaws.federator.version import __version__
+from eidaws.utils.error import ExitCodes
 
 
 def create_app(service_id, config_dict, setup_routes_callback=None, **kwargs):
@@ -103,12 +105,28 @@ def _main(
     logger.info(f"Version v{__version__}")
     logger.debug(f"Service configuration: {args}")
 
-    app = app_factory(config_dict=args)
-    # run standalone app
-    web.run_app(
-        app,
-        host=args["hostname"],
-        port=args["port"],
-        path=args["unix_path"],
-    )
-    parser.exit(message="Stopped\n")
+    try:
+        app = app_factory(config_dict=args)
+        # run standalone app
+        web.run_app(
+            app,
+            host=args["hostname"],
+            port=args["port"],
+            path=args["unix_path"],
+        )
+    except Exception as err:
+        logger.critical(
+            f"Failed to initialize application: {type(err)}: {err}"
+        )
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.critical(
+            "Traceback information: "
+            + repr(
+                traceback.format_exception(exc_type, exc_value, exc_traceback)
+            )
+        )
+        parser.exit(
+            status=ExitCodes.EXIT_ERROR, message=f"ERROR: {type(err)}\n"
+        )
+    else:
+        parser.exit(message="Stopped\n")
