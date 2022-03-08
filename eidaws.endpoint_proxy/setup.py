@@ -17,7 +17,7 @@ _DESCRIPTION = "Endpoint proxy webservice for EIDA"
 _VERSION = get_version(os.path.join("eidaws", "endpoint_proxy", "version.py"))
 _INCLUDES = "*"
 _DEPS = [
-    "aiohttp>=3.7.1",
+    "aiohttp==3.7.4",
     "aiohttp-remotes>=0.1.2",
     "aiodns>=2.0.0",
     "brotlipy>=0.7.0",
