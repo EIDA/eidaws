@@ -110,7 +110,7 @@ def _get_mseed_record_size(fd):
         b"!B", buf[record_size_exponent_idx : record_size_exponent_idx + 1]
     )
 
-    return 2 ** record_size_exponent
+    return 2**record_size_exponent
 
 
 class _DataselectWorker(BaseSplitAlignWorker):

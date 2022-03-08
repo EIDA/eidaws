@@ -21,7 +21,7 @@ STL_DEFAULT_CONFIG_FILES = [
     "~/.eidaws/eidaws_stationlite_server_config.yml",
 ]
 
-STL_DEFAULT_CLIENT_MAX_SIZE = 1024 ** 2
+STL_DEFAULT_CLIENT_MAX_SIZE = 1024**2
 
 # ----------------------------------------------------------------------------
 STL_HARVEST_BASE_ID = "eidaws.stationlite.harvest"
