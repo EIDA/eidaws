@@ -153,6 +153,8 @@ class RoutingHarvester(Harvester):
     :param bool force_restricted: Automatically correct the *dataselect* method
         token for restricted :py:class:`orm.ChannelEpoch` objects
         (default: ``True``)
+    :param bool force_http: Force the ``https`` scheme of routing URLs to be
+        overriden with the corresponding ``http`` scheme.
     """
 
     STATION_TAG = "station"
@@ -169,6 +171,7 @@ class RoutingHarvester(Harvester):
 
         self._services = kwargs.get("services", STL_HARVEST_DEFAULT_SERVICES)
         self._force_restricted = kwargs.get("force_restricted", True)
+        self._force_http = kwargs.get("force_http", True)
 
     def _harvest_localconfig(self, session):
 
@@ -399,6 +402,13 @@ class RoutingHarvester(Harvester):
                         service_tag,
                         epoch.epoch.restrictedstatus,
                     )
+                if self._force_http:
+                    endpoint_urls = [
+                        url.replace("https", "http", 1)
+                        if url.startswith("https")
+                        else url
+                        for url in endpoint_urls
+                    ]
 
                 endpoints = []
                 for url in endpoint_urls:

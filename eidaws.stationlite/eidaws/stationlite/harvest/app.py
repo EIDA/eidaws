@@ -36,6 +36,7 @@ from eidaws.stationlite.settings import (
     STL_HARVEST_DEFAULT_PATH_PIDFILE,
     STL_HARVEST_DEFAULT_PATH_LOGGING_CONF,
     STL_HARVEST_DEFAULT_SERVICES,
+    STL_HARVEST_DEFAULT_STRICT_HTTPS,
     STL_HARVEST_DEFAULT_STRICT_RESTRICTED,
     STL_HARVEST_DEFAULT_TRUNCATE_TIMESTAMP,
     STL_HARVEST_DEFAULT_URL_DB,
@@ -340,6 +341,17 @@ class StationLiteHarvestApp:
             ),
         )
         parser.add_argument(
+            "--strict-https",
+            action="store_true",
+            dest="strict_https",
+            default=STL_HARVEST_DEFAULT_STRICT_HTTPS,
+            help=(
+                "Strictly use the 'https' scheme for routing URLs if "
+                "provided. By default the 'https' scheme of routing URLs is "
+                "overridden falling back to the corresponding 'http' scheme."
+            ),
+        )
+        parser.add_argument(
             "--strict-restricted",
             action="store_true",
             dest="strict_restricted",
@@ -461,6 +473,7 @@ class StationLiteHarvestApp:
                     url,
                     services=self.config["services"],
                     force_restricted=not self.config["strict_restricted"],
+                    force_http=not self.config["strict_https"],
                 )
 
                 session = Session()

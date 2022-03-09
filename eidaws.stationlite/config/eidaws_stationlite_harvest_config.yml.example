@@ -58,6 +58,13 @@
 #   - wfcatalog
 #
 # ----
+# Strictly use the 'https' scheme for routing URLs if provided. By default the
+# 'https' scheme of routing URLs is overridden falling back to the
+# corresponding 'http' scheme.
+#
+# strict-https: False
+#
+# ----
 # Perform a strict validaation of channel epochs to use the correct
 # dataselect method token depending on their restricted status. By default
 # method tokens are adjusted automatically.
