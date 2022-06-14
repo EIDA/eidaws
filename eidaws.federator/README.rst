@@ -264,7 +264,14 @@ Testing
 =======
 
 Make sure that an `Redis <https://redis.io/>`_ server instance is up and
-running at ``redis://localhost:6379``.
+running at ``redis://localhost:6379``. If using a container engine such as
+`Docker <https://www.docker.com/>`_  something like e.g.
+
+.. code::
+
+  docker run -d --name redis-test-server -p 6379:6379 --rm redis
+
+should do it.
 
 Also, make sure that you're executing the following commands from the
 repository's root directory.
