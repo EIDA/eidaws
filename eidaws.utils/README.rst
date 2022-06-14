@@ -13,7 +13,7 @@ is installed with
 
 .. code::
 
-  $ pip install eidaws.utils
+  pip install eidaws.utils
 
 
 Testing
@@ -23,11 +23,11 @@ Required test dependencies can be installed with
 
 .. code::
 
-  $ pip install -r eidaws.utils/requirements/test.txt
+  pip install -r eidaws.utils/requirements/test.txt
 
 
 In order to run the tests, invoke
 
 .. code::
 
-  $ pytest eidaws.utils
+  pytest eidaws.utils

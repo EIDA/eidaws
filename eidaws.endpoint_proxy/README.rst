@@ -37,7 +37,7 @@ Clone the repository:
 
 .. code::
 
-  $ git clone https://github.com/EIDA/eidaws.git && cd eidaws
+  git clone https://github.com/EIDA/eidaws.git && cd eidaws
 
 
 **Installation**:
@@ -46,8 +46,8 @@ In order to install the ``eidaws.endpoint_proxy`` service, invoke
 
 .. code::
 
-  $ pip install eidaws.utils
-  $ pip install eidaws.endpoint_proxy
+  pip install eidaws.utils
+  pip install eidaws.endpoint_proxy
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.
@@ -58,14 +58,14 @@ In order to run the service simply invoke:
 
 .. code::
 
-  $ eida-endpoint-proxy
+  eida-endpoint-proxy
 
 Additional information and help is provided when invoking the application with
 the ``-h|--help`` flag. I.e.
 
 .. code::
 
-  $ eida-endpoint-proxy -h
+  eida-endpoint-proxy -h
 
 
 Configuration
@@ -80,7 +80,7 @@ e.g.
 
 .. code::
 
-  $ cp -v eidaws.endpoint_proxy/config/eidaws_proxy_config.yml.example \
+  cp -v eidaws.endpoint_proxy/config/eidaws_proxy_config.yml.example \
     eidaws.endpoint_proxy/config/eidaws_proxy_config.yml
 
 and adopt the file according to your needs. Then start the application with
@@ -88,7 +88,7 @@ the ``-c|--config`` flag e.g.
 
 .. code::
 
-  $ eida-endpoint-proxy -c eidaws.endpoint_proxy/config/eidaws_proxy_config.yml
+  eida-endpoint-proxy -c eidaws.endpoint_proxy/config/eidaws_proxy_config.yml
 
 
 Logging

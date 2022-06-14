@@ -69,7 +69,7 @@ Debian/Ubuntu:
 
 .. code::
 
-  $ sudo apt-get install libxml2-dev libxslt-dev python3-dev
+  sudo apt-get install libxml2-dev libxslt-dev python3-dev
 
 
 **Download**:
@@ -78,7 +78,7 @@ Clone the repository:
 
 .. code::
 
-  $ git clone https://github.com/EIDA/eidaws.git && cd eidaws
+  git clone https://github.com/EIDA/eidaws.git && cd eidaws
 
 
 **Installation**:
@@ -87,8 +87,8 @@ In order to install ``eidaws.federator`` services, invoke
 
 .. code::
 
-  $ pip install eidaws.utils
-  $ pip install eidaws.federator
+  pip install eidaws.utils
+  pip install eidaws.federator
 
 Note, that encapsulating the installation by means of a `virtual environment
 <https://docs.python.org/3/tutorial/venv.html>`_ is strongly recommended.
@@ -134,7 +134,7 @@ Running one of those application is as simple as e.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json --serve-static
+  eida-federator-wfcatalog-json --serve-static
 
 
 Now the service should be up and running at ``localhost:8080``. Let's perform
@@ -171,7 +171,7 @@ the ``-h|--help`` flag. E.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json -h
+  eida-federator-wfcatalog-json -h
 
 
 Note, that for production it has several advantages running the services behind
@@ -192,7 +192,7 @@ configuration with e.g.
 
 .. code::
 
-  $ cp -v \
+  cp -v \
     eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml.example \
     eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml
 
@@ -201,7 +201,7 @@ service application with the ``-c|--config`` flag e.g.
 
 .. code::
 
-  $ eida-federator-wfcatalog-json \
+  eida-federator-wfcatalog-json \
     -c eidaws.federator/config/eidaws_federator_wfcatalog_json_config.yml
 
 
@@ -251,7 +251,7 @@ Additional information and help is provided when invoking
 
 .. code::
 
-  $ eida-crawl-fdsnws-station -h
+  eida-crawl-fdsnws-station -h
 
 
 Besides of specifying configuration options at the application's CLI, the
@@ -270,14 +270,14 @@ Required test dependencies can be installed with
 
 .. code::
 
-  $ pip install -r eidaws.federator/requirements/test.txt
+  pip install -r eidaws.federator/requirements/test.txt
 
 
 In order to run the tests, invoke
 
 .. code::
 
-  $ pytest eidaws.utils eidaws.federator
+  pytest eidaws.utils eidaws.federator
 
 
 Limitations

@@ -38,7 +38,7 @@ Clone the repository:
 
 .. code::
 
-  $ git clone https://github.com/EIDA/eidaws.git && cd eidaws
+  git clone https://github.com/EIDA/eidaws.git && cd eidaws
 
 
 **Installation**:
@@ -47,9 +47,9 @@ In order to install the ``eidaws.stationlite`` distribution, invoke
 
 .. code::
 
-  $ pip install numpy
-  $ pip install eidaws.utils
-  $ pip install eidaws.stationlite[postgres]
+  pip install numpy
+  pip install eidaws.utils
+  pip install eidaws.stationlite[postgres]
 
 The installation of the ``postgres`` feature is only required if the
 application is run with a PostgreSQL_ backend.
@@ -65,8 +65,8 @@ the database for ``eidaws-stationlite``. This will create the database schema.
 
 .. code::
 
-   $ export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && \
-     flask db-init
+  export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && \
+    flask db-init
 
 
 Routing information is harvested by means of the ``eida-stationlite-harvest``
@@ -85,14 +85,14 @@ configuration with e.g.
 
 .. code::
 
-  $ cp -v eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml.example \
+  cp -v eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml.example \
     eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml
 
 After you've made your changes, invoke the application with
 
 .. code::
 
-   $ eida-stationlite-harvest \
+  eida-stationlite-harvest \
     -c eidaws.stationlite/config/eidaws_stationlite_harvest_config.yml
 
 
@@ -104,7 +104,7 @@ the built-in Flask_ server:
 
 .. code::
 
-  $ export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
+  export FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
 
 For additional details execute ``flask run -h``.
 
@@ -120,7 +120,7 @@ e.g.
 
 .. code::
 
-  $ cp -v eidaws.stationlite/config/eidaws_stationlite_server_config.yml.example \
+  cp -v eidaws.stationlite/config/eidaws_stationlite_server_config.yml.example \
     eidaws.stationlite/config/eidaws_stationlite_server_config.yml
 
 and adjust the configuration according to your needs. Then invoke the
@@ -128,8 +128,8 @@ corresponding service application with
 
 .. code::
 
-   $ export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_stationlite_server_config.yml \
-     FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
+  export EIDAWS_STATIONLITE_SETTINGS=../../../config/eidaws_stationlite_server_config.yml \
+    FLASK_APP=eidaws.stationlite/eidaws/stationlite/server/ && flask run
 
 Logging
 =======
@@ -149,11 +149,11 @@ Required test dependencies can be installed with
 
 .. code::
 
-  $ pip install -r eidaws.stationlite/requirements/test.txt
+  pip install -r eidaws.stationlite/requirements/test.txt
 
 
 In order to run the tests, invoke
 
 .. code::
 
-  $ pytest eidaws.utils eidaws.stationlite
+  pytest eidaws.utils eidaws.stationlite
