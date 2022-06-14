@@ -19,11 +19,14 @@ is installed with
 Testing
 =======
 
+Make sure that you're executing the following commands from the repository's
+root directory.
+
 Required test dependencies can be installed with
 
 .. code::
 
-  pip install -r eidaws.utils/requirements/test.txt
+  (cd eidaws.utils && pip install -r requirements/test.txt)
 
 
 In order to run the tests, invoke

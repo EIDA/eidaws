@@ -266,11 +266,14 @@ Testing
 Make sure that an `Redis <https://redis.io/>`_ server instance is up and
 running at ``redis://localhost:6379``.
 
+Also, make sure that you're executing the following commands from the
+repository's root directory.
+
 Required test dependencies can be installed with  
 
 .. code::
 
-  pip install -r eidaws.federator/requirements/test.txt
+  (cd eidaws.federator && pip install -r requirements/test.txt)
 
 
 In order to run the tests, invoke
