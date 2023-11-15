@@ -6,6 +6,7 @@ import functools
 import os
 import sys
 
+
 import configargparse
 
 from eidaws.utils.config import interpolate_environment_variables
@@ -92,10 +93,10 @@ class InterpolatingYAMLConfigFileParser(configargparse.YAMLConfigFileParser):
             return interpolated[section]
 
     def parse(self, stream):
-        yaml = self._load_yaml()
+        yaml, SafeLoader, _ = self._load_yaml()
 
         try:
-            parsed_obj = yaml.safe_load(stream)
+            parsed_obj = yaml.load(stream, Loader=SafeLoader)
         except Exception as e:
             raise configargparse.ConfigFileParserException(
                 "Couldn't parse config file: %s" % e
