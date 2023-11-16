@@ -19,16 +19,19 @@ _DEPS = [
     "cached-property>=1.5.1",
     "eidaws.utils==0.1",
     "fasteners>=0.14.1",
-    "Flask==0.12.2",
+    "Flask==2.1.1",
     "Flask-CORS==3.0.10",
-    "Flask-SQLAlchemy==2.3.2",
+    "Flask-SQLAlchemy==2.5.1",
+    "Jinja2==3.1.1",
+    "MarkupSafe==2.1.1",
+    "Werkzeug==2.1.1",
     "importlib_metadata==3.0.0;python_version<'3.8'",
     "jsonschema>=3.2.0",
     "lxml>=4.2.0",
     "obspy>=1.2.1",
     "pyyaml>=5.3",
     "requests>=2.18.4",
-    "SQLAlchemy>=1.4.5",
+    "SQLAlchemy==1.4.35",
 ]
 _EXTRAS = {"postgres": ["psycopg2"]}
 _ENTRY_POINTS = {
