@@ -468,7 +468,7 @@ class RoutingHarvester(Harvester):
 
         return service
 
-    def _emerge_datacenter(self, session, service):
+    def _emerge_datacenter(self, session, service, update_lastseen=True):
         try:
             datacenter = (
                 session.query(orm.DataCenter)
@@ -502,6 +502,9 @@ class RoutingHarvester(Harvester):
                 _ = orm.ServiceDataCenter(
                     service=service, datacenter=datacenter
                 )
+
+            if update_lastseen:
+                datacenter.lastseen = datetime.datetime.utcnow()
 
         return datacenter
 
