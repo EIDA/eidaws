@@ -3,7 +3,7 @@ http://geofon.gfz-potsdam.de/eidaws/routing/1/localconfig
 http://ws.resif.fr/routing/eida_routing.xml
 http://webservices.ingv.it/eidaws/routing/1/localconfig
 http://eida.ethz.ch/eidaws/routing/routing.xml
-https://eida.bgr.de/eidaws/routing/1/localconfig
+https://eida.bgr.de/eidaws/routing/routing.xml
 https://eida-sc3.infp.ro/eidaws/routing/1/routing.xml
 http://eida.koeri.boun.edu.tr/eidaws/routing/1/localconfig
 http://erde.geophysik.uni-muenchen.de/eidaws/routing/1/localconfig
