@@ -231,7 +231,7 @@ class BaseRequestProcessor(CachingMixin, ClientRetryBudgetMixin, ConfigMixin):
     def client_retry_budget_threshold(self):
         return self.config["client_retry_budget_threshold"]
 
-    async def _route(self, timeout=aiohttp.ClientTimeout(total=2 * 60)):
+    async def _route(self, timeout=aiohttp.ClientTimeout(total=15 * 60)):
         req_handler = RoutingRequestHandler(
             self.config["url_routing"],
             self.stream_epochs,
